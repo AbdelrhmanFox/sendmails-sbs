@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>SBS Sendmails – Dashboard</title>
+  <title>SBS  – Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet" />
@@ -421,7 +421,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
   <script>
     (function () {
       const STORAGE_LANG = 'sbs_sendmails_lang';
@@ -996,14 +995,14 @@
         });
       });
 
-      // QR Code generation
+      // QR Code generation (via public API – no library needed)
       var qrInputUrl = document.getElementById('qrInputUrl');
       var btnGenerateQr = document.getElementById('btnGenerateQr');
       var qrResult = document.getElementById('qrResult');
       var qrImage = document.getElementById('qrImage');
       var qrDownload = document.getElementById('qrDownload');
       var qrError = document.getElementById('qrError');
-      if (btnGenerateQr && qrInputUrl && typeof QRCode !== 'undefined') {
+      if (btnGenerateQr && qrInputUrl) {
         btnGenerateQr.addEventListener('click', function () {
           var text = (qrInputUrl.value || '').trim();
           if (qrError) { qrError.style.display = 'none'; qrError.textContent = ''; }
@@ -1011,19 +1010,30 @@
             if (qrError) { qrError.textContent = t('qrErrEmpty'); qrError.style.display = 'block'; }
             return;
           }
-          QRCode.toDataURL(text, { width: 300, margin: 2 }, function (err, dataUrl) {
-            if (err) {
-              if (qrError) { qrError.textContent = err.message || String(err); qrError.style.display = 'block'; }
-              return;
-            }
-            if (qrImage) qrImage.src = dataUrl;
-            if (qrResult) qrResult.style.display = 'block';
-            if (qrDownload) {
-              qrDownload.href = dataUrl;
+          var apiUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=10&data=' + encodeURIComponent(text);
+          if (qrImage) {
+            qrImage.src = apiUrl;
+            qrImage.onerror = function () {
+              if (qrError) { qrError.textContent = 'تعذّر تحميل صورة QR. جرّب رابطاً أو نصاً أقصر.'; qrError.style.display = 'block'; }
+            };
+          }
+          if (qrResult) qrResult.style.display = 'block';
+          if (qrDownload) {
+            qrDownload.style.display = 'none';
+            qrDownload.removeAttribute('href');
+            fetch(apiUrl).then(function (r) { return r.blob(); }).then(function (blob) {
+              var url = URL.createObjectURL(blob);
+              qrDownload.href = url;
               qrDownload.download = 'qrcode.png';
               qrDownload.style.display = 'inline-block';
-            }
-          });
+              qrDownload.onclick = function () { setTimeout(function () { URL.revokeObjectURL(url); }, 100); };
+            }).catch(function () {
+              qrDownload.href = apiUrl;
+              qrDownload.download = 'qrcode.png';
+              qrDownload.target = '_blank';
+              qrDownload.style.display = 'inline-block';
+            });
+          }
         });
       }
     })();
