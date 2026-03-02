@@ -1,0 +1,685 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "sendmails-sbs",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "be3809ba-415e-47a6-9195-da2be0d5fed3",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        400,
+        208
+      ],
+      "webhookId": "sendmails-sbs-dash"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"ok\": true, \"message\": \"تم بدء إرسال الإيميلات\" } }}",
+        "options": {}
+      },
+      "id": "c74c4e6b-2aae-4550-b4dd-1789e5962575",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        848,
+        16
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $json.body.sheetUrl }}",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1sUUpVcRs5tE1KzNGaVA4cnQShvr1eI1bvkO44jAsKtI/edit#gid=0"
+        },
+        "options": {}
+      },
+      "id": "05b64ce6-a305-4d9f-97e8-2ed5fed1adc0",
+      "name": "Read All Rows",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        848,
+        208
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "HL2oexu75XGQWtzz",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// استبعاد الصفوف اللي اتبعت (Email Sent = Sent)\nconst out = [];\nconst items = $input.all();\nfor (let i = 0; i < items.length; i++) {\n  const j = { ...(items[i].json || {}) };\n  const sheetRow = j['Row'] ?? j['row'];\n  j.Row = (sheetRow !== undefined && sheetRow !== null && sheetRow !== '') ? Number(sheetRow) : (2 + i);\n  let sentVal = j['Email Sent'] ?? j['Email  Sent'] ?? j['email sent'] ?? '';\n  if (sentVal === undefined || sentVal === null) {\n    const key = Object.keys(j).find(k => k !== 'Row' && /email\\s*sent/i.test(String(k).trim()));\n    sentVal = key ? j[key] : '';\n  }\n  const sent = String(sentVal).toLowerCase().trim();\n  if (sent === 'sent') continue;\n  out.push({ json: j });\n}\nreturn out;"
+      },
+      "id": "1f1d445b-841c-4e68-8d23-1e79afbfb651",
+      "name": "Only Rows Not Yet Sent",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1072,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "has-email",
+              "leftValue": "={{ $json.Email ?? $json.email ?? '' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "605d7715-37f2-488e-a1a3-030bc9836eef",
+      "name": "Has Email",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [
+        1296,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "9e6f600e-1be2-4ae0-a21a-d151fa347664",
+      "name": "Split In Batches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1520,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// دمج Subject و Body من الداشبورد مع بيانات الصف (استبدال {{اسم_العمود}})\nconst webhook = $('Webhook').first().json;\nconst body = webhook.body || webhook;\nlet subject = String(body.subject ?? webhook.subject ?? '');\nlet html = String(body.bodyHtml ?? webhook.bodyHtml ?? '');\nconst row = $input.item.json;\nfor (const [k, v] of Object.entries(row)) {\n  if (v === null || v === undefined) continue;\n  const val = String(v);\n  const placeholder = '{{' + k + '}}';\n  subject = subject.split(placeholder).join(val);\n  html = html.split(placeholder).join(val);\n}\nreturn { json: { ...row, _subject: subject, _html: html } };"
+      },
+      "id": "5a172864-b7d9-4980-b432-b80a06f6c38f",
+      "name": "Prepare Email Body",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1744,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "info@sbsolutions-eg.com",
+        "toEmail": "={{ $json.Email || $json.email }}",
+        "subject": "={{ $json._subject }}",
+        "html": "={{ $json._html }}",
+        "options": {
+          "appendAttribution": false,
+          "attachments": ""
+        }
+      },
+      "id": "ba3f23ff-cda3-494c-898b-6fbb17293381",
+      "name": "Send Email (Hostinger SMTP)",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1968,
+        144
+      ],
+      "webhookId": "c445eb1d-7e26-42ca-a9b8-68d7c71f5efa",
+      "credentials": {
+        "smtp": {
+          "id": "mjmkq45zCgICgfQo",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "no-error",
+              "leftValue": "={{ $run?.error?.message ?? $json?.error?.message ?? $json?.error ?? '' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "36529129-869c-4922-bd4b-3b3da5b0a545",
+      "name": "Send OK?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        2192,
+        144
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "129a40d2-bac4-4a6c-a9da-49ac3db49a4e",
+      "name": "Wait 5 Minutes",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2416,
+        48
+      ],
+      "webhookId": "9c2229d9-27e2-4511-a2c3-a38106515223"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "set-sent",
+              "name": "Email Sent",
+              "value": "Sent",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8a2a6b29-e69f-45be-a383-4de250793cf3",
+      "name": "Mark Email Sent",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2640,
+        48
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "set-error",
+              "name": "Email Sent",
+              "value": "Error",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2ec5e577-6460-4dba-aa3d-405c4554353f",
+      "name": "Mark Email Error",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2640,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Webhook').item.json.body.sheetUrl }}",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1sUUpVcRs5tE1KzNGaVA4cnQShvr1eI1bvkO44jAsKtI/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email Sent",
+              "displayName": "Email Sent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Coures",
+              "displayName": "Coures",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "ebf44d6e-c291-475a-bfcd-924ba1d46b22",
+      "name": "Update Row as Sent",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        2864,
+        208
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "HL2oexu75XGQWtzz",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## SBS Sendmails (ويب هوك واحد)\n\n• **ويب هوك واحد** يستقبل: sheetUrl و action (preview أو send).\n• **action = preview**: يرجع أعمدة الشيت + صف كمثال.\n• **action = send**: يرد فوراً ثم يقرأ الشيت ويرسل الإيميلات (مع subject و bodyHtml).\n• استخدم في Body و Subject: **{{Name}}**, **{{Email}}**, **{{Coures}}** إلخ.",
+        "height": 240,
+        "width": 360,
+        "color": 4
+      },
+      "id": "96b9a434-ca36-440e-b456-e7f6db374cc4",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        160,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "is-preview",
+              "leftValue": "={{ $json.body.action }}",
+              "rightValue": "preview",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "1fdaf78f-23a0-4f2a-a5b1-27bada815b67",
+      "name": "Action = preview?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        624,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $('Webhook').item.json.body.sheetUrl }}",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1sUUpVcRs5tE1KzNGaVA4cnQShvr1eI1bvkO44jAsKtI/edit#gid=0"
+        },
+        "options": {}
+      },
+      "id": "3d38ea0e-c21f-4041-82d6-20810671de87",
+      "name": "Read Sheet Preview",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        880,
+        384
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "HL2oexu75XGQWtzz",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nif (items.length === 0) return [{ json: { columns: [], sampleRow: {}, error: 'لا توجد بيانات' } }];\nconst first = items[0].json;\nconst columns = Object.keys(first);\nconst sampleRow = { ...first };\nreturn [{ json: { columns, sampleRow } }];"
+      },
+      "id": "908b0dd1-0711-4007-95f3-205701bca9a1",
+      "name": "Prepare Preview Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1072,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "3fa292e1-255c-4582-a06f-f6021cee69f6",
+      "name": "Respond Preview",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1296,
+        400
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Action = preview?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read All Rows": {
+      "main": [
+        [
+          {
+            "node": "Only Rows Not Yet Sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Only Rows Not Yet Sent": {
+      "main": [
+        [
+          {
+            "node": "Has Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Email": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split In Batches": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Prepare Email Body",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Email Body": {
+      "main": [
+        [
+          {
+            "node": "Send Email (Hostinger SMTP)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email (Hostinger SMTP)": {
+      "main": [
+        [
+          {
+            "node": "Send OK?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send OK?": {
+      "main": [
+        [
+          {
+            "node": "Wait 5 Minutes",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark Email Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 5 Minutes": {
+      "main": [
+        [
+          {
+            "node": "Mark Email Sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Email Sent": {
+      "main": [
+        [
+          {
+            "node": "Update Row as Sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Email Error": {
+      "main": [
+        [
+          {
+            "node": "Update Row as Sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Row as Sent": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Action = preview?": {
+      "main": [
+        [
+          {
+            "node": "Read Sheet Preview",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Read All Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Sheet Preview": {
+      "main": [
+        [
+          {
+            "node": "Prepare Preview Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Preview Data": {
+      "main": [
+        [
+          {
+            "node": "Respond Preview",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {
+    "Webhook": [
+      {
+        "headers": {
+          "host": "s3odyn8n.tech",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0",
+          "content-length": "1648",
+          "accept": "*/*",
+          "accept-encoding": "gzip, br",
+          "accept-language": "en-US,en;q=0.9,ar;q=0.8",
+          "cdn-loop": "cloudflare; loops=1",
+          "cf-connecting-ip": "154.182.173.235",
+          "cf-ipcountry": "EG",
+          "cf-ray": "9d638b6aaf5112ac-MRS",
+          "cf-visitor": "{\"scheme\":\"https\"}",
+          "content-type": "application/json",
+          "origin": "null",
+          "priority": "u=1, i",
+          "sec-ch-ua": "\"Not:A-Brand\";v=\"99\", \"Microsoft Edge\";v=\"145\", \"Chromium\";v=\"145\"",
+          "sec-ch-ua-mobile": "?0",
+          "sec-ch-ua-platform": "\"Windows\"",
+          "sec-fetch-dest": "empty",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-site": "cross-site",
+          "via": "2.0 Caddy",
+          "x-forwarded-for": "162.158.22.49",
+          "x-forwarded-host": "s3odyn8n.tech",
+          "x-forwarded-proto": "https"
+        },
+        "params": {},
+        "query": {},
+        "body": {
+          "sheetUrl": "https://docs.google.com/spreadsheets/d/1sUUpVcRs5tE1KzNGaVA4cnQShvr1eI1bvkO44jAsKtI/edit?gid=0#gid=0",
+          "subject": "Email sending issue – Undelivered message returned to sender",
+          "bodyHtml": "<p>Dear ,</p><p><br></p><p>Ramadan Kareem 🌙</p><p><br></p><p>Thank you for your interest in the free Ramadan webinar presented by SBS – Sustainable Business Solutions.</p><p>We are delighted to invite you to join our upcoming session.</p><p><br></p><p>Business Psychology &amp; Organizational Behavior</p><p><br></p><p>Presented by:</p><p>Dr. Ibraheem El-Ashy</p><p>Executive Managing Partner at SBS</p><p>L&amp;D and Organizational Performance Development Advisor</p><p><br></p><p>📅 Wednesday, 4 March 2026</p><p>⏰ 9:00 PM – 11:00 PM</p><p><br></p><p>In this webinar, we will explore why organizations sometimes struggle to achieve the expected levels of performance despite having skilled employees and available resources. The session will focus on understanding employees’ psychological needs, the impact of workplace psychology on performance, building psychologically safe work environments, and how organizational behavior directly influences engagement and productivity.</p><p><br></p><p>🎓 Attendance is free as part of the Lead With Purpose Ramadan Series presented by SBS.</p><p>A certificate of attendance will be provided after the webinar.</p><p><br></p><p>Registration Link: [Add Registration Link Here]</p><p><br></p><p>We look forward to your attendance and hope you have an insightful and valuable session with us.</p><p><br></p><p>Warm regards,</p><p>SBS – Sustainable Business Solutions</p>",
+          "action": "send"
+        },
+        "webhookUrl": "https://s3odyn8n.tech/webhook-test/sendmails-sbs",
+        "executionMode": "test"
+      }
+    ]
+  },
+  "meta": {
+    "instanceId": "060bc88294a96d5f2cd2b7733be4bcb1adb3c853f2f7840a2fd87c45001adad5"
+  }
+}

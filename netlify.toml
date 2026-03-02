@@ -1,0 +1,11 @@
+# Netlify – الداشبورد أونلاين
+# Publish from the dashboard folder so index.html is at the site root.
+[build]
+  publish = "dashboard"
+
+# Optional: prevent caching of index.html so updates show immediately
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
