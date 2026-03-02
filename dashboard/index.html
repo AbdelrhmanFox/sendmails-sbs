@@ -247,6 +247,50 @@
     .action-label { font-weight: 700; }
     .action-desc { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.4; }
     #message { margin-top: 16px; }
+
+    /* Tabs */
+    .tabs-bar {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 4px;
+      overflow: hidden;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 14px 20px;
+      border: none;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--text-secondary);
+      font-family: var(--font);
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+    .tab-btn:hover { background: var(--surface-hover); color: var(--text); }
+    .tab-btn.active { background: var(--accent); color: #fff; }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    /* QR Code tab */
+    .qr-section { margin-top: 20px; }
+    .qr-input-row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 20px; }
+    .qr-input-row .input-wrap { flex: 1; min-width: 200px; }
+    .qr-result {
+      margin-top: 24px;
+      padding: 24px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      text-align: center;
+    }
+    .qr-result img { max-width: 100%; height: auto; display: block; margin: 0 auto 16px; border-radius: var(--radius-sm); }
+    .qr-result .qr-download { margin-top: 8px; }
   </style>
 </head>
 <body class="lang-ar" dir="rtl">
@@ -262,6 +306,12 @@
       </div>
     </header>
 
+    <nav class="tabs-bar" role="tablist">
+      <button type="button" class="tab-btn active" role="tab" id="tabBtnSendmails" data-tab="tab-sendmails" data-i18n="tabSendmails">إرسال الإيميلات</button>
+      <button type="button" class="tab-btn" role="tab" id="tabBtnQr" data-tab="tab-qr" data-i18n="tabQr">QR Code</button>
+    </nav>
+
+    <div id="tab-sendmails" class="tab-pane active" role="tabpanel">
     <div class="card">
       <h2 class="card-title"><span class="icon">⚙</span> <span data-i18n="settings">الإعدادات</span></h2>
       <label data-i18n="labelWebhook">رابط الـ Webhook في n8n</label>
@@ -348,9 +398,30 @@
       <div class="preview-box subject" id="previewSubject" dir="auto">—</div>
       <div class="preview-box body" id="previewBody">—</div>
     </div>
+    </div><!-- end tab-sendmails -->
+
+    <div id="tab-qr" class="tab-pane" role="tabpanel">
+    <div class="card">
+      <h2 class="card-title"><span class="icon">📱</span> <span data-i18n="qrTitle">توليد QR Code</span></h2>
+      <p class="hint" data-i18n="qrHint">ضع الرابط أو النص الذي تريد تحويله إلى صورة QR، ثم اضغط توليد.</p>
+      <div class="qr-input-row">
+        <div class="input-wrap">
+          <label data-i18n="qrLabelUrl">الرابط أو النص</label>
+          <input type="text" id="qrInputUrl" placeholder="https://example.com" data-i18n-placeholder="qrPlaceholder" />
+        </div>
+        <button type="button" class="btn btn-primary" id="btnGenerateQr" data-i18n="btnGenerateQr">توليد QR</button>
+      </div>
+      <div class="qr-result" id="qrResult" style="display:none;">
+        <img id="qrImage" alt="QR Code" />
+        <a class="btn btn-secondary qr-download" id="qrDownload" download="qrcode.png" data-i18n="btnDownloadQr">تحميل الصورة</a>
+      </div>
+      <div id="qrError" class="columns-error" style="display:none;"></div>
+    </div>
+    </div><!-- end tab-qr -->
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
   <script>
     (function () {
       const STORAGE_LANG = 'sbs_sendmails_lang';
@@ -399,6 +470,15 @@
           err403: 'ممنوع (403). تحقق من صلاحيات الـ Webhook.',
           err404: 'الويب هوك غير موجود (404). تأكد من تشغيل الـ workflow ونسخ الرابط الصحيح.',
           err500: 'خطأ في الخادم (500). راجع تنفيذ الـ workflow في n8n (Executions).',
+          tabSendmails: 'إرسال الإيميلات',
+          tabQr: 'QR Code',
+          qrTitle: 'توليد QR Code',
+          qrHint: 'ضع الرابط أو النص الذي تريد تحويله إلى صورة QR، ثم اضغط توليد.',
+          qrLabelUrl: 'الرابط أو النص',
+          qrPlaceholder: 'https://example.com أو أي نص',
+          btnGenerateQr: 'توليد QR',
+          btnDownloadQr: 'تحميل الصورة',
+          qrErrEmpty: 'أدخل رابطاً أو نصاً أولاً.',
           errTimeout: 'انتهت مهلة الاتصال. تحقق من أن n8n يعمل والرابط صحيح.',
           successSend: 'تم بدء الإرسال.',
           insertPlaceholder: 'إدراج متغير:',
@@ -463,6 +543,15 @@
           err403: 'Forbidden (403). Check webhook permissions.',
           err404: 'Webhook not found (404). Make sure the workflow is active and the URL is correct.',
           err500: 'Server error (500). Check the workflow execution in n8n (Executions).',
+          tabSendmails: 'Send emails',
+          tabQr: 'QR Code',
+          qrTitle: 'Generate QR Code',
+          qrHint: 'Enter the link or text to convert to a QR code image, then click Generate.',
+          qrLabelUrl: 'Link or text',
+          qrPlaceholder: 'https://example.com or any text',
+          btnGenerateQr: 'Generate QR',
+          btnDownloadQr: 'Download image',
+          qrErrEmpty: 'Enter a link or text first.',
           errTimeout: 'Connection timed out. Ensure n8n is running and the URL is correct.',
           successSend: 'Sending started.',
           insertPlaceholder: 'Insert merge field:',
@@ -893,6 +982,50 @@
       }
 
       applyLang();
+
+      // Tab switching
+      document.querySelectorAll('.tab-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var tabId = btn.getAttribute('data-tab');
+          if (!tabId) return;
+          document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.remove('active'); });
+          document.querySelectorAll('.tab-pane').forEach(function (p) { p.classList.remove('active'); });
+          btn.classList.add('active');
+          var pane = document.getElementById(tabId);
+          if (pane) pane.classList.add('active');
+        });
+      });
+
+      // QR Code generation
+      var qrInputUrl = document.getElementById('qrInputUrl');
+      var btnGenerateQr = document.getElementById('btnGenerateQr');
+      var qrResult = document.getElementById('qrResult');
+      var qrImage = document.getElementById('qrImage');
+      var qrDownload = document.getElementById('qrDownload');
+      var qrError = document.getElementById('qrError');
+      if (btnGenerateQr && qrInputUrl && typeof QRCode !== 'undefined') {
+        btnGenerateQr.addEventListener('click', function () {
+          var text = (qrInputUrl.value || '').trim();
+          if (qrError) { qrError.style.display = 'none'; qrError.textContent = ''; }
+          if (!text) {
+            if (qrError) { qrError.textContent = t('qrErrEmpty'); qrError.style.display = 'block'; }
+            return;
+          }
+          QRCode.toDataURL(text, { width: 300, margin: 2 }, function (err, dataUrl) {
+            if (err) {
+              if (qrError) { qrError.textContent = err.message || String(err); qrError.style.display = 'block'; }
+              return;
+            }
+            if (qrImage) qrImage.src = dataUrl;
+            if (qrResult) qrResult.style.display = 'block';
+            if (qrDownload) {
+              qrDownload.href = dataUrl;
+              qrDownload.download = 'qrcode.png';
+              qrDownload.style.display = 'inline-block';
+            }
+          });
+        });
+      }
     })();
   </script>
 </body>
