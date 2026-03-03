@@ -9,7 +9,7 @@ function json(body, status = 200) {
 
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: cors };
-  if (event.httpMethod !== 'POST') return json({ error: 'Method not allowed' }, 405);
+  if (event.httpMethod !== 'POST' && event.httpMethod !== 'GET') return json({ error: 'Method not allowed' }, 405);
 
   const key = event.queryStringParameters?.key || event.headers['x-seed-key'];
   const secret = process.env.SEED_SECRET;

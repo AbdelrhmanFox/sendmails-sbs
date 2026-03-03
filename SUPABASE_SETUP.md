@@ -40,10 +40,19 @@ To enable login and user management:
 | `SEED_SECRET` | Optional; for one-time seed via URL |
 
 4. **Create admin (admin / 123)**  
-   - After deploy: open `https://YOUR-SITE.netlify.app/.netlify/functions/seed?key=SEED_SECRET`  
+   - **On Netlify:** Add `SEED_SECRET` in env vars, redeploy, then open in browser (GET):  
+     `https://YOUR-SITE.netlify.app/.netlify/functions/seed?key=YOUR_SEED_SECRET`  
    - Or locally: `.env` + `node scripts/seed-admin.js`
 
 Then log in with **admin** / **123** and use the "Manage users" tab to add users.
+
+---
+
+**Login not working?**
+
+- **"Server config missing"** → Set `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` and `JWT_SECRET` (or `SUPABASE_JWT_SECRET`) in Netlify → **Redeploy**.
+- **"Invalid username or password"** → The admin user may not exist on the Supabase project that Netlify uses. Open the seed URL once (step 4 above) with the same `SEED_SECRET` you set in Netlify. Then try **admin** / **123** again.
+- After changing env vars in Netlify, always **trigger a new deploy** so the functions use the new values.
 
 ---
 

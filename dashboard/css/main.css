@@ -295,7 +295,7 @@ input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px 
 .login-card label { margin-bottom: 6px; }
 .login-card input { margin-bottom: 16px; }
 .login-card .btn { width: 100%; margin-top: 8px; }
-.login-error { color: var(--error); font-size: 0.9rem; margin-top: 12px; text-align: center; display: none; }
+.login-error { color: var(--error); font-size: 0.9rem; margin-top: 12px; padding: 12px; background: rgba(248, 81, 73, 0.12); border-radius: var(--radius-sm); text-align: center; display: none; }
 .login-error.visible { display: block; }
 .header-actions { display: flex; align-items: center; gap: 12px; }
 .header-actions .btn-logout { padding: 8px 16px; font-size: 0.9rem; }

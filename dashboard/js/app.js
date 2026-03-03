@@ -182,7 +182,7 @@
           try {
             var res = await fetch('/.netlify/functions/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: u, password: p }) });
             var data = {};
-            try { data = await res.json(); } catch (_) {}
+            try { data = await res.json(); } catch (_) { data = { error: 'Invalid response from server' }; }
             if (res.ok && data.token && data.role) {
               localStorage.setItem(AUTH_TOKEN, data.token);
               localStorage.setItem(AUTH_ROLE, data.role);
@@ -190,9 +190,12 @@
               window.location.reload();
               return;
             }
-            if (loginError) { loginError.textContent = data.error || t('loginErr'); loginError.classList.add('visible'); }
+            var errMsg = data.error || t('loginErr');
+            if (res.status === 500 && errMsg === 'Server config missing') errMsg = 'Server config missing. Set SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY and JWT_SECRET (or SUPABASE_JWT_SECRET) in Netlify Environment variables.';
+            if (res.status === 401 && errMsg === 'Invalid username or password') errMsg = 'Invalid username or password. If this is the first time, create the admin user: run seed (see SUPABASE_SETUP.md) or call /.netlify/functions/seed?key=YOUR_SEED_SECRET';
+            if (loginError) { loginError.textContent = errMsg; loginError.classList.add('visible'); }
           } catch (err) {
-            if (loginError) { loginError.textContent = err.message || t('loginErr'); loginError.classList.add('visible'); }
+            if (loginError) { loginError.textContent = (err.message || t('loginErr')) + ' (check console)'; loginError.classList.add('visible'); }
           }
           if (btnLogin) btnLogin.disabled = false;
         });
