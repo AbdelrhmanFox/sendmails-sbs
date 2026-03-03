@@ -274,4 +274,140 @@
           span.appendChild(btnRtl);
           span.appendChild(btnLtr);
           toolbar.appendChild(span);
+          document.querySelectorAll('.dir-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() { setEditorDirection(this.getAttribute('data-dir')); });
+          });
         })();
+      } catch (e) {}
+
+      document.querySelectorAll('.tab-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var tab = this.getAttribute('data-tab');
+          document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+          document.querySelectorAll('.tab-pane').forEach(function(p) { p.classList.remove('active'); });
+          this.classList.add('active');
+          var pane = document.getElementById(tab);
+          if (pane) pane.classList.add('active');
+          if (tab === 'tab-admin') loadUsersList();
+        });
+      });
+
+      var createUserForm = document.getElementById('createUserForm');
+      var createUserMsg = document.getElementById('createUserMsg');
+      if (createUserForm) {
+        createUserForm.addEventListener('submit', async function(e) {
+          e.preventDefault();
+          var un = (document.getElementById('newUsername').value || '').trim();
+          var pw = document.getElementById('newPassword').value;
+          if (createUserMsg) { createUserMsg.style.display = 'none'; createUserMsg.textContent = ''; }
+          if (!un || !pw) return;
+          try {
+            var r = await fetch('/.netlify/functions/create-user', { method: 'POST', headers: getAuthHeaders(), body: JSON.stringify({ username: un, password: pw }) });
+            var d = await r.json().catch(function() { return {}; });
+            if (r.ok && createUserMsg) { createUserMsg.textContent = 'User added.'; createUserMsg.className = 'msg success'; createUserMsg.style.display = 'block'; createUserForm.reset(); loadUsersList(); }
+            else if (createUserMsg) { createUserMsg.textContent = d.error || 'Error'; createUserMsg.className = 'msg error'; createUserMsg.style.display = 'block'; }
+          } catch (err) { if (createUserMsg) { createUserMsg.textContent = err.message; createUserMsg.className = 'msg error'; createUserMsg.style.display = 'block'; } }
+        });
+      }
+      function loadUsersList() {
+        var tbody = document.getElementById('usersTableBody');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        fetch('/.netlify/functions/list-users', { headers: getAuthHeaders() }).then(function(r) { return r.json(); }).then(function(d) {
+          var list = d.users || [];
+          list.forEach(function(u) {
+            var tr = document.createElement('tr');
+            tr.innerHTML = '<td>' + (u.username || '') + '</td><td>' + (u.role === 'admin' ? t('roleAdmin') : t('roleUser')) + '</td>';
+            tbody.appendChild(tr);
+          });
+        }).catch(function() {});
+      }
+
+      function updatePreview() {
+        var subj = (subjectEl && subjectEl.value) || '';
+        var html = (quill && quill.root) ? quill.root.innerHTML : '';
+        var sample = { Name: 'Sample', Email: 'sample@example.com' };
+        function repl(_, k) { return sample[k] != null ? sample[k] : '{{' + k + '}}'; }
+        if (previewSubject) previewSubject.textContent = subj.replace(/\{\{(\w+)\}\}/g, repl);
+        if (previewBody) previewBody.innerHTML = html.replace(/\{\{(\w+)\}\}/g, repl);
+      }
+      if (subjectEl) subjectEl.addEventListener('input', updatePreview);
+      if (quill && quill.on) quill.on('text-change', updatePreview);
+
+      if (btnLoadColumns) {
+        btnLoadColumns.addEventListener('click', async function() {
+          var url = (webhookUrlEl && webhookUrlEl.value) || '';
+          var sheetUrl = (sheetUrlEl && sheetUrlEl.value) || '';
+          if (!url || url.indexOf('webhook') === -1) { if (messageEl) messageEl.innerHTML = '<span class="msg error">' + t('errWebhookRequired') + '</span>'; return; }
+          if (!sheetUrl) { if (messageEl) messageEl.innerHTML = '<span class="msg error">' + t('errSheetRequired') + '</span>'; return; }
+          if (columnsSection) { columnsSection.classList.remove('empty'); columnsSection.classList.add('empty'); }
+          if (columnsLoading) columnsLoading.style.display = 'block';
+          if (columnsError) columnsError.style.display = 'none';
+          try {
+            var res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'preview', sheetUrl: sheetUrl }) });
+            var data = await res.json().catch(function() { return {}; });
+            if (columnsLoading) columnsLoading.style.display = 'none';
+            if (data.columns && data.columns.length) {
+              if (columnsChips) { columnsChips.innerHTML = ''; data.columns.forEach(function(c) { var chip = document.createElement('span'); chip.className = 'chip'; chip.textContent = c; chip.title = t('chipTitle'); columnsChips.appendChild(chip); }); }
+              if (sampleTableHead) { sampleTableHead.innerHTML = data.columns.map(function(c) { return '<th>' + c + '</th>'; }).join(''); }
+              if (sampleTableBody && data.sampleRow) { sampleTableBody.innerHTML = data.columns.map(function(c) { return '<td>' + (data.sampleRow[c] != null ? data.sampleRow[c] : '') + '</td>'; }).join(''); }
+              if (columnsSection) columnsSection.classList.remove('empty');
+            } else { if (columnsError) { columnsError.textContent = data.error || t('errNoColumns'); columnsError.style.display = 'block'; } }
+          } catch (err) { if (columnsLoading) columnsLoading.style.display = 'none'; if (columnsError) { columnsError.textContent = err.message || t('errNetwork'); columnsError.style.display = 'block'; } }
+        });
+      }
+
+      if (btnSend) {
+        btnSend.addEventListener('click', async function() {
+          var url = (webhookUrlEl && webhookUrlEl.value) || '';
+          var sheetUrl = (sheetUrlEl && sheetUrlEl.value) || '';
+          var subj = (subjectEl && subjectEl.value) || '';
+          var html = (quill && quill.root) ? quill.root.innerHTML : '';
+          if (!url || url.indexOf('webhook') === -1) { if (messageEl) messageEl.innerHTML = '<span class="msg error">' + t('errWebhookRequired') + '</span>'; return; }
+          if (!sheetUrl) { if (messageEl) messageEl.innerHTML = '<span class="msg error">' + t('errSheetRequired') + '</span>'; return; }
+          if (!subj) { if (messageEl) messageEl.innerHTML = '<span class="msg error">' + t('errSubjectRequired') + '</span>'; return; }
+          if (messageEl) messageEl.innerHTML = '';
+          try {
+            var res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'send', sheetUrl: sheetUrl, subject: subj, bodyHtml: html }) });
+            var data = await res.json().catch(function() { return {}; });
+            if (res.ok && data.ok) { if (messageEl) messageEl.innerHTML = '<span class="msg success">' + t('successSend') + '</span>'; }
+            else { if (messageEl) messageEl.innerHTML = '<span class="msg error">' + (data.error || data.message || t('errGeneric').replace('{{msg}}', res.status)) + '</span>'; }
+          } catch (err) { if (messageEl) messageEl.innerHTML = '<span class="msg error">' + (err.message || t('errNetwork')) + '</span>'; }
+        });
+      }
+
+      var btnInsertPlaceholder = document.getElementById('btnInsertPlaceholder');
+      var placeholderSelect = document.getElementById('placeholderSelect');
+      if (btnInsertPlaceholder && placeholderSelect && quill) {
+        btnInsertPlaceholder.addEventListener('click', function() {
+          var val = placeholderSelect.value;
+          if (val && quill) { var range = quill.getSelection(true); quill.insertText(range.index, val); }
+        });
+      }
+      var editorHelp = document.getElementById('editorHelp');
+      if (editorHelp && editorHelp.querySelector('.editor-help-summary')) {
+        editorHelp.querySelector('.editor-help-summary').addEventListener('click', function() { editorHelp.classList.toggle('open'); });
+      }
+
+      var qrInputUrl = document.getElementById('qrInputUrl');
+      var qrResult = document.getElementById('qrResult');
+      var qrImage = document.getElementById('qrImage');
+      var qrDownload = document.getElementById('qrDownload');
+      var qrError = document.getElementById('qrError');
+      var btnGenerateQr = document.getElementById('btnGenerateQr');
+      if (btnGenerateQr && qrInputUrl) {
+        btnGenerateQr.addEventListener('click', function() {
+          var text = (qrInputUrl.value || '').trim();
+          if (qrError) qrError.style.display = 'none';
+          if (!text) { if (qrError) { qrError.textContent = t('qrErrEmpty'); qrError.style.display = 'block'; } return; }
+          if (qrResult) qrResult.style.display = 'none';
+          var apiUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(text);
+          if (qrImage) qrImage.src = apiUrl;
+          if (qrResult) qrResult.style.display = 'block';
+          if (qrDownload) qrDownload.href = apiUrl;
+        });
+      }
+
+      applyLang();
+      updatePreview();
+      })();
