@@ -307,3 +307,6 @@ input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px 
 .users-list table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 .users-list th, .users-list td { padding: 10px 12px; text-align: right; border-bottom: 1px solid var(--border); }
 .users-list th { background: var(--bg-subtle); color: var(--text-secondary); }
+.users-list td.admin-actions { text-align: left; }
+.users-list .btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+.users-list .btn-sm + .btn-sm { margin-left: 6px; }

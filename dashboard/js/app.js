@@ -97,8 +97,14 @@
           usersListTitle: 'Current users',
           thUsername: 'Username',
           thRole: 'Role',
+          thActions: 'Actions',
           roleAdmin: 'Admin',
           roleUser: 'User',
+          btnResetPassword: 'Reset password',
+          btnDeleteUser: 'Delete',
+          confirmDelete: 'Delete this user?',
+          passwordResetSuccess: 'Password updated.',
+          passwordResetPrompt: 'New password for',
           errTimeout: 'Connection timed out. Ensure n8n is running and the URL is correct.',
           successSend: 'Sending started.',
           insertPlaceholder: 'Insert merge field:',
@@ -313,12 +319,49 @@
         var tbody = document.getElementById('usersTableBody');
         if (!tbody) return;
         tbody.innerHTML = '';
+        var currentUser = localStorage.getItem(AUTH_USER) || '';
         fetch('/.netlify/functions/list-users', { headers: getAuthHeaders() }).then(function(r) { return r.json(); }).then(function(d) {
           var list = d.users || [];
           list.forEach(function(u) {
             var tr = document.createElement('tr');
-            tr.innerHTML = '<td>' + (u.username || '') + '</td><td>' + (u.role === 'admin' ? t('roleAdmin') : t('roleUser')) + '</td>';
+            var username = u.username || '';
+            var roleLabel = u.role === 'admin' ? t('roleAdmin') : t('roleUser');
+            var isAdmin = u.role === 'admin';
+            var isSelf = username === currentUser;
+            var canDelete = !isAdmin && !isSelf;
+            var actions = '';
+            actions += '<button type="button" class="btn btn-secondary btn-sm btn-reset-pw" data-username="' + username.replace(/"/g, '&quot;') + '">' + t('btnResetPassword') + '</button> ';
+            if (canDelete) actions += '<button type="button" class="btn btn-secondary btn-sm btn-delete-user" data-username="' + username.replace(/"/g, '&quot;') + '">' + t('btnDeleteUser') + '</button>';
+            else actions += '<span class="text-secondary">—</span>';
+            tr.innerHTML = '<td>' + username + '</td><td>' + roleLabel + '</td><td class="admin-actions">' + actions + '</td>';
             tbody.appendChild(tr);
+          });
+          tbody.querySelectorAll('.btn-reset-pw').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+              var un = this.getAttribute('data-username');
+              var newPass = prompt(t('passwordResetPrompt') + ' ' + un + ':');
+              if (!newPass || newPass.length < 4) return;
+              fetch('/.netlify/functions/reset-password', { method: 'POST', headers: getAuthHeaders(), body: JSON.stringify({ username: un, newPassword: newPass }) })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                  if (data.ok) { if (createUserMsg) { createUserMsg.textContent = t('passwordResetSuccess'); createUserMsg.className = 'msg success'; createUserMsg.style.display = 'block'; } loadUsersList(); }
+                  else { if (createUserMsg) { createUserMsg.textContent = data.error || 'Error'; createUserMsg.className = 'msg error'; createUserMsg.style.display = 'block'; } }
+                })
+                .catch(function() {});
+            });
+          });
+          tbody.querySelectorAll('.btn-delete-user').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+              var un = this.getAttribute('data-username');
+              if (!confirm(t('confirmDelete'))) return;
+              fetch('/.netlify/functions/delete-user', { method: 'POST', headers: getAuthHeaders(), body: JSON.stringify({ username: un }) })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                  if (data.ok) loadUsersList();
+                  else if (createUserMsg) { createUserMsg.textContent = data.error || 'Error'; createUserMsg.className = 'msg error'; createUserMsg.style.display = 'block'; }
+                })
+                .catch(function() {});
+            });
           });
         }).catch(function() {});
       }
