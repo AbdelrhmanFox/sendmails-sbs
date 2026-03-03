@@ -4,6 +4,8 @@
 
 - **`automation/`** – workflow خاص بـ n8n يُشغَّل من الداشبورد (Webhook).
 - **`dashboard/`** – صفحة الداشبورد (افتح `dashboard/index.html` في المتصفح أو ارفع المشروع على GitHub وربطه بـ Netlify؛ إعدادات النشر في `netlify.toml`).
+- **`netlify/functions/`** – دوال السيرفر لتسجيل الدخول وإنشاء المستخدمين (تعمل مع Supabase).
+- **`SUPABASE_SETUP.md`** – خطوات إعداد Supabase ومتغيرات Netlify لتشغيل تسجيل الدخول (يوزر/باسورد من أي جهاز، أدمن ينشئ مستخدمين).
 
 ### رفع على GitHub ثم Netlify (بعد تثبيت Git)
 1. في مجلد المشروع: `git init` ثم `git add .` ثم `git commit -m "Initial"`
