@@ -1,7 +1,11 @@
 # Netlify – الداشبورد أونلاين
 # Publish from the dashboard folder so index.html is at the site root.
 [build]
+  command = "echo Build complete"
   publish = "dashboard"
+
+[build.environment]
+  NODE_VERSION = "18"
 
 # Optional: prevent caching of index.html so updates show immediately
 [[headers]]
