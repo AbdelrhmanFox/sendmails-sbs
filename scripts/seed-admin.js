@@ -1,6 +1,6 @@
 /**
- * إنشاء حساب الأدمن (admin / 123) في Supabase – تشغيل مرة واحدة.
- * الاستخدام: SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... node scripts/seed-admin.js
+ * Create admin user (admin / 123) in Supabase - run once.
+ * Usage: SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... node scripts/seed-admin.js
  */
 require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
 const { createClient } = require('@supabase/supabase-js');

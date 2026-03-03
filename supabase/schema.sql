@@ -1,4 +1,4 @@
--- جدول مستخدمي الداشبورد (تشغيله مرة واحدة من Supabase → SQL Editor)
+-- Run once in Supabase -> SQL Editor
 create table if not exists app_users (
   id uuid default gen_random_uuid() primary key,
   username text unique not null,

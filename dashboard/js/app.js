@@ -32,95 +32,6 @@
       }
 
       const i18n = {
-        ar: {
-          title: 'إرسال إيميلات SBS',
-          subtitle: 'اختر الشيت، اكتب الموضوع ونص الإيميل، ثم شغّل الإرسال من واجهة واحدة',
-          settings: 'الإعدادات',
-          labelWebhook: 'رابط الـ Webhook في n8n',
-          placeholderWebhook: 'https://your-n8n.com/webhook/sendmails-sbs',
-          hintWebhook: 'ويب هوك واحد: زر «جلب الأعمدة» يشغّل المعاينة، وزر «بدء الإرسال» يشغّل الإرسال.',
-          chooseAction: 'اختر الوظيفة',
-          hintAction: 'حدّد ماذا تريد أن يفعل الـ Webhook الآن: معاينة أعمدة الشيت فقط، أو بدء إرسال الإيميلات فعلياً.',
-          btnLoadColumns: 'جلب أعمدة الشيت',
-          descLoadColumns: 'يعرض أسماء الأعمدة وصف كمثال للاستخدام في Subject و Body',
-          btnSend: 'بدء إرسال الإيميلات',
-          descSend: 'يبدأ إرسال الإيميلات من الشيت المحدد (إيميل كل 5 دقايق)',
-          sheetTitle: 'الشيت (مصدر البيانات)',
-          labelSheet: 'رابط جوجل شيت',
-          placeholderSheet: 'https://docs.google.com/spreadsheets/d/...',
-          hintSheet: 'يُستخدم نفس الشيت للقراءة وتحديث عمود «Email Sent» بعد الإرسال.',
-          columnsSubtitle: 'أعمدة الشيت (للاستخدام في Subject و Body كـ {{اسم_العمود}})',
-          sampleRowSubtitle: 'صف كمثال (أول صف بيانات)',
-          loadingColumns: 'جاري تحميل الأعمدة...',
-          chipTitle: 'استخدم في Subject أو Body',
-          subjectTitle: 'عنوان الإيميل (Subject)',
-          labelSubject: 'استخدم دمج مثل: {{Name}} ، {{Email}}',
-          placeholderSubject: 'مثال: Ramadan Kareem – دعوة ويبنار، عزيزي {{Name}}',
-          bodyTitle: 'نص الإيميل (Body)',
-          labelBody: 'اكتب المحتوى مع التنسيق (عريض، روابط، قوائم). استخدم {{Name}} ، {{Email}} ، {{شهاده}} للدمج.',
-          placeholderBody: 'اكتب نص الإيميل هنا...',
-          previewTitle: 'معاينة مع بيانات تجريبية',
-          hintPreview: 'العنوان والمعاينة بعد استبدال القيم التجريبية (أو من صف الشيت إن جلبته).',
-          errWebhookRequired: 'أدخل رابط الـ Webhook أولاً.',
-          errWebhookInvalid: 'رابط الـ Webhook غير صالح. يجب أن يبدأ بـ http أو https ويحتوي على webhook.',
-          errSheetRequired: 'أدخل رابط الشيت أولاً.',
-          errSheetInvalid: 'رابط جوجل شيت غير صالح. مثال: https://docs.google.com/spreadsheets/d/...',
-          errSubjectRequired: 'أدخل عنوان الإيميل.',
-          errNoColumns: 'لم يتم إرجاع أعمدة. تحقق من الشيت والـ workflow.',
-          errServer: 'استجابة الخادم {{status}}: {{detail}}',
-          errNetwork: 'تعذّر الاتصال بالخادم. إن كنت تفتح الصفحة من ملف محلي (file://)، جرّب تشغيلها من خادم محلي (npx serve) أو تحقق من رابط الـ Webhook و CORS.',
-          errGeneric: 'خطأ في الاتصال: {{msg}}',
-          err401: 'غير مصرح (401). تحقق من إعدادات n8n والـ Webhook.',
-          err403: 'ممنوع (403). تحقق من صلاحيات الـ Webhook.',
-          err404: 'الويب هوك غير موجود (404). تأكد من تشغيل الـ workflow ونسخ الرابط الصحيح.',
-          err500: 'خطأ في الخادم (500). راجع تنفيذ الـ workflow في n8n (Executions).',
-          loginTitle: 'تسجيل الدخول',
-          loginUsername: 'اسم المستخدم',
-          loginPassword: 'كلمة المرور',
-          btnLogin: 'دخول',
-          btnLogout: 'خروج',
-          loginErr: 'اسم المستخدم أو كلمة المرور غير صحيحة.',
-          tabSendmails: 'إرسال الإيميلات',
-          tabQr: 'QR Code',
-          qrTitle: 'توليد QR Code',
-          qrHint: 'ضع الرابط أو النص الذي تريد تحويله إلى صورة QR، ثم اضغط توليد.',
-          qrLabelUrl: 'الرابط أو النص',
-          qrPlaceholder: 'https://example.com أو أي نص',
-          btnGenerateQr: 'توليد QR',
-          btnDownloadQr: 'تحميل الصورة',
-          qrErrEmpty: 'أدخل رابطاً أو نصاً أولاً.',
-          tabAdmin: 'إدارة المستخدمين',
-          adminHint: 'إضافة مستخدم جديد (يستطيع الدخول من أي جهاز بنفس اسم المستخدم وكلمة المرور).',
-          newUsername: 'اسم المستخدم الجديد',
-          newPassword: 'كلمة المرور',
-          btnCreateUser: 'إضافة مستخدم',
-          usersListTitle: 'المستخدمون الحاليون',
-          thUsername: 'المستخدم',
-          thRole: 'الدور',
-          roleAdmin: 'مدير',
-          roleUser: 'مستخدم',
-          errTimeout: 'انتهت مهلة الاتصال. تحقق من أن n8n يعمل والرابط صحيح.',
-          successSend: 'تم بدء الإرسال.',
-          insertPlaceholder: 'إدراج متغير:',
-          btnInsertPlaceholder: 'إدراج',
-          editorHelpTitle: 'كيفية استخدام أدوات المحرر',
-          editorHelpIntro: 'أدوات شريط التنسيق فوق منطقة الكتابة:',
-          editorHelpBold: 'B — نص عريض (غامق).',
-          editorHelpItalic: 'I — نص مائل.',
-          editorHelpUnderline: 'U — تسطير تحت النص.',
-          editorHelpStrike: 'S — يتوسط النص خط (للحذف أو التعديل).',
-          editorHelpBlockquote: 'اقتباس — لعرض جملة كاقتباس بحد جانبي.',
-          editorHelpCode: 'كود — لكتابة كود أو أمر بخط ثابت.',
-          editorHelpH1: 'عنوان 1 / 2 / 3 — عناوين بدرجات مختلفة.',
-          editorHelpList: 'قائمة مرقمة أو نقطية.',
-          editorHelpIndent: 'تقليل/زيادة المسافة البادئة للسطر.',
-          editorHelpAlign: 'محاذاة النص: لليمين، للوسط، لليسار.',
-          editorHelpLink: 'رابط — إدراج رابط (URL) على النص المحدد.',
-          editorHelpPlaceholder: '«إدراج متغير» — إدراج اسم عمود من الشيت (مثل {{Name}}) ليدمج مع كل إيميل.',
-          writingDirection: 'اتجاه الكتابة:',
-          dirRtl: 'من اليمين لليسار (RTL)',
-          dirLtr: 'من اليسار لليمين (LTR)',
-        },
         en: {
           title: 'SBS Sendmails',
           subtitle: 'Choose the sheet, set subject and body, then trigger sending from one place.',
@@ -212,11 +123,10 @@
         }
       };
 
-      let lang = localStorage.getItem(STORAGE_LANG) || 'ar';
-      if (lang !== 'ar' && lang !== 'en') lang = 'ar';
+      let lang = 'en';
 
       function t(key) {
-        const str = i18n[lang][key];
+        const str = i18n.en[key];
         return str != null ? str : key;
       }
       function tReplace(key, vars) {
@@ -226,43 +136,37 @@
       }
 
       function applyLang() {
-        document.documentElement.lang = lang;
-        document.body.classList.toggle('lang-ar', lang === 'ar');
-        document.body.classList.toggle('lang-en', lang === 'en');
-        document.body.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
+        document.documentElement.lang = 'en';
+        document.body.classList.add('lang-en');
+        document.body.setAttribute('dir', 'ltr');
         document.querySelectorAll('[data-i18n]').forEach(function (el) {
           const key = el.getAttribute('data-i18n');
-          if (key && i18n[lang][key]) el.textContent = i18n[lang][key];
+          if (key && i18n.en[key]) el.textContent = i18n.en[key];
         });
         document.querySelectorAll('[data-i18n-placeholder]').forEach(function (el) {
           const key = el.getAttribute('data-i18n-placeholder');
-          if (key && i18n[lang][key]) el.placeholder = i18n[lang][key];
+          if (key && i18n.en[key]) el.placeholder = i18n.en[key];
         });
-        if (window.quillEditor && i18n[lang].placeholderBody) quillEditor.root.setAttribute('data-placeholder', i18n[lang].placeholderBody);
-        document.getElementById('langEn').classList.toggle('active', lang === 'en');
-        document.getElementById('langAr').classList.toggle('active', lang === 'ar');
+        if (window.quillEditor && i18n.en.placeholderBody) quillEditor.root.setAttribute('data-placeholder', i18n.en.placeholderBody);
         var helpEl = document.getElementById('editorHelpContent');
         if (helpEl) {
-          var intro = i18n[lang].editorHelpIntro;
+          var intro = i18n.en.editorHelpIntro;
           var items = [['editorHelpBold','editorHelpItalic','editorHelpUnderline','editorHelpStrike'],['editorHelpBlockquote','editorHelpCode'],['editorHelpH1','editorHelpList','editorHelpIndent','editorHelpAlign'],['editorHelpLink'],['editorHelpPlaceholder']];
           var flat = [];
-          items.forEach(function(row) { row.forEach(function(k) { if (i18n[lang][k]) flat.push(i18n[lang][k]); }); });
-          helpEl.innerHTML = '<p style="margin:0 0 10px 0">' + intro + '</p><ul style="margin:0; padding-left:1.4em">' + flat.map(function(t){ return '<li>' + t + '</li>'; }).join('') + '</ul>';
+          items.forEach(function(row) { row.forEach(function(k) { if (i18n.en[k]) flat.push(i18n.en[k]); }); });
+          helpEl.innerHTML = '<p style="margin:0 0 10px 0">' + intro + '</p><ul style="margin:0; padding-left:1.4em">' + flat.map(function(txt){ return '<li>' + txt + '</li>'; }).join('') + '</ul>';
         }
         var lbl = document.querySelector('.editor-insert-bar label');
-        if (lbl && i18n[lang].insertPlaceholder) lbl.textContent = i18n[lang].insertPlaceholder;
+        if (lbl && i18n.en.insertPlaceholder) lbl.textContent = i18n.en.insertPlaceholder;
         var btnIns = document.getElementById('btnInsertPlaceholder');
-        if (btnIns && i18n[lang].btnInsertPlaceholder) btnIns.textContent = i18n[lang].btnInsertPlaceholder;
+        if (btnIns && i18n.en.btnInsertPlaceholder) btnIns.textContent = i18n.en.btnInsertPlaceholder;
         var sum = document.querySelector('.editor-help-summary');
-        if (sum && i18n[lang].editorHelpTitle) sum.textContent = i18n[lang].editorHelpTitle;
+        if (sum && i18n.en.editorHelpTitle) sum.textContent = i18n.en.editorHelpTitle;
         var dirRtlBtn = document.getElementById('dirRtl');
-        if (dirRtlBtn) dirRtlBtn.textContent = (i18n[lang].dirRtl || 'RTL').replace(/\s*\(RTL\)\s*|\s*\(LTR\)\s*/g, '').trim() || 'RTL';
+        if (dirRtlBtn) dirRtlBtn.textContent = 'RTL';
         var dirLtrBtn = document.getElementById('dirLtr');
-        if (dirLtrBtn) dirLtrBtn.textContent = (i18n[lang].dirLtr || 'LTR').replace(/\s*\(RTL\)\s*|\s*\(LTR\)\s*/g, '').trim() || 'LTR';
+        if (dirLtrBtn) dirLtrBtn.textContent = 'LTR';
       }
-
-      document.getElementById('langEn').addEventListener('click', function () { lang = 'en'; localStorage.setItem(STORAGE_LANG, lang); applyLang(); });
-      document.getElementById('langAr').addEventListener('click', function () { lang = 'ar'; localStorage.setItem(STORAGE_LANG, lang); applyLang(); });
 
       var loginForm = document.getElementById('loginForm');
       var loginError = document.getElementById('loginError');
@@ -334,7 +238,7 @@
       }
       window.quillEditor = quill;
 
-      var editorDirection = localStorage.getItem('sbs_sendmails_editor_dir') || 'rtl';
+      var editorDirection = localStorage.getItem('sbs_sendmails_editor_dir') || 'ltr';
       function setEditorDirection(dir) {
         editorDirection = dir;
         localStorage.setItem('sbs_sendmails_editor_dir', dir);
@@ -354,13 +258,13 @@
           span.setAttribute('title', t('writingDirection'));
           var btnRtl = document.createElement('button');
           btnRtl.type = 'button';
-          btnRtl.className = 'dir-btn active';
+          btnRtl.className = 'dir-btn';
           btnRtl.id = 'dirRtl';
           btnRtl.setAttribute('data-dir', 'rtl');
           btnRtl.textContent = 'RTL';
           var btnLtr = document.createElement('button');
           btnLtr.type = 'button';
-          btnLtr.className = 'dir-btn';
+          btnLtr.className = 'dir-btn active';
           btnLtr.id = 'dirLtr';
           btnLtr.setAttribute('data-dir', 'ltr');
           btnLtr.textContent = 'LTR';

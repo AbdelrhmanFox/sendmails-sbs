@@ -20,7 +20,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ { \"ok\": true, \"message\": \"تم بدء إرسال الإيميلات\" } }}",
+        "responseBody": "={{ { \"ok\": true, \"message\": \"Sending started\" } }}",
         "options": {}
       },
       "id": "c74c4e6b-2aae-4550-b4dd-1789e5962575",
@@ -65,7 +65,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// استبعاد الصفوف اللي اتبعت (Email Sent = Sent)\nconst out = [];\nconst items = $input.all();\nfor (let i = 0; i < items.length; i++) {\n  const j = { ...(items[i].json || {}) };\n  const sheetRow = j['Row'] ?? j['row'];\n  j.Row = (sheetRow !== undefined && sheetRow !== null && sheetRow !== '') ? Number(sheetRow) : (2 + i);\n  let sentVal = j['Email Sent'] ?? j['Email  Sent'] ?? j['email sent'] ?? '';\n  if (sentVal === undefined || sentVal === null) {\n    const key = Object.keys(j).find(k => k !== 'Row' && /email\\s*sent/i.test(String(k).trim()));\n    sentVal = key ? j[key] : '';\n  }\n  const sent = String(sentVal).toLowerCase().trim();\n  if (sent === 'sent') continue;\n  out.push({ json: j });\n}\nreturn out;"
+        "jsCode": "// Exclude rows already sent (Email Sent = Sent)\nconst out = [];\nconst items = $input.all();\nfor (let i = 0; i < items.length; i++) {\n  const j = { ...(items[i].json || {}) };\n  const sheetRow = j['Row'] ?? j['row'];\n  j.Row = (sheetRow !== undefined && sheetRow !== null && sheetRow !== '') ? Number(sheetRow) : (2 + i);\n  let sentVal = j['Email Sent'] ?? j['Email  Sent'] ?? j['email sent'] ?? '';\n  if (sentVal === undefined || sentVal === null) {\n    const key = Object.keys(j).find(k => k !== 'Row' && /email\\s*sent/i.test(String(k).trim()));\n    sentVal = key ? j[key] : '';\n  }\n  const sent = String(sentVal).toLowerCase().trim();\n  if (sent === 'sent') continue;\n  out.push({ json: j });\n}\nreturn out;"
       },
       "id": "1f1d445b-841c-4e68-8d23-1e79afbfb651",
       "name": "Only Rows Not Yet Sent",
@@ -124,7 +124,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// دمج Subject و Body من الداشبورد مع بيانات الصف (استبدال {{اسم_العمود}})\nconst webhook = $('Webhook').first().json;\nconst body = webhook.body || webhook;\nlet subject = String(body.subject ?? webhook.subject ?? '');\nlet html = String(body.bodyHtml ?? webhook.bodyHtml ?? '');\nconst row = $input.item.json;\nfor (const [k, v] of Object.entries(row)) {\n  if (v === null || v === undefined) continue;\n  const val = String(v);\n  const placeholder = '{{' + k + '}}';\n  subject = subject.split(placeholder).join(val);\n  html = html.split(placeholder).join(val);\n}\nreturn { json: { ...row, _subject: subject, _html: html } };"
+        "jsCode": "// Merge Subject and Body from dashboard with row data (replace {{column}})\nconst webhook = $('Webhook').first().json;\nconst body = webhook.body || webhook;\nlet subject = String(body.subject ?? webhook.subject ?? '');\nlet html = String(body.bodyHtml ?? webhook.bodyHtml ?? '');\nconst row = $input.item.json;\nfor (const [k, v] of Object.entries(row)) {\n  if (v === null || v === undefined) continue;\n  const val = String(v);\n  const placeholder = '{{' + k + '}}';\n  subject = subject.split(placeholder).join(val);\n  html = html.split(placeholder).join(val);\n}\nreturn { json: { ...row, _subject: subject, _html: html } };"
       },
       "id": "5a172864-b7d9-4980-b432-b80a06f6c38f",
       "name": "Prepare Email Body",
@@ -343,7 +343,7 @@
     },
     {
       "parameters": {
-        "content": "## SBS Sendmails (ويب هوك واحد)\n\n• **ويب هوك واحد** يستقبل: sheetUrl و action (preview أو send).\n• **action = preview**: يرجع أعمدة الشيت + صف كمثال.\n• **action = send**: يرد فوراً ثم يقرأ الشيت ويرسل الإيميلات (مع subject و bodyHtml).\n• استخدم في Body و Subject: **{{Name}}**, **{{Email}}**, **{{Coures}}** إلخ.",
+        "content": "## SBS Sendmails (single webhook)\n\n• **One webhook** receives: sheetUrl and action (preview or send).\n• **action = preview**: returns sheet columns + sample row.\n• **action = send**: responds immediately then reads sheet and sends emails (with subject and bodyHtml).\n• Use in Body and Subject: **{{Name}}**, **{{Email}}**, **{{Coures}}**, etc.",
         "height": 240,
         "width": 360,
         "color": 4
@@ -423,7 +423,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const items = $input.all();\nif (items.length === 0) return [{ json: { columns: [], sampleRow: {}, error: 'لا توجد بيانات' } }];\nconst first = items[0].json;\nconst columns = Object.keys(first);\nconst sampleRow = { ...first };\nreturn [{ json: { columns, sampleRow } }];"
+        "jsCode": "const items = $input.all();\nif (items.length === 0) return [{ json: { columns: [], sampleRow: {}, error: 'No data' } }];\nconst first = items[0].json;\nconst columns = Object.keys(first);\nconst sampleRow = { ...first };\nreturn [{ json: { columns, sampleRow } }];"
       },
       "id": "908b0dd1-0711-4007-95f3-205701bca9a1",
       "name": "Prepare Preview Data",

@@ -1,4 +1,4 @@
-# Netlify – الداشبورد أونلاين
+# Netlify - SBS Dashboard
 # Publish from the dashboard folder so index.html is at the site root.
 [build]
   command = "echo Build complete"

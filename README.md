@@ -1,43 +1,42 @@
-# Sendmails SBS – الداشبورد + الأتميشن
+# Sendmails SBS – Dashboard + Automation
 
-## محتويات المجلد
+## Contents
 
-- **`automation/`** – workflow خاص بـ n8n يُشغَّل من الداشبورد (Webhook).
-- **`dashboard/`** – صفحة الداشبورد (افتح `dashboard/index.html` في المتصفح أو ارفع المشروع على GitHub وربطه بـ Netlify؛ إعدادات النشر في `netlify.toml`).
-- **`netlify/functions/`** – دوال السيرفر لتسجيل الدخول وإنشاء المستخدمين (تعمل مع Supabase).
-- **`SUPABASE_SETUP.md`** – خطوات إعداد Supabase ومتغيرات Netlify لتشغيل تسجيل الدخول (يوزر/باسورد من أي جهاز، أدمن ينشئ مستخدمين).
+- **`automation/`** – n8n workflow triggered from the dashboard (Webhook).
+- **`dashboard/`** – Dashboard UI (open `dashboard/index.html` in browser or deploy to Netlify; see `netlify.toml`).
+- **`netlify/functions/`** – Serverless functions for login and user management (Supabase).
+- **`SUPABASE_SETUP.md`** – Supabase and Netlify env setup for login (username/password from any device, admin can create users).
 
-### رفع على GitHub ثم Netlify (بعد تثبيت Git)
-1. في مجلد المشروع: `git init` ثم `git add .` ثم `git commit -m "Initial"`
-2. على GitHub: أنشئ repo جديد (مثلاً `sendmails-sbs`) بدون README.
-3. `git remote add origin https://github.com/اسمك/sendmails-sbs.git` ثم `git branch -M main` ثم `git push -u origin main`
-4. في Netlify: Add new site → Import from GitHub → اختر الـ repo → Publish directory: **dashboard** → Deploy.
+### Deploy to GitHub then Netlify
+1. In project folder: `git init`, `git add .`, `git commit -m "Initial"`
+2. On GitHub: create a new repo (e.g. `sendmails-sbs`) without README.
+3. `git remote add origin https://github.com/YOUR_USERNAME/sendmails-sbs.git`, then `git branch -M main`, then `git push -u origin main`
+4. In Netlify: Add new site → Import from GitHub → choose repo → Publish directory: **dashboard** → Deploy.
 
 ---
 
-## طريقة الاستخدام (للموظف)
+## Usage
 
-1. **تشغيل الـ workflow في n8n**
-   - استورد الملف `automation/workflow.json` داخل n8n.
-   - فعّل الـ workflow وانسخ **رابط الـ Webhook** من نود الـ Webhook (مثال: `https://your-n8n.com/webhook/sendmails-sbs`).
+1. **Run the workflow in n8n**
+   - Import `automation/workflow.json` in n8n.
+   - Activate the workflow and copy the **Webhook URL** (e.g. `https://your-n8n.com/webhook/sendmails-sbs`).
 
-2. **فتح الداشبورد**
-   - افتح الملف `dashboard/index.html` في المتصفح (مثلاً double-click أو من خلال خادم محلي).
+2. **Open the dashboard**
+   - Open `dashboard/index.html` in the browser (or use a local server).
 
-3. **في الداشبورد**
-   - في **الإعدادات**: الصق رابط الـ Webhook.
-   - في **الشيت**: الصق رابط جوجل شيت اللي هتقرا منه الداتا (الأعمدة: Email, Name, Row, Email Sent، واختياري: شهاده).
-   - في **Subject**: اكتب عنوان الإيميل، واستخدم مثلاً `{{Name}}` عشان يتحط اسم الشخص.
-   - في **Body**: اكتب نص الإيميل بالتنسيق اللي تحبه (عريض، روابط، إلخ). النص يُحفظ كـ HTML عشان التنسيق ما يبوظش. استخدم `{{Name}}` و `{{Email}}` و `{{شهاده}}` للدمج.
+3. **In the dashboard**
+   - **Settings:** paste the Webhook URL.
+   - **Sheet:** paste the Google Sheet URL (columns: Email, Name, Row, Email Sent, optional: Certificate).
+   - **Subject:** email subject; use `{{Name}}` etc. for merge.
+   - **Body:** email body with formatting. Use `{{Name}}`, `{{Email}}`, `{{Certificate}}` for merge.
 
-4. **معاينة**
-   - جزء «معاينة مع بيانات تجريبية» يوريك الموضوع والـ body بعد استبدال القيم التجريبية.
+4. **Preview**
+   - The preview section shows subject and body with sample data.
 
-5. **بدء الإرسال**
-   - اضغط **بدء إرسال الإيميلات**. الطلب يروح لـ n8n، والـ workflow يرد فوراً ثم يقرأ الشيت ويرسل إيميل إيميل (بفاصل 5 دقايق بين كل واحد).
+5. **Start sending**
+   - Click **Start sending emails**. The request goes to n8n; the workflow responds and then reads the sheet and sends one email every 5 minutes.
 
-## ملاحظات
+## Notes
 
-- لازم يكون في n8n: **Google Sheets** و **SMTP** (Hostinger أو غيره) مضبوطين في الـ credentials.
-- عمود **Row** في الشيت لازم يكون موجود (مثلاً `=ROW()`) عشان التحديث يحدث الصف الصح.
-- لو حابب ترجع للنسخة اللي تشتغل على **جدولة كل 5 ساعات** بدون داشبورد، استخدم الـ workflow الأصلي `SBS_SENDMAILS.json` من مجلد Downloads.
+- n8n must have **Google Sheets** and **SMTP** (e.g. Hostinger) credentials configured.
+- The **Row** column in the sheet must exist (e.g. `=ROW()`) so the correct row is updated after sending.

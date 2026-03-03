@@ -1,7 +1,7 @@
 /**
- * تشغيل schema.sql على Supabase ثم بذر الأدمن.
- * إن وُجد SUPABASE_ACCESS_TOKEN (Personal Access Token من supabase.com) نستخدم Management API.
- * وإلا نعطي تعليمات وتشغّل البذر فقط (إن الجدول موجود).
+ * Run schema.sql on Supabase then seed admin.
+ * If SUPABASE_ACCESS_TOKEN (PAT from supabase.com) is set, use Management API.
+ * Otherwise print instructions and run seed only if table exists.
  */
 require('dotenv').config({ path: require('path').resolve(__dirname, '../.env') });
 const { createClient } = require('@supabase/supabase-js');
@@ -49,7 +49,7 @@ async function main() {
       if (ok) console.log('Schema applied.');
       else console.log('Could not run schema via API. Run schema manually in Supabase SQL Editor.');
     } else {
-      console.log('No SUPABASE_ACCESS_TOKEN. Run supabase/schema.sql once in Supabase → SQL Editor.');
+      console.log('No SUPABASE_ACCESS_TOKEN. Run supabase/schema.sql once in Supabase SQL Editor.');
     }
   }
 

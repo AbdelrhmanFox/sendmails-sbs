@@ -1,13 +1,13 @@
-# إعداد تسجيل الدخول (Supabase + Netlify)
+# Login setup (Supabase + Netlify)
 
-## خطوة واحدة مطلوبة منك (مرة واحدة فقط)
+## One-time step
 
-الجدول `app_users` لازم يُنشأ داخل Supabase. من هنا لا أستطيع تنفيذ SQL على مشروعك بدون صلاحيات إضافية، لذلك تحتاج تنفيذها من متصفحك مرة واحدة:
+The `app_users` table must be created in Supabase. Run this once from your browser:
 
-1. افتح **محرر SQL** لمشروعك:  
+1. Open **SQL Editor** for your project:  
    **https://supabase.com/dashboard/project/lpvoooyqhndizycsukcm/sql/new**
 
-2. الصق هذا الـ SQL بالكامل ثم اضغط **Run**:
+2. Paste this SQL and click **Run**:
 
 ```sql
 create table if not exists app_users (
@@ -19,43 +19,32 @@ create table if not exists app_users (
 );
 ```
 
-3. بعد ما يظهر "Success"، شغّل البذر:
-   - **من هنا:** قل لي "شغّل البذر" وسأشغّله عنك.
-   - **أو محلياً:** من مجلد المشروع شغّل: `.\scripts\seed-admin.ps1` (أو أنشئ `.env` من `.env.example` واملأ القيم ثم شغّل `node scripts/seed-admin.js`).
+3. After "Success", seed the admin user:
+   - **Locally:** From project folder run `.\scripts\seed-admin.ps1` (or create `.env` from `.env.example`, set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`, then run `node scripts/seed-admin.js`).
 
 ---
 
-لتشغيل تسجيل الدخول وإدارة المستخدمين، تحتاج أيضاً:
+To enable login and user management:
 
-1. **إنشاء مشروع Supabase (مجاني)**  
-   - ادخل [supabase.com](https://supabase.com) → Create new project.  
-   - بعد الإنشاء: **Settings** → **API** → انسخ **Project URL** و **service_role** (مفتاح سري، لا تشاركه).
+1. **Create a Supabase project** at [supabase.com](https://supabase.com). In **Settings** → **API** copy **Project URL** and **service_role** key.
 
-2. **إنشاء الجدول في Supabase**  
-   - من Supabase: **SQL Editor** → New query، ثم انسخ محتوى الملف **`supabase/schema.sql`** وشغّله (أو الصق الـ SQL الموجود في الملف).
+2. **Create the table** in Supabase (SQL Editor) using `supabase/schema.sql` if you have not done the step above.
 
-3. **إضافة المتغيرات في Netlify**  
-   - من موقعك في Netlify: **Site settings** → **Environment variables** → **Add a variable** (أو **Import from .env**).  
-   - أضف:
+3. **Add env vars in Netlify:** **Site settings** → **Environment variables**:
 
-| الاسم | القيمة | ملاحظات |
-|------|--------|---------|
-| `SUPABASE_URL` | Project URL من Supabase | مثال: https://xxx.supabase.co |
-| `SUPABASE_SERVICE_ROLE_KEY` | مفتاح service_role من Supabase | سري |
-| `JWT_SECRET` | أي نص عشوائي طويل | مثال: استخدم مولد كلمات مرور |
-| `SEED_SECRET` | كلمة سر لمرة واحدة لإنشاء الأدمن | اختياري، لاستدعاء seed |
+| Name | Value |
+|------|--------|
+| `SUPABASE_URL` | Project URL from Supabase |
+| `SUPABASE_SERVICE_ROLE_KEY` | service_role key from Supabase |
+| `JWT_SECRET` | Any long random string |
+| `SEED_SECRET` | Optional; for one-time seed via URL |
 
-4. **إنشاء حساب الأدمن (admin / 123)**  
-   - **من Netlify (بعد الـ deploy):** افتح في المتصفح أو استدعِ:
-   `https://YOUR-SITE.netlify.app/.netlify/functions/seed?key=SEED_SECRET`
-   - **أو محلياً:** انسخ `.env.example` إلى `.env` واملأ `SUPABASE_URL` و `SUPABASE_SERVICE_ROLE_KEY`، ثم شغّل:
-   `node scripts/seed-admin.js`
+4. **Create admin (admin / 123)**  
+   - After deploy: open `https://YOUR-SITE.netlify.app/.netlify/functions/seed?key=SEED_SECRET`  
+   - Or locally: `.env` + `node scripts/seed-admin.js`
 
-   بعدها يمكن تسجيل الدخول بـ **admin** / **123** وإنشاء المستخدمين من تاب «إدارة المستخدمين».
+Then log in with **admin** / **123** and use the "Manage users" tab to add users.
 
 ---
 
-**ملخص:**  
-- الدخول من أي جهاز بنفس اليوزر/الباسورد.  
-- الأدمن (admin) يضيف مستخدمين جدد من الداشبورد.  
-- البيانات مخزنة في Supabase (سيرفر)، وليس في المتصفح فقط.
+**Summary:** Login works from any device; admin can add users; data is stored in Supabase.

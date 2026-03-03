@@ -1,25 +1,25 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>SBS  – Dashboard</title>
+  <title>SBS – Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet" />
   <link rel="stylesheet" href="css/main.css" />
 </head>
-<body class="lang-ar" dir="rtl">
+<body class="lang-en" dir="ltr">
   <div id="login-screen" class="visible">
     <div class="login-card">
-      <h2 data-i18n="loginTitle">تسجيل الدخول</h2>
+      <h2 data-i18n="loginTitle">Login</h2>
       <form id="loginForm">
-        <label data-i18n="loginUsername">اسم المستخدم</label>
+        <label data-i18n="loginUsername">Username</label>
         <input type="text" id="loginUsername" autocomplete="username" required />
-        <label data-i18n="loginPassword">كلمة المرور</label>
+        <label data-i18n="loginPassword">Password</label>
         <input type="password" id="loginPassword" autocomplete="current-password" required />
-        <button type="submit" class="btn btn-primary" id="btnLogin" data-i18n="btnLogin">دخول</button>
+        <button type="submit" class="btn btn-primary" id="btnLogin" data-i18n="btnLogin">Log in</button>
       </form>
       <p id="loginError" class="login-error"></p>
     </div>
@@ -29,160 +29,156 @@
   <div class="page">
     <header class="header">
       <div class="title-wrap">
-        <h1 data-i18n="title">إرسال إيميلات SBS</h1>
-        <p class="subtitle" data-i18n="subtitle">اختر الشيت، اكتب الموضوع ونص الإيميل، ثم شغّل الإرسال من واجهة واحدة</p>
-      </div>
-      <div class="lang-switch">
-        <button type="button" id="langEn" class="lang-btn">EN</button>
-        <button type="button" id="langAr" class="lang-btn active">AR</button>
+        <h1 data-i18n="title">SBS Sendmails</h1>
+        <p class="subtitle" data-i18n="subtitle">Choose the sheet, set subject and body, then trigger sending from one place.</p>
       </div>
       <div class="header-actions">
         <span id="loggedInUser" class="text-secondary" style="font-size:0.9rem;"></span>
-        <button type="button" class="btn btn-secondary btn-logout" id="btnLogout" data-i18n="btnLogout">خروج</button>
+        <button type="button" class="btn btn-secondary btn-logout" id="btnLogout" data-i18n="btnLogout">Log out</button>
       </div>
     </header>
 
     <nav class="tabs-bar" role="tablist">
-      <button type="button" class="tab-btn active" role="tab" id="tabBtnSendmails" data-tab="tab-sendmails" data-i18n="tabSendmails">إرسال الإيميلات</button>
+      <button type="button" class="tab-btn active" role="tab" id="tabBtnSendmails" data-tab="tab-sendmails" data-i18n="tabSendmails">Send emails</button>
       <button type="button" class="tab-btn" role="tab" id="tabBtnQr" data-tab="tab-qr" data-i18n="tabQr">QR Code</button>
-      <button type="button" class="tab-btn tab-admin" role="tab" id="tabBtnAdmin" data-tab="tab-admin" data-i18n="tabAdmin" style="display:none;">إدارة المستخدمين</button>
+      <button type="button" class="tab-btn tab-admin" role="tab" id="tabBtnAdmin" data-tab="tab-admin" data-i18n="tabAdmin" style="display:none;">Manage users</button>
     </nav>
 
     <div id="tab-sendmails" class="tab-pane active" role="tabpanel">
     <div class="card">
-      <h2 class="card-title"><span class="icon">⚙</span> <span data-i18n="settings">الإعدادات</span></h2>
-      <label data-i18n="labelWebhook">رابط الـ Webhook في n8n</label>
+      <h2 class="card-title"><span class="icon">&#9881;</span> <span data-i18n="settings">Settings</span></h2>
+      <label data-i18n="labelWebhook">n8n Webhook URL</label>
       <input type="url" id="webhookUrl" value="https://s3odyn8n.tech/webhook/sendmails-sbs" data-i18n-placeholder="placeholderWebhook" />
-      <p class="hint" data-i18n="hintWebhook">ويب هوك واحد: زر «جلب الأعمدة» يشغّل المعاينة، وزر «بدء الإرسال» يشغّل الإرسال.</p>
+      <p class="hint" data-i18n="hintWebhook">One webhook: Load columns runs preview, Start sending runs the send flow.</p>
     </div>
 
     <div class="card card-actions">
-      <h2 class="card-title"><span class="icon">🎯</span> <span data-i18n="chooseAction">اختر الوظيفة</span></h2>
-      <p class="hint actions-hint" data-i18n="hintAction">حدّد ماذا تريد أن يفعل الـ Webhook الآن.</p>
+      <h2 class="card-title"><span class="icon">&#9733;</span> <span data-i18n="chooseAction">Choose action</span></h2>
+      <p class="hint actions-hint" data-i18n="hintAction">Choose what the webhook should do now.</p>
       <div class="action-buttons">
         <div class="action-block">
           <button type="button" class="btn btn-secondary" id="btnLoadColumns">
-            <span class="action-icon">📋</span>
-            <span class="action-label" data-i18n="btnLoadColumns">جلب أعمدة الشيت</span>
+            <span class="action-icon">&#128203;</span>
+            <span class="action-label" data-i18n="btnLoadColumns">Load sheet columns</span>
           </button>
-          <span class="action-desc" data-i18n="descLoadColumns">يعرض أسماء الأعمدة وصف كمثال للاستخدام في Subject و Body</span>
+          <span class="action-desc" data-i18n="descLoadColumns">Shows column names and a sample row for use in Subject and Body</span>
         </div>
         <div class="action-block">
           <button type="button" class="btn btn-primary" id="btnSend">
-            <span class="action-icon">📤</span>
-            <span class="action-label" data-i18n="btnSend">بدء إرسال الإيميلات</span>
+            <span class="action-icon">&#128230;</span>
+            <span class="action-label" data-i18n="btnSend">Start sending emails</span>
           </button>
-          <span class="action-desc" data-i18n="descSend">يبدأ إرسال الإيميلات من الشيت المحدد (إيميل كل 5 دقايق)</span>
+          <span class="action-desc" data-i18n="descSend">Starts sending emails from the selected sheet (one email every 5 minutes)</span>
         </div>
       </div>
       <div id="message"></div>
     </div>
 
     <div class="card">
-      <h2 class="card-title"><span class="icon">📊</span> <span data-i18n="sheetTitle">الشيت (مصدر البيانات)</span></h2>
+      <h2 class="card-title"><span class="icon">&#128202;</span> <span data-i18n="sheetTitle">Sheet (data source)</span></h2>
       <div class="sheet-row">
         <div class="input-wrap">
-          <label data-i18n="labelSheet">رابط جوجل شيت</label>
+          <label data-i18n="labelSheet">Google Sheet URL</label>
           <input type="url" id="sheetUrl" data-i18n-placeholder="placeholderSheet" value="https://docs.google.com/spreadsheets/d/1sUUpVcRs5tE1KzNGaVA4cnQShvr1eI1bvkO44jAsKtI/edit?gid=0#gid=0" />
         </div>
       </div>
-      <p class="hint" data-i18n="hintSheet">يُستخدم نفس الشيت للقراءة وتحديث عمود «Email Sent» بعد الإرسال.</p>
+      <p class="hint" data-i18n="hintSheet">Same sheet is used for reading and updating the Email Sent column after sending.</p>
 
       <div class="columns-section empty" id="columnsSection">
-        <p class="subtitle" data-i18n="columnsSubtitle">أعمدة الشيت (للاستخدام في Subject و Body كـ {{اسم_العمود}})</p>
+        <p class="subtitle" data-i18n="columnsSubtitle">Sheet columns (use in Subject and Body as {{column_name}})</p>
         <div class="columns-chips" id="columnsChips"></div>
-        <p class="subtitle" data-i18n="sampleRowSubtitle">صف كمثال (أول صف بيانات)</p>
+        <p class="subtitle" data-i18n="sampleRowSubtitle">Sample row (first data row)</p>
         <div class="sample-table-wrap">
           <table class="sample-table" id="sampleTable">
             <thead><tr id="sampleTableHead"></tr></thead>
             <tbody><tr id="sampleTableBody"></tr></tbody>
           </table>
         </div>
-        <div class="columns-loading" id="columnsLoading" style="display:none;" data-i18n="loadingColumns">جاري تحميل الأعمدة...</div>
+        <div class="columns-loading" id="columnsLoading" style="display:none;" data-i18n="loadingColumns">Loading columns...</div>
         <div class="columns-error" id="columnsError" style="display:none;"></div>
       </div>
     </div>
 
     <div class="card">
-      <h2 class="card-title"><span class="icon">✉</span> <span data-i18n="subjectTitle">عنوان الإيميل (Subject)</span></h2>
-      <label data-i18n="labelSubject">استخدم دمج مثل: {{Name}} ، {{Email}}</label>
+      <h2 class="card-title"><span class="icon">&#9993;</span> <span data-i18n="subjectTitle">Email subject</span></h2>
+      <label data-i18n="labelSubject">Use merge like {{Name}}, {{Email}}</label>
       <input type="text" id="subject" data-i18n-placeholder="placeholderSubject" />
     </div>
 
     <div class="card">
-      <h2 class="card-title"><span class="icon">📝</span> <span data-i18n="bodyTitle">نص الإيميل (Body)</span></h2>
-      <label data-i18n="labelBody">اكتب المحتوى مع التنسيق. استخدم {{Name}} ، {{Email}} للدمج.</label>
+      <h2 class="card-title"><span class="icon">&#128221;</span> <span data-i18n="bodyTitle">Email body</span></h2>
+      <label data-i18n="labelBody">Write content with formatting. Use {{Name}}, {{Email}} for merge.</label>
       <div id="editor-wrap"></div>
       <div class="editor-insert-bar">
-        <label data-i18n="insertPlaceholder">إدراج متغير:</label>
+        <label data-i18n="insertPlaceholder">Insert merge field:</label>
         <select id="placeholderSelect">
           <option value="{{Name}}">Name</option>
           <option value="{{Email}}">Email</option>
           <option value="{{Coures}}">Coures</option>
-          <option value="{{شهاده}}">شهاده</option>
+          <option value="{{Certificate}}">Certificate</option>
         </select>
-        <button type="button" class="btn btn-secondary btn-insert-placeholder" id="btnInsertPlaceholder" data-i18n="btnInsertPlaceholder">إدراج</button>
+        <button type="button" class="btn btn-secondary btn-insert-placeholder" id="btnInsertPlaceholder" data-i18n="btnInsertPlaceholder">Insert</button>
       </div>
       <div class="editor-help" id="editorHelp">
-        <div class="editor-help-summary" data-i18n="editorHelpTitle">كيفية استخدام أدوات المحرر</div>
+        <div class="editor-help-summary" data-i18n="editorHelpTitle">How to use the editor tools</div>
         <div class="editor-help-content" id="editorHelpContent"></div>
       </div>
     </div>
 
     <div class="card">
-      <h2 class="card-title"><span class="icon">👁</span> <span data-i18n="previewTitle">معاينة مع بيانات تجريبية</span></h2>
-      <p class="hint" data-i18n="hintPreview">العنوان والمعاينة بعد استبدال القيم التجريبية.</p>
+      <h2 class="card-title"><span class="icon">&#128065;</span> <span data-i18n="previewTitle">Preview with sample data</span></h2>
+      <p class="hint" data-i18n="hintPreview">Subject and body after replacing placeholders with sample values.</p>
       <div class="preview-box subject" id="previewSubject" dir="auto">—</div>
       <div class="preview-box body" id="previewBody">—</div>
     </div>
-    </div><!-- end tab-sendmails -->
+    </div>
 
     <div id="tab-qr" class="tab-pane" role="tabpanel">
     <div class="card">
-      <h2 class="card-title"><span class="icon">📱</span> <span data-i18n="qrTitle">توليد QR Code</span></h2>
-      <p class="hint" data-i18n="qrHint">ضع الرابط أو النص الذي تريد تحويله إلى صورة QR، ثم اضغط توليد.</p>
+      <h2 class="card-title"><span class="icon">&#128241;</span> <span data-i18n="qrTitle">Generate QR Code</span></h2>
+      <p class="hint" data-i18n="qrHint">Enter the link or text to convert to a QR code image, then click Generate.</p>
       <div class="qr-input-row">
         <div class="input-wrap">
-          <label data-i18n="qrLabelUrl">الرابط أو النص</label>
+          <label data-i18n="qrLabelUrl">Link or text</label>
           <input type="text" id="qrInputUrl" placeholder="https://example.com" data-i18n-placeholder="qrPlaceholder" />
         </div>
-        <button type="button" class="btn btn-primary" id="btnGenerateQr" data-i18n="btnGenerateQr">توليد QR</button>
+        <button type="button" class="btn btn-primary" id="btnGenerateQr" data-i18n="btnGenerateQr">Generate QR</button>
       </div>
       <div class="qr-result" id="qrResult" style="display:none;">
         <img id="qrImage" alt="QR Code" />
-        <a class="btn btn-secondary qr-download" id="qrDownload" download="qrcode.png" data-i18n="btnDownloadQr">تحميل الصورة</a>
+        <a class="btn btn-secondary qr-download" id="qrDownload" download="qrcode.png" data-i18n="btnDownloadQr">Download image</a>
       </div>
       <div id="qrError" class="columns-error" style="display:none;"></div>
     </div>
-    </div><!-- end tab-qr -->
+    </div>
 
     <div id="tab-admin" class="tab-pane" role="tabpanel">
     <div class="card">
-      <h2 class="card-title"><span class="icon">👥</span> <span data-i18n="tabAdmin">إدارة المستخدمين</span></h2>
-      <p class="hint" data-i18n="adminHint">إضافة مستخدم جديد (يستطيع الدخول من أي جهاز بنفس اسم المستخدم وكلمة المرور).</p>
+      <h2 class="card-title"><span class="icon">&#128101;</span> <span data-i18n="tabAdmin">Manage users</span></h2>
+      <p class="hint" data-i18n="adminHint">Add a new user (they can log in from any device with the same username and password).</p>
       <form id="createUserForm" class="admin-form-row">
         <div class="input-wrap">
-          <label data-i18n="newUsername">اسم المستخدم الجديد</label>
+          <label data-i18n="newUsername">New username</label>
           <input type="text" id="newUsername" minlength="2" required />
         </div>
         <div class="input-wrap">
-          <label data-i18n="newPassword">كلمة المرور</label>
+          <label data-i18n="newPassword">Password</label>
           <input type="password" id="newPassword" minlength="4" required />
         </div>
-        <button type="submit" class="btn btn-primary" id="btnCreateUser" data-i18n="btnCreateUser">إضافة مستخدم</button>
+        <button type="submit" class="btn btn-primary" id="btnCreateUser" data-i18n="btnCreateUser">Add user</button>
       </form>
       <p id="createUserMsg" class="msg" style="display:none;"></p>
       <div class="users-list">
-        <p class="subtitle" data-i18n="usersListTitle">المستخدمون الحاليون</p>
+        <p class="subtitle" data-i18n="usersListTitle">Current users</p>
         <table id="usersTable">
-          <thead><tr><th data-i18n="thUsername">المستخدم</th><th data-i18n="thRole">الدور</th></tr></thead>
+          <thead><tr><th data-i18n="thUsername">Username</th><th data-i18n="thRole">Role</th></tr></thead>
           <tbody id="usersTableBody"></tbody>
         </table>
       </div>
     </div>
-    </div><!-- end tab-admin -->
+    </div>
   </div>
-  </div><!-- end #app -->
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
   <script src="js/app.js"></script>
