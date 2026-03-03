@@ -4,23 +4,37 @@ const jwt = require('jsonwebtoken');
 
 const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization' };
 
+const LOCAL_USER = process.env.LOCAL_FALLBACK_USER || 'local';
+const LOCAL_PASSWORD = process.env.LOCAL_FALLBACK_PASSWORD || 'local';
+
 function json(body, status = 200) {
   return { statusCode: status, headers: { 'Content-Type': 'application/json', ...cors }, body: JSON.stringify(body) };
+}
+
+function isLocalLogin(username, password) {
+  return String(username).trim() === LOCAL_USER && String(password) === LOCAL_PASSWORD;
 }
 
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: cors };
   if (event.httpMethod !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
-  const supabaseUrl = process.env.SUPABASE_URL || (process.env.SUPABASE_PROJECT_REF && `https://${process.env.SUPABASE_PROJECT_REF}.supabase.co`);
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const jwtSecret = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET;
-  if (!supabaseUrl || !supabaseKey || !jwtSecret) return json({ error: 'Server config missing' }, 500);
-
   let body;
   try { body = JSON.parse(event.body || '{}'); } catch (_) { return json({ error: 'Invalid JSON' }, 400); }
   const { username, password } = body;
   if (!username || typeof password !== 'string') return json({ error: 'Username and password required' }, 400);
+
+  const supabaseUrl = process.env.SUPABASE_URL || (process.env.SUPABASE_PROJECT_REF && `https://${process.env.SUPABASE_PROJECT_REF}.supabase.co`);
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const jwtSecret = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET;
+
+  if (isLocalLogin(username, password)) {
+    if (!jwtSecret) return json({ error: 'Server config missing' }, 500);
+    const token = jwt.sign({ username: LOCAL_USER, role: 'admin' }, jwtSecret, { expiresIn: '7d' });
+    return json({ token, role: 'admin', username: LOCAL_USER });
+  }
+
+  if (!supabaseUrl || !supabaseKey || !jwtSecret) return json({ error: 'Server config missing' }, 500);
 
   const supabase = createClient(supabaseUrl, supabaseKey);
   const { data: user, error: fetchErr } = await supabase.from('app_users').select('username, password_hash, role').eq('username', String(username).trim()).maybeSingle();

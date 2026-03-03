@@ -56,4 +56,12 @@ Then log in with **admin** / **123** and use the "Manage users" tab to add users
 
 ---
 
+**Local fallback user (when DB is down)**
+
+- Username: **local** — Password: **local** (admin role, temporary use).
+- Works as long as `JWT_SECRET` (or `SUPABASE_JWT_SECRET`) is set in Netlify; no Supabase needed for this user.
+- Optional: set `LOCAL_FALLBACK_USER` and `LOCAL_FALLBACK_PASSWORD` in Netlify to change the fallback credentials.
+
+---
+
 **Summary:** Login works from any device; admin can add users; data is stored in Supabase.
