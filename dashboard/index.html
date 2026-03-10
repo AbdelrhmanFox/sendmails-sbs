@@ -75,6 +75,21 @@
       <div id="message"></div>
     </div>
 
+    <div class="card card-status" id="statusCard">
+      <h2 class="card-title"><span class="icon">&#128200;</span> <span data-i18n="statusTitle">Sending status</span></h2>
+      <p class="hint" data-i18n="statusHint">See how many emails were sent and where sending stopped. If sending stopped, click «Start sending» again to continue.</p>
+      <div class="status-actions">
+        <button type="button" class="btn btn-secondary" id="btnCheckStatus" data-i18n="btnCheckStatus">Check status</button>
+      </div>
+      <div id="statusResult" class="status-result" style="display:none;">
+        <div class="status-grid" id="statusGrid"></div>
+        <p class="status-next-run hint" id="statusNextRun"></p>
+        <p class="status-stopped hint" id="statusStoppedHint" style="display:none;"></p>
+      </div>
+      <div id="statusLoading" class="status-loading" style="display:none;" data-i18n="statusLoading">Loading…</div>
+      <div id="statusError" class="columns-error" style="display:none;"></div>
+      <p class="status-last-start hint" id="statusLastStart"></p>
+    </div>
     <div class="card">
       <h2 class="card-title"><span class="icon">&#128202;</span> <span data-i18n="sheetTitle">Sheet (data source)</span></h2>
       <div class="sheet-row">

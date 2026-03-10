@@ -107,6 +107,19 @@
           passwordResetPrompt: 'New password for',
           errTimeout: 'Connection timed out. Ensure n8n is running and the URL is correct.',
           successSend: 'Sending started.',
+          statusTitle: 'Sending status',
+          statusHint: 'See how many emails were sent and where sending stopped. If sending stopped, click «Start sending» again to continue.',
+          btnCheckStatus: 'Check status',
+          statusSent: 'Sent',
+          statusPending: 'Pending',
+          statusLastSentRow: 'Last sent row',
+          statusNextRow: 'Next row to send',
+          statusStoppedHint: 'If sending stopped, click «Start sending» above to continue from the next row.',
+          statusLoading: 'Loading…',
+          statusErrorGeneric: 'Could not load status.',
+          statusLastStart: 'Last sending started:',
+          statusNextRunLine: 'Next run will send from row {{row}} ({{pending}} left).',
+          statusAllDone: 'All rows with email have been sent.',
           insertPlaceholder: 'Insert merge field:',
           btnInsertPlaceholder: 'Insert',
           editorHelpTitle: 'How to use the editor tools',
@@ -416,6 +429,62 @@
             if (res.ok && data.ok) { if (messageEl) messageEl.innerHTML = '<span class="msg success">' + t('successSend') + '</span>'; }
             else { if (messageEl) messageEl.innerHTML = '<span class="msg error">' + (data.error || data.message || t('errGeneric').replace('{{msg}}', res.status)) + '</span>'; }
           } catch (err) { if (messageEl) messageEl.innerHTML = '<span class="msg error">' + (err.message || t('errNetwork')) + '</span>'; }
+          if (res.ok && data.ok) {
+            try { localStorage.setItem('sbs_sendmails_last_start', new Date().toISOString()); } catch (_) {}
+            updateStatusLastStart();
+          }
+        });
+      }
+
+      function updateStatusLastStart() {
+        var el = document.getElementById('statusLastStart');
+        if (!el) return;
+        try {
+          var raw = localStorage.getItem('sbs_sendmails_last_start');
+          if (raw) {
+            var d = new Date(raw);
+            el.textContent = (t('statusLastStart') || 'Last sending started:') + ' ' + d.toLocaleString();
+            el.style.display = 'block';
+          } else { el.style.display = 'none'; }
+        } catch (_) { el.style.display = 'none'; }
+      }
+      updateStatusLastStart();
+
+      var btnCheckStatus = document.getElementById('btnCheckStatus');
+      var statusResult = document.getElementById('statusResult');
+      var statusGrid = document.getElementById('statusGrid');
+      var statusNextRun = document.getElementById('statusNextRun');
+      var statusStoppedHint = document.getElementById('statusStoppedHint');
+      var statusLoading = document.getElementById('statusLoading');
+      var statusError = document.getElementById('statusError');
+      if (btnCheckStatus) {
+        btnCheckStatus.addEventListener('click', async function() {
+          var url = (webhookUrlEl && webhookUrlEl.value) || '';
+          var sheetUrl = (sheetUrlEl && sheetUrlEl.value) || '';
+          if (!url || url.indexOf('webhook') === -1) { if (messageEl) messageEl.innerHTML = '<span class="msg error">' + t('errWebhookRequired') + '</span>'; return; }
+          if (!sheetUrl) { if (messageEl) messageEl.innerHTML = '<span class="msg error">' + t('errSheetRequired') + '</span>'; return; }
+          if (statusError) { statusError.style.display = 'none'; statusError.textContent = ''; }
+          if (statusResult) statusResult.style.display = 'none';
+          if (statusLoading) statusLoading.style.display = 'block';
+          try {
+            var res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'status', sheetUrl: sheetUrl }) });
+            var data = await res.json().catch(function() { return {}; });
+            if (statusLoading) statusLoading.style.display = 'none';
+            if (data.ok && data.sent !== undefined) {
+              statusGrid.innerHTML = '<div class="status-item"><span class="status-label">' + t('statusSent') + '</span><strong class="status-value">' + data.sent + '</strong></div>' +
+                '<div class="status-item"><span class="status-label">' + t('statusPending') + '</span><strong class="status-value">' + data.pending + '</strong></div>' +
+                '<div class="status-item"><span class="status-label">' + t('statusLastSentRow') + '</span><strong class="status-value">' + (data.lastSentRow || '—') + '</strong></div>' +
+                '<div class="status-item"><span class="status-label">' + t('statusNextRow') + '</span><strong class="status-value">' + (data.nextRowToSend || '—') + '</strong></div>';
+              if (statusNextRun) statusNextRun.textContent = data.pending > 0 ? tReplace('statusNextRunLine', { row: data.nextRowToSend || '', pending: data.pending }) : t('statusAllDone');
+              if (statusStoppedHint) { statusStoppedHint.style.display = data.pending > 0 ? 'block' : 'none'; statusStoppedHint.textContent = t('statusStoppedHint'); }
+              if (statusResult) statusResult.style.display = 'block';
+            } else {
+              if (statusError) { statusError.textContent = data.error || t('statusErrorGeneric'); statusError.style.display = 'block'; }
+            }
+          } catch (err) {
+            if (statusLoading) statusLoading.style.display = 'none';
+            if (statusError) { statusError.textContent = err.message || t('statusErrorGeneric'); statusError.style.display = 'block'; }
+          }
         });
       }
 

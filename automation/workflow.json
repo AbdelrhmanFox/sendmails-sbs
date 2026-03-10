@@ -65,7 +65,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Exclude rows already sent (Email Sent = Sent)\nconst out = [];\nconst items = $input.all();\nfor (let i = 0; i < items.length; i++) {\n  const j = { ...(items[i].json || {}) };\n  const sheetRow = j['Row'] ?? j['row'];\n  j.Row = (sheetRow !== undefined && sheetRow !== null && sheetRow !== '') ? Number(sheetRow) : (2 + i);\n  let sentVal = j['Email Sent'] ?? j['Email  Sent'] ?? j['email sent'] ?? '';\n  if (sentVal === undefined || sentVal === null) {\n    const key = Object.keys(j).find(k => k !== 'Row' && /email\\s*sent/i.test(String(k).trim()));\n    sentVal = key ? j[key] : '';\n  }\n  const sent = String(sentVal).toLowerCase().trim();\n  if (sent === 'sent') continue;\n  out.push({ json: j });\n}\nreturn out;"
+        "jsCode": "// Exclude rows already sent (Email Sent = Sent). Trim all string fields (fixes trailing/leading spaces from sheet).\nconst out = [];\nconst items = $input.all();\nfor (let i = 0; i < items.length; i++) {\n  const j = { ...(items[i].json || {}) };\n  // Trim all string values to avoid SMTP errors from spaces in email etc.\n  for (const k of Object.keys(j)) {\n    if (typeof j[k] === 'string') j[k] = j[k].trim();\n  }\n  const sheetRow = j['Row'] ?? j['row'];\n  j.Row = (sheetRow !== undefined && sheetRow !== null && sheetRow !== '') ? Number(sheetRow) : (2 + i);\n  let sentVal = j['Email Sent'] ?? j['Email  Sent'] ?? j['email sent'] ?? '';\n  if (sentVal === undefined || sentVal === null) {\n    const key = Object.keys(j).find(k => k !== 'Row' && /email\\s*sent/i.test(String(k).trim()));\n    sentVal = key ? j[key] : '';\n  }\n  const sent = String(sentVal).toLowerCase().trim();\n  if (sent === 'sent') continue;\n  out.push({ json: j });\n}\nreturn out;"
       },
       "id": "1f1d445b-841c-4e68-8d23-1e79afbfb651",
       "name": "Only Rows Not Yet Sent",
@@ -88,7 +88,7 @@
           "conditions": [
             {
               "id": "has-email",
-              "leftValue": "={{ $json.Email ?? $json.email ?? '' }}",
+              "leftValue": "={{ ($json.Email ?? $json.email ?? '').trim() }}",
               "rightValue": "",
               "operator": {
                 "type": "string",
@@ -138,7 +138,7 @@
     {
       "parameters": {
         "fromEmail": "info@sbsolutions-eg.com",
-        "toEmail": "={{ $json.Email || $json.email }}",
+        "toEmail": "={{ ($json.Email || $json.email || '').trim() }}",
         "subject": "={{ $json._subject }}",
         "html": "={{ $json._html }}",
         "options": {
@@ -448,6 +448,98 @@
         1296,
         400
       ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "is-status",
+              "leftValue": "={{ $json.body.action }}",
+              "rightValue": "status",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a1b2c3d4-status-001",
+      "name": "Action = status?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        624,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $json.body.sheetUrl }}",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1sUUpVcRs5tE1KzNGaVA4cnQShvr1eI1bvkO44jAsKtI/edit#gid=0"
+        },
+        "options": {}
+      },
+      "id": "a1b2c3d4-status-002",
+      "name": "Read Sheet for Status",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        848,
+        496
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "HL2oexu75XGQWtzz",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Count sent vs pending from sheet for dashboard status.\nconst items = $input.all();\nlet sent = 0;\nlet pending = 0;\nlet lastSentRow = 0;\nconst emailSentKey = (row) => {\n  const k = Object.keys(row).find(key => key !== 'Row' && key !== 'row_number' && /email\\s*sent/i.test(String(key).trim()));\n  return k || 'Email Sent';\n};\nconst emailVal = (row) => String((row['Email'] ?? row['email'] ?? '')).trim();\nfor (let i = 0; i < items.length; i++) {\n  const j = items[i].json || {};\n  const rowNum = (j['row_number'] != null) ? Number(j['row_number']) : (j['Row'] != null && j['Row'] !== '') ? Number(j['Row']) : (2 + i);\n  const sentVal = j[emailSentKey(j)];\n  const sentStr = String(sentVal ?? '').toLowerCase().trim();\n  if (sentStr === 'sent') {\n    sent++;\n    lastSentRow = Math.max(lastSentRow, rowNum);\n  } else {\n    if (emailVal(j).length > 0) pending++;\n  }\n}\nconst total = items.length;\nconst nextRowToSend = lastSentRow > 0 ? lastSentRow + 1 : 2;\nreturn [{ json: { ok: true, sent, pending, total, lastSentRow, nextRowToSend } }];"
+      },
+      "id": "a1b2c3d4-status-003",
+      "name": "Compute Status",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1072,
+        496
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "a1b2c3d4-status-004",
+      "name": "Respond Status",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1296,
+        496
+      ]
     }
   ],
   "connections": {
@@ -602,12 +694,52 @@
         ],
         [
           {
+            "node": "Action = status?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Action = status?": {
+      "main": [
+        [
+          {
+            "node": "Read Sheet for Status",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
             "node": "Respond to Webhook",
             "type": "main",
             "index": 0
           },
           {
             "node": "Read All Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Sheet for Status": {
+      "main": [
+        [
+          {
+            "node": "Compute Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute Status": {
+      "main": [
+        [
+          {
+            "node": "Respond Status",
             "type": "main",
             "index": 0
           }

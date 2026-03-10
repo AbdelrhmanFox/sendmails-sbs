@@ -238,6 +238,17 @@ input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px 
 .action-desc { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.4; }
 #message { margin-top: 16px; }
 
+.card-status .status-actions { margin-bottom: 16px; }
+.status-result { margin-top: 16px; padding: 16px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.status-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px 24px; margin-bottom: 12px; }
+.status-item { display: flex; flex-direction: column; gap: 4px; }
+.status-label { font-size: 0.85rem; color: var(--text-secondary); }
+.status-value { font-size: 1.25rem; color: var(--accent); }
+.status-next-run { margin: 0 0 8px 0; font-size: 0.9rem; }
+.status-stopped { margin: 0; font-size: 0.9rem; color: var(--warning); }
+.status-loading { padding: 14px; background: var(--blue-muted); color: var(--blue); border-radius: var(--radius-sm); margin-top: 12px; }
+.status-last-start { margin-top: 12px; margin-bottom: 0; font-size: 0.85rem; color: var(--text-secondary); }
+
 .tabs-bar {
   display: flex;
   gap: 4px;
