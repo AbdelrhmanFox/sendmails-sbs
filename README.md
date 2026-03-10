@@ -1,42 +1,39 @@
-# Sendmails SBS – Dashboard + Automation
+# Sendmails SBS
 
-## Contents
-
-- **`automation/`** – n8n workflow triggered from the dashboard (Webhook).
-- **`dashboard/`** – Dashboard UI (open `dashboard/index.html` in browser or deploy to Netlify; see `netlify.toml`).
-- **`netlify/functions/`** – Serverless functions for login and user management (Supabase).
-- **`SUPABASE_SETUP.md`** – Supabase and Netlify env setup for login (username/password from any device, admin can create users).
-
-### Deploy to GitHub then Netlify
-1. In project folder: `git init`, `git add .`, `git commit -m "Initial"`
-2. On GitHub: create a new repo (e.g. `sendmails-sbs`) without README.
-3. `git remote add origin https://github.com/YOUR_USERNAME/sendmails-sbs.git`, then `git branch -M main`, then `git push -u origin main`
-4. In Netlify: Add new site → Import from GitHub → choose repo → Publish directory: **dashboard** → Deploy.
+Dashboard + n8n automation for sending bulk emails from a Google Sheet (one email every 5 minutes). Merge fields in subject/body (e.g. `{{Name}}`, `{{Email}}`). Sheet column "Email Sent" is updated after each send.
 
 ---
 
-## Usage
+## Contents
 
-1. **Run the workflow in n8n**
-   - Import `automation/workflow.json` in n8n.
-   - Activate the workflow and copy the **Webhook URL** (e.g. `https://your-n8n.com/webhook/sendmails-sbs`).
+| Path | Description |
+|------|-------------|
+| `automation/` | n8n workflow (webhook → read sheet → filter → send email → update row). Import `workflow.json` and activate. |
+| `dashboard/` | Web UI: webhook URL, sheet URL, subject/body editor, Load columns, Start sending, Sending status (with auto-refresh). Deploy as static site (e.g. Netlify publish dir: **dashboard**). |
+| `netlify/functions/` | Serverless auth and user management (Supabase). See `SUPABASE_SETUP.md` for env vars. |
+| `DASHBOARD.md` | Brief on dashboard layout, design, and behaviour. |
 
-2. **Open the dashboard**
-   - Open `dashboard/index.html` in the browser (or use a local server).
+---
 
-3. **In the dashboard**
-   - **Settings:** paste the Webhook URL.
-   - **Sheet:** paste the Google Sheet URL (columns: Email, Name, Row, Email Sent, optional: Certificate).
-   - **Subject:** email subject; use `{{Name}}` etc. for merge.
-   - **Body:** email body with formatting. Use `{{Name}}`, `{{Email}}`, `{{Certificate}}` for merge.
+## Quick start
 
-4. **Preview**
-   - The preview section shows subject and body with sample data.
+1. **n8n**: Import `automation/workflow.json`, add Google Sheets + SMTP credentials, activate workflow, copy the webhook URL.
+2. **Dashboard**: Open `dashboard/index.html` (or deploy `dashboard/` to Netlify). Enter webhook URL and Google Sheet URL.
+3. **Sheet**: Include columns e.g. Email, Name, and **Email Sent** (filled with "Sent" by the workflow). Optional: **Row** (e.g. `=ROW()`) for correct row updates.
+4. **Send**: Set subject and body (use `{{Name}}`, `{{Email}}`, etc.), click **Start sending emails**. Use **Check status** (or the auto-update after start) to see Sent / Pending and where sending stopped.
 
-5. **Start sending**
-   - Click **Start sending emails**. The request goes to n8n; the workflow responds and then reads the sheet and sends one email every 5 minutes.
+---
+
+## Deploy (GitHub → Netlify)
+
+1. Push repo to GitHub.
+2. Netlify: Add site → Import from GitHub → select repo → **Publish directory: `dashboard`** → Deploy.
+3. Set environment variables (see `SUPABASE_SETUP.md`) for login.
+
+---
 
 ## Notes
 
-- n8n must have **Google Sheets** and **SMTP** (e.g. Hostinger) credentials configured.
-- The **Row** column in the sheet must exist (e.g. `=ROW()`) so the correct row is updated after sending.
+- n8n needs **Google Sheets** and **SMTP** (e.g. Hostinger) credentials.
+- Emails from the sheet are trimmed (leading/trailing spaces removed) to avoid SMTP errors.
+- Webhook actions: `preview` (columns + sample row), `send` (start sending), `status` (sent/pending/row counts).

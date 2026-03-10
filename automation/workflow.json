@@ -7,13 +7,13 @@
         "responseMode": "responseNode",
         "options": {}
       },
-      "id": "be3809ba-415e-47a6-9195-da2be0d5fed3",
+      "id": "ef8d5e7f-da59-4ba6-b1ff-ab4bf6236d02",
       "name": "Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
-        400,
-        208
+        7088,
+        4048
       ],
       "webhookId": "sendmails-sbs-dash"
     },
@@ -23,13 +23,13 @@
         "responseBody": "={{ { \"ok\": true, \"message\": \"Sending started\" } }}",
         "options": {}
       },
-      "id": "c74c4e6b-2aae-4550-b4dd-1789e5962575",
+      "id": "73de9795-3362-4f35-ae3d-947926472d79",
       "name": "Respond to Webhook",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        848,
-        16
+        7760,
+        3664
       ]
     },
     {
@@ -48,13 +48,13 @@
         },
         "options": {}
       },
-      "id": "05b64ce6-a305-4d9f-97e8-2ed5fed1adc0",
+      "id": "f1720193-f094-494c-8162-e7fd3d377017",
       "name": "Read All Rows",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
       "position": [
-        848,
-        208
+        7760,
+        3856
       ],
       "credentials": {
         "googleSheetsOAuth2Api": {
@@ -67,13 +67,13 @@
       "parameters": {
         "jsCode": "// Exclude rows already sent (Email Sent = Sent). Trim all string fields (fixes trailing/leading spaces from sheet).\nconst out = [];\nconst items = $input.all();\nfor (let i = 0; i < items.length; i++) {\n  const j = { ...(items[i].json || {}) };\n  // Trim all string values to avoid SMTP errors from spaces in email etc.\n  for (const k of Object.keys(j)) {\n    if (typeof j[k] === 'string') j[k] = j[k].trim();\n  }\n  const sheetRow = j['Row'] ?? j['row'];\n  j.Row = (sheetRow !== undefined && sheetRow !== null && sheetRow !== '') ? Number(sheetRow) : (2 + i);\n  let sentVal = j['Email Sent'] ?? j['Email  Sent'] ?? j['email sent'] ?? '';\n  if (sentVal === undefined || sentVal === null) {\n    const key = Object.keys(j).find(k => k !== 'Row' && /email\\s*sent/i.test(String(k).trim()));\n    sentVal = key ? j[key] : '';\n  }\n  const sent = String(sentVal).toLowerCase().trim();\n  if (sent === 'sent') continue;\n  out.push({ json: j });\n}\nreturn out;"
       },
-      "id": "1f1d445b-841c-4e68-8d23-1e79afbfb651",
+      "id": "c713a587-e904-4a69-9497-017c1f7c9de4",
       "name": "Only Rows Not Yet Sent",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1072,
-        208
+        7984,
+        3856
       ]
     },
     {
@@ -100,44 +100,44 @@
         },
         "options": {}
       },
-      "id": "605d7715-37f2-488e-a1a3-030bc9836eef",
+      "id": "5340df6f-c7ea-4c12-8cc6-d40e9d45f6b8",
       "name": "Has Email",
       "type": "n8n-nodes-base.filter",
       "typeVersion": 2,
       "position": [
-        1296,
-        208
+        8208,
+        3856
       ]
     },
     {
       "parameters": {
         "options": {}
       },
-      "id": "9e6f600e-1be2-4ae0-a21a-d151fa347664",
+      "id": "1fbea366-e380-4320-b641-bfedbee35329",
       "name": "Split In Batches",
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        1520,
-        208
+        8432,
+        3856
       ]
     },
     {
       "parameters": {
         "jsCode": "// Merge Subject and Body from dashboard with row data (replace {{column}})\nconst webhook = $('Webhook').first().json;\nconst body = webhook.body || webhook;\nlet subject = String(body.subject ?? webhook.subject ?? '');\nlet html = String(body.bodyHtml ?? webhook.bodyHtml ?? '');\nconst row = $input.item.json;\nfor (const [k, v] of Object.entries(row)) {\n  if (v === null || v === undefined) continue;\n  const val = String(v);\n  const placeholder = '{{' + k + '}}';\n  subject = subject.split(placeholder).join(val);\n  html = html.split(placeholder).join(val);\n}\nreturn { json: { ...row, _subject: subject, _html: html } };"
       },
-      "id": "5a172864-b7d9-4980-b432-b80a06f6c38f",
+      "id": "43ac99aa-aa08-4dc8-b162-538efc7da14d",
       "name": "Prepare Email Body",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1744,
-        144
+        8656,
+        3784
       ]
     },
     {
       "parameters": {
-        "fromEmail": "info@sbsolutions-eg.com",
+        "fromEmail": "SBS – Sustainable Business Solutions <info@sbsolutions-eg.com>",
         "toEmail": "={{ ($json.Email || $json.email || '').trim() }}",
         "subject": "={{ $json._subject }}",
         "html": "={{ $json._html }}",
@@ -146,13 +146,13 @@
           "attachments": ""
         }
       },
-      "id": "ba3f23ff-cda3-494c-898b-6fbb17293381",
+      "id": "c0f810cf-79b3-4e8f-8579-c0c2a56626d2",
       "name": "Send Email (Hostinger SMTP)",
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2.1,
       "position": [
-        1968,
-        144
+        8880,
+        3784
       ],
       "webhookId": "c445eb1d-7e26-42ca-a9b8-68d7c71f5efa",
       "credentials": {
@@ -186,24 +186,24 @@
         },
         "options": {}
       },
-      "id": "36529129-869c-4922-bd4b-3b3da5b0a545",
+      "id": "df4c1e67-39f5-416d-82cf-c41ae3194cbe",
       "name": "Send OK?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        2192,
-        144
+        9104,
+        3784
       ]
     },
     {
       "parameters": {},
-      "id": "129a40d2-bac4-4a6c-a9da-49ac3db49a4e",
+      "id": "4de9b943-28ab-419d-85f9-b5c325afcbed",
       "name": "Wait 5 Minutes",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        2416,
-        48
+        9328,
+        3688
       ],
       "webhookId": "9c2229d9-27e2-4511-a2c3-a38106515223"
     },
@@ -221,13 +221,13 @@
         },
         "options": {}
       },
-      "id": "8a2a6b29-e69f-45be-a383-4de250793cf3",
+      "id": "ecb81c45-60a8-4a9a-bb1f-256008c6f8c6",
       "name": "Mark Email Sent",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        2640,
-        48
+        9552,
+        3688
       ]
     },
     {
@@ -244,13 +244,13 @@
         },
         "options": {}
       },
-      "id": "2ec5e577-6460-4dba-aa3d-405c4554353f",
+      "id": "66c56537-0762-4713-87b5-6ec5d1d9925c",
       "name": "Mark Email Error",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        2640,
-        240
+        9552,
+        3880
       ]
     },
     {
@@ -326,13 +326,13 @@
         },
         "options": {}
       },
-      "id": "ebf44d6e-c291-475a-bfcd-924ba1d46b22",
+      "id": "9af77514-d32a-48d6-8a47-b73f57f6c73f",
       "name": "Update Row as Sent",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
       "position": [
-        2864,
-        208
+        9776,
+        3856
       ],
       "credentials": {
         "googleSheetsOAuth2Api": {
@@ -348,13 +348,13 @@
         "width": 360,
         "color": 4
       },
-      "id": "96b9a434-ca36-440e-b456-e7f6db374cc4",
+      "id": "33bce6cb-65b9-4ffb-92de-f3c6a31f9062",
       "name": "Sticky Note",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        160,
-        -48
+        6848,
+        3600
       ]
     },
     {
@@ -381,13 +381,13 @@
         },
         "options": {}
       },
-      "id": "1fdaf78f-23a0-4f2a-a5b1-27bada815b67",
+      "id": "e9613594-4634-4308-9bf1-9daae7e6d84f",
       "name": "Action = preview?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        624,
-        208
+        7312,
+        4048
       ]
     },
     {
@@ -406,13 +406,13 @@
         },
         "options": {}
       },
-      "id": "3d38ea0e-c21f-4041-82d6-20810671de87",
+      "id": "a8df3822-6612-46a8-8a54-a74b6c7e7134",
       "name": "Read Sheet Preview",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
       "position": [
-        880,
-        384
+        7536,
+        4240
       ],
       "credentials": {
         "googleSheetsOAuth2Api": {
@@ -425,13 +425,13 @@
       "parameters": {
         "jsCode": "const items = $input.all();\nif (items.length === 0) return [{ json: { columns: [], sampleRow: {}, error: 'No data' } }];\nconst first = items[0].json;\nconst columns = Object.keys(first);\nconst sampleRow = { ...first };\nreturn [{ json: { columns, sampleRow } }];"
       },
-      "id": "908b0dd1-0711-4007-95f3-205701bca9a1",
+      "id": "659da6c9-cd51-4896-bcf4-42800026b73c",
       "name": "Prepare Preview Data",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1072,
-        400
+        7760,
+        4240
       ]
     },
     {
@@ -440,13 +440,13 @@
         "responseBody": "={{ $json }}",
         "options": {}
       },
-      "id": "3fa292e1-255c-4582-a06f-f6021cee69f6",
+      "id": "a2d905ab-0c4f-4e20-9d02-1e3ea24ab046",
       "name": "Respond Preview",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        1296,
-        400
+        7984,
+        4240
       ]
     },
     {
@@ -473,13 +473,13 @@
         },
         "options": {}
       },
-      "id": "a1b2c3d4-status-001",
-      "name": "Action = status?",
+      "id": "d91c1ebf-9b3e-4b90-90f9-da15d686b85d",
+      "name": "Action = status?1",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        624,
-        320
+        7536,
+        3856
       ]
     },
     {
@@ -498,13 +498,13 @@
         },
         "options": {}
       },
-      "id": "a1b2c3d4-status-002",
-      "name": "Read Sheet for Status",
+      "id": "b89d4eb7-d5ef-48b8-b50d-63683802d442",
+      "name": "Read Sheet for Status1",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
       "position": [
-        848,
-        496
+        7760,
+        4048
       ],
       "credentials": {
         "googleSheetsOAuth2Api": {
@@ -517,13 +517,13 @@
       "parameters": {
         "jsCode": "// Count sent vs pending from sheet for dashboard status.\nconst items = $input.all();\nlet sent = 0;\nlet pending = 0;\nlet lastSentRow = 0;\nconst emailSentKey = (row) => {\n  const k = Object.keys(row).find(key => key !== 'Row' && key !== 'row_number' && /email\\s*sent/i.test(String(key).trim()));\n  return k || 'Email Sent';\n};\nconst emailVal = (row) => String((row['Email'] ?? row['email'] ?? '')).trim();\nfor (let i = 0; i < items.length; i++) {\n  const j = items[i].json || {};\n  const rowNum = (j['row_number'] != null) ? Number(j['row_number']) : (j['Row'] != null && j['Row'] !== '') ? Number(j['Row']) : (2 + i);\n  const sentVal = j[emailSentKey(j)];\n  const sentStr = String(sentVal ?? '').toLowerCase().trim();\n  if (sentStr === 'sent') {\n    sent++;\n    lastSentRow = Math.max(lastSentRow, rowNum);\n  } else {\n    if (emailVal(j).length > 0) pending++;\n  }\n}\nconst total = items.length;\nconst nextRowToSend = lastSentRow > 0 ? lastSentRow + 1 : 2;\nreturn [{ json: { ok: true, sent, pending, total, lastSentRow, nextRowToSend } }];"
       },
-      "id": "a1b2c3d4-status-003",
-      "name": "Compute Status",
+      "id": "0fb68a3c-9c80-43ed-9597-2544e21df35d",
+      "name": "Compute Status1",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1072,
-        496
+        7984,
+        4048
       ]
     },
     {
@@ -532,13 +532,13 @@
         "responseBody": "={{ $json }}",
         "options": {}
       },
-      "id": "a1b2c3d4-status-004",
-      "name": "Respond Status",
+      "id": "5bb48546-1f0e-4ed4-93cb-a433a040f94a",
+      "name": "Respond Status1",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        1296,
-        496
+        8208,
+        4048
       ]
     }
   ],
@@ -694,52 +694,7 @@
         ],
         [
           {
-            "node": "Action = status?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Action = status?": {
-      "main": [
-        [
-          {
-            "node": "Read Sheet for Status",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Respond to Webhook",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Read All Rows",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Read Sheet for Status": {
-      "main": [
-        [
-          {
-            "node": "Compute Status",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Compute Status": {
-      "main": [
-        [
-          {
-            "node": "Respond Status",
+            "node": "Action = status?1",
             "type": "main",
             "index": 0
           }
@@ -762,6 +717,51 @@
         [
           {
             "node": "Respond Preview",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Action = status?1": {
+      "main": [
+        [
+          {
+            "node": "Read Sheet for Status1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Read All Rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Sheet for Status1": {
+      "main": [
+        [
+          {
+            "node": "Compute Status1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute Status1": {
+      "main": [
+        [
+          {
+            "node": "Respond Status1",
             "type": "main",
             "index": 0
           }

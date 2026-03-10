@@ -1,9 +1,7 @@
 (function () {
-      const STORAGE_LANG = 'sbs_sendmails_lang';
       const AUTH_TOKEN = 'sbs_token';
       const AUTH_ROLE = 'sbs_role';
       const AUTH_USER = 'sbs_username';
-      const defaultSheetUrl = 'https://docs.google.com/spreadsheets/d/1sUUpVcRs5tE1KzNGaVA4cnQShvr1eI1bvkO44jAsKtI/edit?gid=0#gid=0';
 
       var authToken = localStorage.getItem(AUTH_TOKEN);
       var authRole = localStorage.getItem(AUTH_ROLE);
@@ -17,7 +15,6 @@
         var userEl = document.getElementById('loggedInUser');
         if (userEl && authUsername) userEl.textContent = authUsername;
         var adminTab = document.getElementById('tabBtnAdmin');
-        var adminPane = document.getElementById('tab-admin');
         if (authRole === 'admin' && adminTab) adminTab.style.display = '';
       }
       function showLogin() {
@@ -56,6 +53,7 @@
           subjectTitle: 'Email subject',
           labelSubject: 'Use merge like {{Name}}, {{Email}}',
           placeholderSubject: 'e.g. Ramadan Kareem – Webinar invite, dear {{Name}}',
+          placeholderSubjectMerge: 'Use {{Name}}, {{Email}} for merge fields',
           bodyTitle: 'Email body',
           labelBody: 'Write content with formatting. Use {{Name}}, {{Email}} for merge.',
           placeholderBody: 'Write your email body here...',
@@ -110,6 +108,8 @@
           statusTitle: 'Sending status',
           statusHint: 'See how many emails were sent and where sending stopped. If sending stopped, click «Start sending» again to continue.',
           btnCheckStatus: 'Check status',
+          btnSave: 'Save',
+          savedWebhook: 'Saved.',
           statusSent: 'Sent',
           statusPending: 'Pending',
           statusLastSentRow: 'Last sent row',
@@ -243,6 +243,20 @@
       const columnsLoading = document.getElementById('columnsLoading');
       const columnsError = document.getElementById('columnsError');
 
+      try {
+        var saved = localStorage.getItem('sbs_sendmails_webhook');
+        if (saved && webhookUrlEl) webhookUrlEl.value = saved;
+      } catch (_) {}
+      var btnSaveWebhook = document.getElementById('btnSaveWebhook');
+      if (btnSaveWebhook && webhookUrlEl) {
+        btnSaveWebhook.addEventListener('click', function() {
+          try {
+            localStorage.setItem('sbs_sendmails_webhook', webhookUrlEl.value || '');
+            if (messageEl) messageEl.innerHTML = '<span class="msg success">' + (t('savedWebhook') || 'Saved.') + '</span>';
+          } catch (_) {}
+        });
+      }
+
       var toolbarOptions = [
         ['bold', 'italic', 'underline', 'strike'],
         ['blockquote', 'code-block'],
@@ -275,28 +289,8 @@
       }
 
       try {
-        (function injectDirToolbar() {
-          var toolbar = document.querySelector('#editor-wrap .ql-toolbar');
-          if (!toolbar) return;
-          var span = document.createElement('span');
-          span.className = 'ql-formats ql-dir-group';
-          span.setAttribute('title', t('writingDirection'));
-          var btnRtl = document.createElement('button');
-          btnRtl.type = 'button';
-          btnRtl.className = 'dir-btn';
-          btnRtl.id = 'dirRtl';
-          btnRtl.setAttribute('data-dir', 'rtl');
-          btnRtl.textContent = 'RTL';
-          var btnLtr = document.createElement('button');
-          btnLtr.type = 'button';
-          btnLtr.className = 'dir-btn active';
-          btnLtr.id = 'dirLtr';
-          btnLtr.setAttribute('data-dir', 'ltr');
-          btnLtr.textContent = 'LTR';
-          span.appendChild(btnRtl);
-          span.appendChild(btnLtr);
-          toolbar.appendChild(span);
-          document.querySelectorAll('.dir-btn').forEach(function(btn) {
+        (function bindDirToggle() {
+          document.querySelectorAll('.editor-dir-toggle .btn-dir, .ql-toolbar .dir-btn').forEach(function(btn) {
             btn.addEventListener('click', function() { setEditorDirection(this.getAttribute('data-dir')); });
           });
         })();
@@ -394,26 +388,37 @@
       if (quill && quill.on) quill.on('text-change', updatePreview);
 
       if (btnLoadColumns) {
-        btnLoadColumns.addEventListener('click', async function() {
-          var url = (webhookUrlEl && webhookUrlEl.value) || '';
-          var sheetUrl = (sheetUrlEl && sheetUrlEl.value) || '';
-          if (!url || url.indexOf('webhook') === -1) { if (messageEl) messageEl.innerHTML = '<span class="msg error">' + t('errWebhookRequired') + '</span>'; return; }
-          if (!sheetUrl) { if (messageEl) messageEl.innerHTML = '<span class="msg error">' + t('errSheetRequired') + '</span>'; return; }
-          if (columnsSection) { columnsSection.classList.remove('empty'); columnsSection.classList.add('empty'); }
-          if (columnsLoading) columnsLoading.style.display = 'block';
-          if (columnsError) columnsError.style.display = 'none';
-          try {
-            var res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'preview', sheetUrl: sheetUrl }) });
-            var data = await res.json().catch(function() { return {}; });
-            if (columnsLoading) columnsLoading.style.display = 'none';
-            if (data.columns && data.columns.length) {
-              if (columnsChips) { columnsChips.innerHTML = ''; data.columns.forEach(function(c) { var chip = document.createElement('span'); chip.className = 'chip'; chip.textContent = c; chip.title = t('chipTitle'); columnsChips.appendChild(chip); }); }
-              if (sampleTableHead) { sampleTableHead.innerHTML = data.columns.map(function(c) { return '<th>' + c + '</th>'; }).join(''); }
-              if (sampleTableBody && data.sampleRow) { sampleTableBody.innerHTML = data.columns.map(function(c) { return '<td>' + (data.sampleRow[c] != null ? data.sampleRow[c] : '') + '</td>'; }).join(''); }
-              if (columnsSection) columnsSection.classList.remove('empty');
-            } else { if (columnsError) { columnsError.textContent = data.error || t('errNoColumns'); columnsError.style.display = 'block'; } }
-          } catch (err) { if (columnsLoading) columnsLoading.style.display = 'none'; if (columnsError) { columnsError.textContent = err.message || t('errNetwork'); columnsError.style.display = 'block'; } }
-        });
+        btnLoadColumns.addEventListener('click', doLoadColumns);
+      }
+      var btnLoadColumnsSheet = document.getElementById('btnLoadColumnsSheet');
+      if (btnLoadColumnsSheet) {
+        btnLoadColumnsSheet.addEventListener('click', doLoadColumns);
+      }
+      async function doLoadColumns() {
+        var url = (webhookUrlEl && webhookUrlEl.value) || '';
+        var sheetUrl = (sheetUrlEl && sheetUrlEl.value) || '';
+        if (!url || url.indexOf('webhook') === -1) { if (messageEl) messageEl.innerHTML = '<span class="msg error">' + t('errWebhookRequired') + '</span>'; return; }
+        if (!sheetUrl) { if (messageEl) messageEl.innerHTML = '<span class="msg error">' + t('errSheetRequired') + '</span>'; return; }
+        if (columnsSection) { columnsSection.classList.remove('empty'); columnsSection.classList.add('empty'); }
+        if (columnsLoading) columnsLoading.style.display = 'block';
+        if (columnsError) columnsError.style.display = 'none';
+        try {
+          var res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'preview', sheetUrl: sheetUrl }) });
+          var data = await res.json().catch(function() { return {}; });
+          if (columnsLoading) columnsLoading.style.display = 'none';
+          if (data.columns && data.columns.length) {
+            if (columnsChips) { columnsChips.innerHTML = ''; data.columns.forEach(function(c) { var chip = document.createElement('span'); chip.className = 'chip'; chip.textContent = c; chip.title = t('chipTitle'); columnsChips.appendChild(chip); }); }
+            if (sampleTableHead) sampleTableHead.innerHTML = data.columns.map(function(c) { return '<th>' + c + '</th>'; }).join('');
+            if (sampleTableBody && data.sampleRow) sampleTableBody.innerHTML = data.columns.map(function(c) { return '<td>' + (data.sampleRow[c] != null ? data.sampleRow[c] : '') + '</td>'; }).join('');
+            if (columnsSection) columnsSection.classList.remove('empty');
+            if (btnSend) btnSend.disabled = false;
+          } else {
+            if (columnsError) { columnsError.textContent = data.error || t('errNoColumns'); columnsError.style.display = 'block'; }
+          }
+        } catch (err) {
+          if (columnsLoading) columnsLoading.style.display = 'none';
+          if (columnsError) { columnsError.textContent = err.message || t('errNetwork'); columnsError.style.display = 'block'; }
+        }
       }
 
       if (btnSend) {
@@ -488,12 +493,14 @@
       function stopAutoStatus() {
         if (statusRefreshInterval) { clearInterval(statusRefreshInterval); statusRefreshInterval = null; }
         if (statusAutoBar) statusAutoBar.style.display = 'none';
+        if (btnStopAutoStatus) btnStopAutoStatus.style.display = 'none';
       }
 
       function startAutoStatus() {
         stopAutoStatus();
         if (statusAutoBar) statusAutoBar.style.display = 'flex';
         if (statusAutoText) statusAutoText.textContent = t('statusAutoUpdate') || 'Auto-updating every 1 min';
+        if (btnStopAutoStatus) btnStopAutoStatus.style.display = 'inline-block';
         setTimeout(function() { refreshStatus(true); }, FIRST_POLL_DELAY_MS);
         statusRefreshInterval = setInterval(function() { refreshStatus(true); }, STATUS_POLL_INTERVAL_MS);
       }
@@ -527,7 +534,7 @@
         btnCheckStatus.addEventListener('click', function() { refreshStatus(false); });
       }
       if (btnStopAutoStatus) {
-        btnStopAutoStatus.addEventListener('click', stopAutoStatus);
+        btnStopAutoStatus.addEventListener('click', function(e) { e.preventDefault(); stopAutoStatus(); });
       }
 
       var btnInsertPlaceholder = document.getElementById('btnInsertPlaceholder');
@@ -541,6 +548,19 @@
       var editorHelp = document.getElementById('editorHelp');
       if (editorHelp && editorHelp.querySelector('.editor-help-summary')) {
         editorHelp.querySelector('.editor-help-summary').addEventListener('click', function() { editorHelp.classList.toggle('open'); });
+      }
+
+      var btnCopySubject = document.getElementById('btnCopySubject');
+      var btnCopyBody = document.getElementById('btnCopyBody');
+      if (btnCopySubject && previewSubject) {
+        btnCopySubject.addEventListener('click', function() {
+          try { navigator.clipboard.writeText(previewSubject.textContent || ''); } catch (_) {}
+        });
+      }
+      if (btnCopyBody && previewBody) {
+        btnCopyBody.addEventListener('click', function() {
+          try { navigator.clipboard.writeText(previewBody.textContent || previewBody.innerText || ''); } catch (_) {}
+        });
       }
 
       var qrInputUrl = document.getElementById('qrInputUrl');

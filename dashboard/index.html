@@ -34,8 +34,8 @@
         <p class="subtitle" data-i18n="subtitle">Choose the sheet, set subject and body, then trigger sending from one place.</p>
       </div>
       <div class="header-actions">
-        <span id="loggedInUser" class="text-secondary" style="font-size:0.9rem;"></span>
-        <button type="button" class="btn btn-secondary btn-logout" id="btnLogout" data-i18n="btnLogout">Log out</button>
+        <span id="loggedInUser" class="text-secondary header-username"></span>
+        <button type="button" class="btn-logout-text" id="btnLogout" data-i18n="btnLogout">Log out</button>
       </div>
     </header>
 
@@ -50,7 +50,10 @@
       <span class="step-badge">1</span>
       <h2 class="card-title"><span class="icon">&#9881;</span> <span data-i18n="settings">Settings</span></h2>
       <label data-i18n="labelWebhook">n8n Webhook URL</label>
-      <input type="url" id="webhookUrl" value="https://s3odyn8n.tech/webhook/sendmails-sbs" data-i18n-placeholder="placeholderWebhook" />
+      <div class="settings-row">
+        <input type="url" id="webhookUrl" class="settings-input" value="https://s3odyn8n.tech/webhook/sendmails-sbs" data-i18n-placeholder="placeholderWebhook" />
+        <button type="button" class="btn btn-secondary btn-save-inline" id="btnSaveWebhook" data-i18n="btnSave">Save</button>
+      </div>
       <p class="hint" data-i18n="hintWebhook">One webhook: Load columns runs preview, Start sending runs the send flow.</p>
     </div>
 
@@ -58,21 +61,13 @@
       <span class="step-badge">2</span>
       <h2 class="card-title"><span class="icon">&#9733;</span> <span data-i18n="chooseAction">Choose action</span></h2>
       <p class="hint actions-hint" data-i18n="hintAction">Choose what the webhook should do now.</p>
-      <div class="action-buttons">
-        <div class="action-block">
-          <button type="button" class="btn btn-secondary" id="btnLoadColumns">
-            <span class="action-icon">&#128203;</span>
-            <span class="action-label" data-i18n="btnLoadColumns">Load sheet columns</span>
-          </button>
-          <span class="action-desc" data-i18n="descLoadColumns">Shows column names and a sample row for use in Subject and Body</span>
-        </div>
-        <div class="action-block">
-          <button type="button" class="btn btn-primary" id="btnSend">
-            <span class="action-icon">&#128230;</span>
-            <span class="action-label" data-i18n="btnSend">Start sending emails</span>
-          </button>
-          <span class="action-desc" data-i18n="descSend">Starts sending emails from the selected sheet (one email every 5 minutes)</span>
-        </div>
+      <div class="action-buttons-inline">
+        <button type="button" class="btn btn-secondary" id="btnLoadColumns">
+          <span class="action-label" data-i18n="btnLoadColumns">Load Sheet Columns</span>
+        </button>
+        <button type="button" class="btn btn-primary btn-primary-lg" id="btnSend" disabled>
+          <span class="action-label" data-i18n="btnSend">Start Sending Emails</span>
+        </button>
       </div>
       <div id="message"></div>
     </div>
@@ -80,33 +75,31 @@
     <div class="card card-status card-step" id="statusCard">
       <span class="step-badge">3</span>
       <h2 class="card-title"><span class="icon">&#128200;</span> <span data-i18n="statusTitle">Sending status</span></h2>
-      <p class="hint" data-i18n="statusHint">See how many emails were sent and where sending stopped. If sending stopped, click «Start sending» again to continue.</p>
-      <div class="status-actions">
+      <div class="status-actions status-actions-top">
         <button type="button" class="btn btn-secondary" id="btnCheckStatus" data-i18n="btnCheckStatus">Check status</button>
       </div>
+      <p class="hint status-hint-below" data-i18n="statusHint">See how many emails were sent and where sending stopped. If sending stopped, click «Start sending» again to continue.</p>
       <div id="statusResult" class="status-result" style="display:none;">
-        <div class="status-grid" id="statusGrid"></div>
+        <div class="status-grid status-grid-2x2" id="statusGrid"></div>
         <p class="status-next-run hint" id="statusNextRun"></p>
         <p class="status-stopped hint" id="statusStoppedHint" style="display:none;"></p>
-        <div class="status-auto-bar" id="statusAutoBar" style="display:none;">
-          <span class="status-auto-text" id="statusAutoText"></span>
-          <span class="status-last-updated hint" id="statusLastUpdated"></span>
-          <button type="button" class="btn btn-secondary btn-sm" id="btnStopAutoStatus" data-i18n="statusStopAutoUpdate">Stop auto-update</button>
-        </div>
       </div>
       <div id="statusLoading" class="status-loading" style="display:none;" data-i18n="statusLoading">Loading…</div>
       <div id="statusError" class="columns-error" style="display:none;"></div>
+      <div class="status-auto-bar status-auto-bar-bottom" id="statusAutoBar" style="display:none;">
+        <div class="status-progress-bar" id="statusProgressBar"></div>
+        <span class="status-auto-text" id="statusAutoText"></span>
+        <span class="status-last-updated hint" id="statusLastUpdated"></span>
+      </div>
+      <a href="#" role="button" class="status-stop-link" id="btnStopAutoStatus" style="display:none;" data-i18n="statusStopAutoUpdate">Stop auto-update</a>
       <p class="status-last-start hint" id="statusLastStart"></p>
     </div>
     <div class="card card-step">
       <span class="step-badge">4</span>
       <h2 class="card-title"><span class="icon">&#128202;</span> <span data-i18n="sheetTitle">Sheet (data source)</span></h2>
-      <div class="sheet-row">
-        <div class="input-wrap">
-          <label data-i18n="labelSheet">Google Sheet URL</label>
-          <input type="url" id="sheetUrl" data-i18n-placeholder="placeholderSheet" value="https://docs.google.com/spreadsheets/d/1sUUpVcRs5tE1KzNGaVA4cnQShvr1eI1bvkO44jAsKtI/edit?gid=0#gid=0" />
-        </div>
-      </div>
+      <label data-i18n="labelSheet">Google Sheet URL</label>
+      <input type="url" id="sheetUrl" class="sheet-url-full" data-i18n-placeholder="placeholderSheet" value="https://docs.google.com/spreadsheets/d/1sUUpVcRs5tE1KzNGaVA4cnQShvr1eI1bvkO44jAsKtI/edit?gid=0#gid=0" />
+      <button type="button" class="btn btn-secondary btn-load-below" id="btnLoadColumnsSheet" data-i18n="btnLoadColumns">Load Columns</button>
       <p class="hint" data-i18n="hintSheet">Same sheet is used for reading and updating the Email Sent column after sending.</p>
 
       <div class="columns-section empty" id="columnsSection">
@@ -127,25 +120,29 @@
     <div class="card card-step">
       <span class="step-badge">5</span>
       <h2 class="card-title"><span class="icon">&#9993;</span> <span data-i18n="subjectTitle">Email subject</span></h2>
-      <label data-i18n="labelSubject">Use merge like {{Name}}, {{Email}}</label>
-      <input type="text" id="subject" data-i18n-placeholder="placeholderSubject" />
+      <input type="text" id="subject" class="subject-input-full" placeholder="Use {{Name}}, {{Email}} for merge fields" data-i18n-placeholder="placeholderSubjectMerge" />
     </div>
 
-    <div class="card card-step">
+    <div class="card card-step card-editor">
       <span class="step-badge">6</span>
       <h2 class="card-title"><span class="icon">&#128221;</span> <span data-i18n="bodyTitle">Email body</span></h2>
-      <label data-i18n="labelBody">Write content with formatting. Use {{Name}}, {{Email}} for merge.</label>
-      <div id="editor-wrap"></div>
-      <div class="editor-insert-bar">
-        <label data-i18n="insertPlaceholder">Insert merge field:</label>
-        <select id="placeholderSelect">
-          <option value="{{Name}}">Name</option>
-          <option value="{{Email}}">Email</option>
-          <option value="{{Coures}}">Coures</option>
-          <option value="{{Certificate}}">Certificate</option>
-        </select>
-        <button type="button" class="btn btn-secondary btn-insert-placeholder" id="btnInsertPlaceholder" data-i18n="btnInsertPlaceholder">Insert</button>
+      <div class="editor-top-row">
+        <div class="editor-insert-bar editor-insert-bar-above">
+          <label data-i18n="insertPlaceholder">Insert merge field:</label>
+          <select id="placeholderSelect">
+            <option value="{{Name}}">Name</option>
+            <option value="{{Email}}">Email</option>
+            <option value="{{Coures}}">Coures</option>
+            <option value="{{Certificate}}">Certificate</option>
+          </select>
+          <button type="button" class="btn btn-secondary btn-insert-placeholder" id="btnInsertPlaceholder" data-i18n="btnInsertPlaceholder">Insert</button>
+        </div>
+        <div class="editor-dir-toggle">
+          <button type="button" class="btn-dir" id="dirRtl" data-dir="rtl">RTL</button>
+          <button type="button" class="btn-dir active" id="dirLtr" data-dir="ltr">LTR</button>
+        </div>
       </div>
+      <div id="editor-wrap"></div>
       <div class="editor-help" id="editorHelp">
         <div class="editor-help-summary" data-i18n="editorHelpTitle">How to use the editor tools</div>
         <div class="editor-help-content" id="editorHelpContent"></div>
@@ -156,7 +153,15 @@
       <span class="step-badge">7</span>
       <h2 class="card-title"><span class="icon">&#128065;</span> <span data-i18n="previewTitle">Preview with sample data</span></h2>
       <p class="hint" data-i18n="hintPreview">Subject and body after replacing placeholders with sample values.</p>
+      <div class="preview-row">
+        <label class="preview-label">Subject</label>
+        <button type="button" class="btn-icon-copy" id="btnCopySubject" title="Copy subject" aria-label="Copy subject">&#128203;</button>
+      </div>
       <div class="preview-box subject" id="previewSubject" dir="auto">—</div>
+      <div class="preview-row">
+        <label class="preview-label">Body</label>
+        <button type="button" class="btn-icon-copy" id="btnCopyBody" title="Copy body" aria-label="Copy body">&#128203;</button>
+      </div>
       <div class="preview-box body" id="previewBody">—</div>
     </div>
     </div>
