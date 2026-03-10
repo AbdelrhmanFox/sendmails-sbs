@@ -120,6 +120,9 @@
           statusLastStart: 'Last sending started:',
           statusNextRunLine: 'Next run will send from row {{row}} ({{pending}} left).',
           statusAllDone: 'All rows with email have been sent.',
+          statusAutoUpdate: 'Auto-updating every 1 min',
+          statusLastUpdated: 'Last updated:',
+          statusStopAutoUpdate: 'Stop auto-update',
           insertPlaceholder: 'Insert merge field:',
           btnInsertPlaceholder: 'Insert',
           editorHelpTitle: 'How to use the editor tools',
@@ -432,6 +435,7 @@
           if (res.ok && data.ok) {
             try { localStorage.setItem('sbs_sendmails_last_start', new Date().toISOString()); } catch (_) {}
             updateStatusLastStart();
+            startAutoStatus();
           }
         });
       }
@@ -457,35 +461,73 @@
       var statusStoppedHint = document.getElementById('statusStoppedHint');
       var statusLoading = document.getElementById('statusLoading');
       var statusError = document.getElementById('statusError');
-      if (btnCheckStatus) {
-        btnCheckStatus.addEventListener('click', async function() {
-          var url = (webhookUrlEl && webhookUrlEl.value) || '';
-          var sheetUrl = (sheetUrlEl && sheetUrlEl.value) || '';
-          if (!url || url.indexOf('webhook') === -1) { if (messageEl) messageEl.innerHTML = '<span class="msg error">' + t('errWebhookRequired') + '</span>'; return; }
-          if (!sheetUrl) { if (messageEl) messageEl.innerHTML = '<span class="msg error">' + t('errSheetRequired') + '</span>'; return; }
+      var statusAutoBar = document.getElementById('statusAutoBar');
+      var statusAutoText = document.getElementById('statusAutoText');
+      var statusLastUpdated = document.getElementById('statusLastUpdated');
+      var btnStopAutoStatus = document.getElementById('btnStopAutoStatus');
+
+      var statusRefreshInterval = null;
+      var STATUS_POLL_INTERVAL_MS = 60000;
+      var FIRST_POLL_DELAY_MS = 10000;
+
+      function renderStatusData(data) {
+        if (!data.ok || data.sent === undefined) return;
+        if (statusGrid) {
+          statusGrid.innerHTML = '<div class="status-item"><span class="status-label">' + t('statusSent') + '</span><strong class="status-value">' + data.sent + '</strong></div>' +
+            '<div class="status-item"><span class="status-label">' + t('statusPending') + '</span><strong class="status-value">' + data.pending + '</strong></div>' +
+            '<div class="status-item"><span class="status-label">' + t('statusLastSentRow') + '</span><strong class="status-value">' + (data.lastSentRow || '—') + '</strong></div>' +
+            '<div class="status-item"><span class="status-label">' + t('statusNextRow') + '</span><strong class="status-value">' + (data.nextRowToSend || '—') + '</strong></div>';
+        }
+        if (statusNextRun) statusNextRun.textContent = data.pending > 0 ? tReplace('statusNextRunLine', { row: data.nextRowToSend || '', pending: data.pending }) : t('statusAllDone');
+        if (statusStoppedHint) { statusStoppedHint.style.display = data.pending > 0 ? 'block' : 'none'; statusStoppedHint.textContent = t('statusStoppedHint'); }
+        if (statusResult) statusResult.style.display = 'block';
+        if (statusLastUpdated) statusLastUpdated.textContent = (t('statusLastUpdated') || 'Last updated:') + ' ' + new Date().toLocaleTimeString();
+        if (data.pending === 0) stopAutoStatus();
+      }
+
+      function stopAutoStatus() {
+        if (statusRefreshInterval) { clearInterval(statusRefreshInterval); statusRefreshInterval = null; }
+        if (statusAutoBar) statusAutoBar.style.display = 'none';
+      }
+
+      function startAutoStatus() {
+        stopAutoStatus();
+        if (statusAutoBar) statusAutoBar.style.display = 'flex';
+        if (statusAutoText) statusAutoText.textContent = t('statusAutoUpdate') || 'Auto-updating every 1 min';
+        setTimeout(function() { refreshStatus(true); }, FIRST_POLL_DELAY_MS);
+        statusRefreshInterval = setInterval(function() { refreshStatus(true); }, STATUS_POLL_INTERVAL_MS);
+      }
+
+      async function refreshStatus(silent) {
+        var url = (webhookUrlEl && webhookUrlEl.value) || '';
+        var sheetUrl = (sheetUrlEl && sheetUrlEl.value) || '';
+        if (!url || url.indexOf('webhook') === -1 || !sheetUrl) return;
+        if (!silent) {
           if (statusError) { statusError.style.display = 'none'; statusError.textContent = ''; }
           if (statusResult) statusResult.style.display = 'none';
           if (statusLoading) statusLoading.style.display = 'block';
-          try {
-            var res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'status', sheetUrl: sheetUrl }) });
-            var data = await res.json().catch(function() { return {}; });
-            if (statusLoading) statusLoading.style.display = 'none';
-            if (data.ok && data.sent !== undefined) {
-              statusGrid.innerHTML = '<div class="status-item"><span class="status-label">' + t('statusSent') + '</span><strong class="status-value">' + data.sent + '</strong></div>' +
-                '<div class="status-item"><span class="status-label">' + t('statusPending') + '</span><strong class="status-value">' + data.pending + '</strong></div>' +
-                '<div class="status-item"><span class="status-label">' + t('statusLastSentRow') + '</span><strong class="status-value">' + (data.lastSentRow || '—') + '</strong></div>' +
-                '<div class="status-item"><span class="status-label">' + t('statusNextRow') + '</span><strong class="status-value">' + (data.nextRowToSend || '—') + '</strong></div>';
-              if (statusNextRun) statusNextRun.textContent = data.pending > 0 ? tReplace('statusNextRunLine', { row: data.nextRowToSend || '', pending: data.pending }) : t('statusAllDone');
-              if (statusStoppedHint) { statusStoppedHint.style.display = data.pending > 0 ? 'block' : 'none'; statusStoppedHint.textContent = t('statusStoppedHint'); }
-              if (statusResult) statusResult.style.display = 'block';
-            } else {
-              if (statusError) { statusError.textContent = data.error || t('statusErrorGeneric'); statusError.style.display = 'block'; }
-            }
-          } catch (err) {
-            if (statusLoading) statusLoading.style.display = 'none';
-            if (statusError) { statusError.textContent = err.message || t('statusErrorGeneric'); statusError.style.display = 'block'; }
+        }
+        try {
+          var res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'status', sheetUrl: sheetUrl }) });
+          var data = await res.json().catch(function() { return {}; });
+          if (statusLoading) statusLoading.style.display = 'none';
+          if (data.ok && data.sent !== undefined) {
+            renderStatusData(data);
+          } else if (!silent && statusError) {
+            statusError.textContent = data.error || t('statusErrorGeneric');
+            statusError.style.display = 'block';
           }
-        });
+        } catch (err) {
+          if (statusLoading) statusLoading.style.display = 'none';
+          if (!silent && statusError) { statusError.textContent = err.message || t('statusErrorGeneric'); statusError.style.display = 'block'; }
+        }
+      }
+
+      if (btnCheckStatus) {
+        btnCheckStatus.addEventListener('click', function() { refreshStatus(false); });
+      }
+      if (btnStopAutoStatus) {
+        btnStopAutoStatus.addEventListener('click', stopAutoStatus);
       }
 
       var btnInsertPlaceholder = document.getElementById('btnInsertPlaceholder');

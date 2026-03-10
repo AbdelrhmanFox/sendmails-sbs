@@ -46,14 +46,16 @@
     </nav>
 
     <div id="tab-sendmails" class="tab-pane active" role="tabpanel">
-    <div class="card">
+    <div class="card card-step">
+      <span class="step-badge">1</span>
       <h2 class="card-title"><span class="icon">&#9881;</span> <span data-i18n="settings">Settings</span></h2>
       <label data-i18n="labelWebhook">n8n Webhook URL</label>
       <input type="url" id="webhookUrl" value="https://s3odyn8n.tech/webhook/sendmails-sbs" data-i18n-placeholder="placeholderWebhook" />
       <p class="hint" data-i18n="hintWebhook">One webhook: Load columns runs preview, Start sending runs the send flow.</p>
     </div>
 
-    <div class="card card-actions">
+    <div class="card card-actions card-step">
+      <span class="step-badge">2</span>
       <h2 class="card-title"><span class="icon">&#9733;</span> <span data-i18n="chooseAction">Choose action</span></h2>
       <p class="hint actions-hint" data-i18n="hintAction">Choose what the webhook should do now.</p>
       <div class="action-buttons">
@@ -75,7 +77,8 @@
       <div id="message"></div>
     </div>
 
-    <div class="card card-status" id="statusCard">
+    <div class="card card-status card-step" id="statusCard">
+      <span class="step-badge">3</span>
       <h2 class="card-title"><span class="icon">&#128200;</span> <span data-i18n="statusTitle">Sending status</span></h2>
       <p class="hint" data-i18n="statusHint">See how many emails were sent and where sending stopped. If sending stopped, click «Start sending» again to continue.</p>
       <div class="status-actions">
@@ -85,12 +88,18 @@
         <div class="status-grid" id="statusGrid"></div>
         <p class="status-next-run hint" id="statusNextRun"></p>
         <p class="status-stopped hint" id="statusStoppedHint" style="display:none;"></p>
+        <div class="status-auto-bar" id="statusAutoBar" style="display:none;">
+          <span class="status-auto-text" id="statusAutoText"></span>
+          <span class="status-last-updated hint" id="statusLastUpdated"></span>
+          <button type="button" class="btn btn-secondary btn-sm" id="btnStopAutoStatus" data-i18n="statusStopAutoUpdate">Stop auto-update</button>
+        </div>
       </div>
       <div id="statusLoading" class="status-loading" style="display:none;" data-i18n="statusLoading">Loading…</div>
       <div id="statusError" class="columns-error" style="display:none;"></div>
       <p class="status-last-start hint" id="statusLastStart"></p>
     </div>
-    <div class="card">
+    <div class="card card-step">
+      <span class="step-badge">4</span>
       <h2 class="card-title"><span class="icon">&#128202;</span> <span data-i18n="sheetTitle">Sheet (data source)</span></h2>
       <div class="sheet-row">
         <div class="input-wrap">
@@ -115,13 +124,15 @@
       </div>
     </div>
 
-    <div class="card">
+    <div class="card card-step">
+      <span class="step-badge">5</span>
       <h2 class="card-title"><span class="icon">&#9993;</span> <span data-i18n="subjectTitle">Email subject</span></h2>
       <label data-i18n="labelSubject">Use merge like {{Name}}, {{Email}}</label>
       <input type="text" id="subject" data-i18n-placeholder="placeholderSubject" />
     </div>
 
-    <div class="card">
+    <div class="card card-step">
+      <span class="step-badge">6</span>
       <h2 class="card-title"><span class="icon">&#128221;</span> <span data-i18n="bodyTitle">Email body</span></h2>
       <label data-i18n="labelBody">Write content with formatting. Use {{Name}}, {{Email}} for merge.</label>
       <div id="editor-wrap"></div>
@@ -141,7 +152,8 @@
       </div>
     </div>
 
-    <div class="card">
+    <div class="card card-step">
+      <span class="step-badge">7</span>
       <h2 class="card-title"><span class="icon">&#128065;</span> <span data-i18n="previewTitle">Preview with sample data</span></h2>
       <p class="hint" data-i18n="hintPreview">Subject and body after replacing placeholders with sample values.</p>
       <div class="preview-box subject" id="previewSubject" dir="auto">—</div>
