@@ -1,5 +1,16 @@
+const dns = require('dns');
 const jwt = require('jsonwebtoken');
 const { createClient } = require('@supabase/supabase-js');
+
+// Netlify/AWS Lambda + Node fetch to *.supabase.co often fails with "TypeError: fetch failed"
+// when DNS returns IPv6 first but the path only works over IPv4. Prefer IPv4 for outbound HTTP.
+try {
+  if (typeof dns.setDefaultResultOrder === 'function') {
+    dns.setDefaultResultOrder('ipv4first');
+  }
+} catch (_) {
+  /* ignore */
+}
 
 const cors = {
   'Access-Control-Allow-Origin': '*',

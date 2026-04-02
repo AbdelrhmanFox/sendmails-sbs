@@ -6,6 +6,8 @@
 
 [build.environment]
   NODE_VERSION = "18"
+  # Backup for Supabase outbound fetch (same issue as dns.setDefaultResultOrder in netlify/lib/_shared.js)
+  NODE_OPTIONS = "--dns-result-order=ipv4first"
 
 # Shared code lives in netlify/lib (not deployable as a function).
 [functions]

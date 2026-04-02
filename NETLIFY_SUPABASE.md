@@ -39,3 +39,5 @@ Set these in Netlify project environment variables:
 7. **Production vs Preview:** In Netlify → Environment variables, confirm the same Supabase values exist for **Production** (not only Deploy previews).
 
 8. **Shared code location:** Function helpers live in `netlify/lib/_shared.js` (not under `netlify/functions/`) so Netlify does not deploy them as a fake `/_shared` function.
+
+9. **`Database error — TypeError: fetch failed`:** Usually outbound HTTPS from Netlify to Supabase failing at DNS/TCP (IPv6 vs IPv4). The repo sets `dns.setDefaultResultOrder('ipv4first')` in `netlify/lib/_shared.js` and `NODE_OPTIONS=--dns-result-order=ipv4first` in `netlify.toml`. Redeploy; if it persists, add the same `NODE_OPTIONS` under **Site configuration → Environment variables** for Production.
