@@ -41,7 +41,7 @@ or Netlify:
 /.netlify/functions/seed?key=YOUR_SEED_SECRET
 ```
 
-Default admin credentials from seed: `admin / 123`.
+Default admin credentials from seed: `admin / 123456` (override with `SEED_ADMIN_USERNAME` / `SEED_ADMIN_PASSWORD`).
 
 ## 4) Optional workbook import
 
