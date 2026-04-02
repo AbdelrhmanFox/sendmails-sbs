@@ -1,0 +1,64 @@
+const jwt = require('jsonwebtoken');
+const { createClient } = require('@supabase/supabase-js');
+
+const cors = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+function json(body, status = 200) {
+  return {
+    statusCode: status,
+    headers: { 'Content-Type': 'application/json', ...cors },
+    body: JSON.stringify(body),
+  };
+}
+
+function getSupabaseServiceClient() {
+  const supabaseUrl = process.env.SUPABASE_URL || (process.env.SUPABASE_PROJECT_REF && `https://${process.env.SUPABASE_PROJECT_REF}.supabase.co`);
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !supabaseKey) return null;
+  return createClient(supabaseUrl, supabaseKey);
+}
+
+function verifyAuth(event) {
+  const auth = event.headers.authorization || event.headers.Authorization || '';
+  const token = auth.replace(/^Bearer\s+/i, '');
+  const jwtSecret = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET;
+  if (!token || !jwtSecret) return null;
+  try {
+    return jwt.verify(token, jwtSecret);
+  } catch (_) {
+    return null;
+  }
+}
+
+function normalizeDate(value) {
+  if (!value) return null;
+  const s = String(value).trim();
+  if (!s) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const slash = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (slash) {
+    const m = slash[1].padStart(2, '0');
+    const d = slash[2].padStart(2, '0');
+    return `${slash[3]}-${m}-${d}`;
+  }
+  const dash = s.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+  if (dash) {
+    const d = dash[1].padStart(2, '0');
+    const m = dash[2].padStart(2, '0');
+    return `${dash[3]}-${m}-${d}`;
+  }
+  const dt = new Date(s);
+  if (!Number.isNaN(dt.getTime())) return dt.toISOString().slice(0, 10);
+  return null;
+}
+
+module.exports = {
+  cors,
+  json,
+  getSupabaseServiceClient,
+  verifyAuth,
+  normalizeDate,
+};

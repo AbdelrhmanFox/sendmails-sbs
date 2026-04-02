@@ -1,67 +1,60 @@
-# Login setup (Supabase + Netlify)
+# Supabase Setup (Current Project)
 
-## One-time step
+## 1) Run schema
 
-The `app_users` table must be created in Supabase. Run this once from your browser:
+Run the full file `supabase/schema.sql` in Supabase SQL Editor.
 
-1. Open **SQL Editor** for your project:  
-   **https://supabase.com/dashboard/project/lpvoooyqhndizycsukcm/sql/new**
+This creates:
 
-2. Paste this SQL and click **Run**:
+- `app_users`
+- `enrollments`
+- `training_sessions`
+- `training_groups`
+- `training_participants`
+- `training_messages`
 
-```sql
-create table if not exists app_users (
-  id uuid default gen_random_uuid() primary key,
-  username text unique not null,
-  password_hash text not null,
-  role text not null check (role in ('admin','user')),
-  created_at timestamptz default now()
-);
+and related RLS policies for training public join/chat flows.
+
+## 2) Netlify environment variables
+
+Set these in Netlify:
+
+| Name | Required | Purpose |
+| --- | --- | --- |
+| `SUPABASE_URL` (or `SUPABASE_PROJECT_REF`) | Yes | Supabase project connection |
+| `SUPABASE_SERVICE_ROLE_KEY` | Yes | Server-side CRUD in functions |
+| `SUPABASE_ANON_KEY` | Yes (recommended) | Realtime chat subscription in browser |
+| `JWT_SECRET` (or `SUPABASE_JWT_SECRET`) | Yes | Auth token signing |
+| `SEED_SECRET` | Optional | One-time admin seed endpoint |
+
+## 3) Seed admin user
+
+Local:
+
+```bash
+npm run seed:admin
 ```
 
-3. After "Success", seed the admin user:
-   - **Locally:** From project folder run `.\scripts\seed-admin.ps1` (or create `.env` from `.env.example`, set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`, then run `node scripts/seed-admin.js`).
+or Netlify:
 
----
+```text
+/.netlify/functions/seed?key=YOUR_SEED_SECRET
+```
 
-To enable login and user management:
+Default admin credentials from seed: `admin / 123`.
 
-1. **Create a Supabase project** at [supabase.com](https://supabase.com). In **Settings** → **API** copy **Project URL** and **service_role** key.
+## 4) Optional workbook import
 
-2. **Create the table** in Supabase (SQL Editor) using `supabase/schema.sql` if you have not done the step above.
+```bash
+npm run import:enrollments
+```
 
-3. **Add env vars in Netlify:** **Site settings** → **Environment variables**:
+Source file:
 
-| Name | Value |
-|------|--------|
-| `SUPABASE_URL` | Project URL from Supabase |
-| `SUPABASE_SERVICE_ROLE_KEY` | service_role key from Supabase |
-| `JWT_SECRET` | Any long random string |
-| `SEED_SECRET` | Optional; for one-time seed via URL |
+- `docs/excel-export/enrollments.csv`
 
-4. **Create admin (admin / 123)**  
-   - **On Netlify:** Add `SEED_SECRET` in env vars, redeploy, then open in browser (GET):  
-     `https://YOUR-SITE.netlify.app/.netlify/functions/seed?key=YOUR_SEED_SECRET`  
-   - Or locally: `.env` + `node scripts/seed-admin.js`
+## Troubleshooting
 
-Then log in with **admin** / **123** and use the "Manage users" tab to add users.
-
----
-
-**Login not working?**
-
-- **"Server config missing"** → Set `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` and `JWT_SECRET` (or `SUPABASE_JWT_SECRET`) in Netlify → **Redeploy**.
-- **"Invalid username or password"** → The admin user may not exist on the Supabase project that Netlify uses. Open the seed URL once (step 4 above) with the same `SEED_SECRET` you set in Netlify. Then try **admin** / **123** again.
-- After changing env vars in Netlify, always **trigger a new deploy** so the functions use the new values.
-
----
-
-**Local fallback user (when DB is down)**
-
-- Username: **local** — Password: **local** (admin role, temporary use).
-- Works as long as `JWT_SECRET` (or `SUPABASE_JWT_SECRET`) is set in Netlify; no Supabase needed for this user.
-- Optional: set `LOCAL_FALLBACK_USER` and `LOCAL_FALLBACK_PASSWORD` in Netlify to change the fallback credentials.
-
----
-
-**Summary:** Login works from any device; admin can add users; data is stored in Supabase.
+- `Server config missing`: missing env variables in Netlify.
+- `Invalid username or password`: seed user not created in current Supabase project.
+- Realtime chat not updating live: verify `SUPABASE_ANON_KEY` and training tables exist.

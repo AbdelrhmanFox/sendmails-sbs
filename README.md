@@ -1,39 +1,91 @@
-# Sendmails SBS
+# SBS Company Dashboard
 
-Dashboard + n8n automation for sending bulk emails from a Google Sheet (one email every 5 minutes). Merge fields in subject/body (e.g. `{{Name}}`, `{{Email}}`). Sheet column "Email Sent" is updated after each send.
+Internal staff dashboard for an educational services company.  
+This project now includes:
+
+- **Operations Data** (workbook-driven database UI for enrollments)
+- **Email Campaigns** (existing n8n sendmail automation, feature-gated by role)
+- **Live Session Groups** (trainer creates groups, participants join with links, chat)
+- **Auth + user management** (Supabase + Netlify Functions)
+
+All shipped UI and docs are English-only.
 
 ---
 
-## Contents
+## Repository map
 
-| Path | Description |
-|------|-------------|
-| `automation/` | n8n workflow (webhook → read sheet → filter → send email → update row). Import `workflow.json` and activate. |
-| `dashboard/` | Web UI: webhook URL, sheet URL, subject/body editor, Load columns, Start sending, Sending status (with auto-refresh). Deploy as static site (e.g. Netlify publish dir: **dashboard**). |
-| `netlify/functions/` | Serverless auth and user management (Supabase). See `SUPABASE_SETUP.md` for env vars. |
-| `DASHBOARD.md` | Brief on dashboard layout, design, and behaviour. |
+| Path | Purpose |
+| --- | --- |
+| `dashboard/` | Static frontend app (staff shell, data module, campaigns, training, admin). |
+| `netlify/functions/` | API endpoints for auth, user management, enrollments CRUD, training sessions/chat, public config. |
+| `supabase/schema.sql` | Supabase schema (users, enrollments, training tables, RLS policies). |
+| `automation/workflow.json` | n8n workflow for campaign preview/send/status. |
+| `docs/excel-export/` | Workbook exports (CSV source of truth for data model). |
+| `docs/DATA_MODEL.md` | Workbook inventory and mapping decisions. |
+| `CLAUDE.md` | Agent rules for this codebase. |
 
 ---
 
 ## Quick start
 
-1. **n8n**: Import `automation/workflow.json`, add Google Sheets + SMTP credentials, activate workflow, copy the webhook URL.
-2. **Dashboard**: Open `dashboard/index.html` (or deploy `dashboard/` to Netlify). Enter webhook URL and Google Sheet URL.
-3. **Sheet**: Include columns e.g. Email, Name, and **Email Sent** (filled with "Sent" by the workflow). Optional: **Row** (e.g. `=ROW()`) for correct row updates.
-4. **Send**: Set subject and body (use `{{Name}}`, `{{Email}}`, etc.), click **Start sending emails**. Use **Check status** (or the auto-update after start) to see Sent / Pending and where sending stopped.
+### 1) Install dependencies
+
+```bash
+npm install
+```
+
+### 2) Configure Supabase
+
+Run `supabase/schema.sql` in Supabase SQL Editor.
+
+Set Netlify environment variables:
+
+- `SUPABASE_URL` (or `SUPABASE_PROJECT_REF`)
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `SUPABASE_ANON_KEY` (required for Realtime subscription in group chat)
+- `JWT_SECRET` (or `SUPABASE_JWT_SECRET`)
+- `SEED_SECRET` (optional for one-time seed endpoint)
+
+### 3) Seed admin user
+
+Local:
+
+```bash
+npm run seed:admin
+```
+
+or Netlify:
+
+```text
+/.netlify/functions/seed?key=YOUR_SEED_SECRET
+```
+
+### 4) Import workbook sample data (optional)
+
+```bash
+npm run import:enrollments
+```
+
+### 5) Configure n8n campaigns
+
+Import `automation/workflow.json`, set Google Sheets + SMTP credentials, activate the workflow, then copy the webhook URL into the dashboard Campaigns module.
 
 ---
 
-## Deploy (GitHub → Netlify)
+## Deployment
 
-1. Push repo to GitHub.
-2. Netlify: Add site → Import from GitHub → select repo → **Publish directory: `dashboard`** → Deploy.
-3. Set environment variables (see `SUPABASE_SETUP.md`) for login.
+- **Netlify publish directory:** `dashboard`
+- **Functions directory:** `netlify/functions`
+- Push to GitHub, deploy from GitHub, then verify:
+  - Login works
+  - Enrollment CRUD works
+  - Training group link + chat works
+  - Campaign preview/send/status works with n8n webhook
 
 ---
 
-## Notes
+## Security notes
 
-- n8n needs **Google Sheets** and **SMTP** (e.g. Hostinger) credentials.
-- Emails from the sheet are trimmed (leading/trailing spaces removed) to avoid SMTP errors.
-- Webhook actions: `preview` (columns + sample row), `send` (start sending), `status` (sent/pending/row counts).
+- Do not commit `.env` or secret keys.
+- `training_*` tables are configured for public join/chat behavior with generated group tokens; keep links private during sessions.
+- Service-role keys must stay server-side only (Netlify functions).

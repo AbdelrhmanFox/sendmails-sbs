@@ -3,217 +3,213 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>SBS – Dashboard</title>
+  <title>SBS Company Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet" />
+  <link rel="stylesheet" href="css/tokens.css" />
   <link rel="stylesheet" href="css/main.css" />
 </head>
-<body class="lang-en" dir="ltr">
-  <div id="login-screen" class="visible">
+<body>
+  <div id="login-screen" class="login-screen visible">
     <div class="login-card">
-      <h2 data-i18n="loginTitle">Login</h2>
+      <h1>SBS Staff Dashboard</h1>
+      <p class="subtitle">Internal operations platform for educational services.</p>
       <form id="loginForm">
-        <label data-i18n="loginUsername">Username</label>
+        <label for="loginUsername">Username</label>
         <input type="text" id="loginUsername" autocomplete="username" required />
-        <label data-i18n="loginPassword">Password</label>
+        <label for="loginPassword">Password</label>
         <input type="password" id="loginPassword" autocomplete="current-password" required />
-        <button type="submit" class="btn btn-primary" id="btnLogin" data-i18n="btnLogin">Log in</button>
+        <button type="submit" class="btn btn-primary" id="btnLogin">Sign in</button>
       </form>
-      <p id="loginError" class="login-error"></p>
-      <p class="login-hint">If the database is down, use <strong>local</strong> / <strong>local</strong> (admin, temporary).</p>
+      <p class="small-note">Fallback only: <strong>local / local</strong></p>
+      <p id="loginError" class="inline-error"></p>
     </div>
   </div>
 
-  <div id="app" class="hidden">
-  <div class="page">
-    <header class="header">
-      <div class="title-wrap">
-        <h1 data-i18n="title">SBS Sendmails</h1>
-        <p class="subtitle" data-i18n="subtitle">Choose the sheet, set subject and body, then trigger sending from one place.</p>
+  <div id="app" class="app hidden">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">SBS</div>
+        <div>
+          <strong>SBS Dashboard</strong>
+          <p>Educational Operations</p>
+        </div>
       </div>
-      <div class="header-actions">
-        <span id="loggedInUser" class="text-secondary header-username"></span>
-        <button type="button" class="btn-logout-text" id="btnLogout" data-i18n="btnLogout">Log out</button>
+      <nav id="menu">
+        <button class="menu-item active" data-view="home">Home</button>
+        <button class="menu-item" data-view="operations">Operations Data</button>
+        <button class="menu-item" data-view="campaigns" id="menuCampaigns">Email Campaigns</button>
+        <button class="menu-item" data-view="training">Live Session Groups</button>
+        <button class="menu-item" data-view="admin" id="menuAdmin">Manage Users</button>
+      </nav>
+      <div class="sidebar-footer">
+        <div id="loggedInUser" class="muted"></div>
+        <button type="button" id="btnLogout" class="btn btn-secondary btn-block">Log out</button>
       </div>
-    </header>
+    </aside>
 
-    <nav class="tabs-bar" role="tablist">
-      <button type="button" class="tab-btn active" role="tab" id="tabBtnSendmails" data-tab="tab-sendmails" data-i18n="tabSendmails">Send emails</button>
-      <button type="button" class="tab-btn" role="tab" id="tabBtnQr" data-tab="tab-qr" data-i18n="tabQr">QR Code</button>
-      <button type="button" class="tab-btn tab-admin" role="tab" id="tabBtnAdmin" data-tab="tab-admin" data-i18n="tabAdmin" style="display:none;">Manage users</button>
-    </nav>
+    <main class="main">
+      <section id="view-home" class="view active">
+        <h2>Welcome</h2>
+        <p class="subtitle">Use the left menu to manage staff operations, campaigns, and live training groups.</p>
+        <div class="grid-three">
+          <article class="card"><h3>Operations Data</h3><p>Create and update enrollment records from your workbook-driven database model.</p></article>
+          <article class="card"><h3>Email Campaigns</h3><p>Run the existing n8n sendmail automation when the feature is enabled for your role.</p></article>
+          <article class="card"><h3>Live Session Groups</h3><p>Create trainer rooms and share secure join links with participants.</p></article>
+        </div>
+      </section>
 
-    <div id="tab-sendmails" class="tab-pane active" role="tabpanel">
-    <div class="card card-step">
-      <span class="step-badge">1</span>
-      <h2 class="card-title"><span class="icon">&#9881;</span> <span data-i18n="settings">Settings</span></h2>
-      <label data-i18n="labelWebhook">n8n Webhook URL</label>
-      <div class="settings-row">
-        <input type="url" id="webhookUrl" class="settings-input" value="https://s3odyn8n.tech/webhook/sendmails-sbs" data-i18n-placeholder="placeholderWebhook" />
-        <button type="button" class="btn btn-secondary btn-save-inline" id="btnSaveWebhook" data-i18n="btnSave">Save</button>
-      </div>
-      <p class="hint" data-i18n="hintWebhook">One webhook: Load columns runs preview, Start sending runs the send flow.</p>
-    </div>
+      <section id="view-operations" class="view">
+        <div class="view-header">
+          <h2>Operations Data</h2>
+          <button class="btn btn-secondary" id="btnRefreshEnrollments">Refresh</button>
+        </div>
+        <p class="subtitle">Workbook-driven enrollment records (English UI, source data kept as provided).</p>
+        <form id="enrollmentForm" class="card form-grid">
+          <input type="hidden" id="enrollIdDb" />
+          <div><label for="enrollmentId">Enrollment ID</label><input id="enrollmentId" required /></div>
+          <div><label for="traineeId">Trainee ID</label><input id="traineeId" required /></div>
+          <div><label for="batchId">Batch ID</label><input id="batchId" required /></div>
+          <div>
+            <label for="enrollmentStatus">Enrollment Status</label>
+            <select id="enrollmentStatus">
+              <option>Registered</option><option>Attended</option><option>Cancelled</option><option>Completed</option>
+            </select>
+          </div>
+          <div>
+            <label for="paymentStatus">Payment Status</label>
+            <select id="paymentStatus">
+              <option>Pending</option><option>Paid</option><option>Waived</option>
+            </select>
+          </div>
+          <div><label for="amountPaid">Amount Paid</label><input id="amountPaid" type="number" step="0.01" /></div>
+          <div>
+            <label for="certificateIssued">Certificate Issued</label>
+            <select id="certificateIssued">
+              <option value="">Not set</option><option value="yes">Yes</option><option value="no">No</option>
+            </select>
+          </div>
+          <div><label for="enrollDate">Enroll Date</label><input id="enrollDate" placeholder="YYYY-MM-DD or source format" /></div>
+          <div class="full"><label for="notes">Notes</label><input id="notes" /></div>
+          <div class="full form-actions">
+            <button class="btn btn-primary" type="submit" id="btnSaveEnrollment">Save Enrollment</button>
+            <button class="btn btn-secondary" type="button" id="btnResetEnrollment">Clear</button>
+          </div>
+          <p id="enrollmentMsg" class="inline-note full"></p>
+        </form>
+        <div class="card">
+          <h3>Enrollment Records</h3>
+          <div class="table-wrap">
+            <table id="enrollmentsTable">
+              <thead>
+                <tr>
+                  <th>Enrollment</th><th>Trainee</th><th>Batch</th><th>Enroll Status</th><th>Payment</th><th>Amount</th><th>Date</th><th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="enrollmentsBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
 
-    <div class="card card-actions card-step">
-      <span class="step-badge">2</span>
-      <h2 class="card-title"><span class="icon">&#9733;</span> <span data-i18n="chooseAction">Choose action</span></h2>
-      <p class="hint actions-hint" data-i18n="hintAction">Choose what the webhook should do now.</p>
-      <div class="action-buttons-inline">
-        <button type="button" class="btn btn-secondary" id="btnLoadColumns">
-          <span class="action-label" data-i18n="btnLoadColumns">Load Sheet Columns</span>
-        </button>
-        <button type="button" class="btn btn-primary btn-primary-lg" id="btnSend" disabled>
-          <span class="action-label" data-i18n="btnSend">Start Sending Emails</span>
-        </button>
-      </div>
-      <div id="message"></div>
-    </div>
+      <section id="view-campaigns" class="view">
+        <h2>Email Campaigns</h2>
+        <p class="subtitle">Optional module powered by existing n8n workflow.</p>
+        <div class="card">
+          <label for="webhookUrl">n8n Webhook URL</label>
+          <div class="row">
+            <input type="url" id="webhookUrl" value="https://s3odyn8n.tech/webhook/sendmails-sbs" />
+            <button type="button" class="btn btn-secondary" id="btnSaveWebhook">Save</button>
+          </div>
+          <label for="sheetUrl">Google Sheet URL</label>
+          <input type="url" id="sheetUrl" placeholder="https://docs.google.com/spreadsheets/d/..." />
+          <div class="row">
+            <button type="button" class="btn btn-secondary" id="btnLoadColumns">Load Columns</button>
+            <button type="button" class="btn btn-primary" id="btnSend" disabled>Start Sending Emails</button>
+            <button type="button" class="btn btn-secondary" id="btnCheckStatus">Check Status</button>
+          </div>
+          <p id="campaignMsg" class="inline-note"></p>
+        </div>
+        <div class="card">
+          <h3>Columns Preview</h3>
+          <div id="columnsChips" class="chips"></div>
+          <div class="table-wrap"><table><thead><tr id="sampleTableHead"></tr></thead><tbody><tr id="sampleTableBody"></tr></tbody></table></div>
+        </div>
+        <div class="card">
+          <h3>Compose Email</h3>
+          <label for="subject">Subject</label>
+          <input id="subject" placeholder="Use {{Name}} in text" />
+          <div class="row">
+            <label for="placeholderSelect">Insert merge field</label>
+            <select id="placeholderSelect"></select>
+            <button type="button" class="btn btn-secondary" id="btnInsertPlaceholder">Insert</button>
+          </div>
+          <div id="editor-wrap"></div>
+          <h4>Preview</h4>
+          <div class="preview-box" id="previewSubject"></div>
+          <div class="preview-box" id="previewBody"></div>
+        </div>
+        <div class="card">
+          <h3>Campaign Status</h3>
+          <div id="statusGrid" class="status-grid"></div>
+          <p id="statusError" class="inline-error"></p>
+        </div>
+      </section>
 
-    <div class="card card-status card-step" id="statusCard">
-      <span class="step-badge">3</span>
-      <h2 class="card-title"><span class="icon">&#128200;</span> <span data-i18n="statusTitle">Sending status</span></h2>
-      <div class="status-actions status-actions-top">
-        <button type="button" class="btn btn-secondary" id="btnCheckStatus" data-i18n="btnCheckStatus">Check status</button>
-      </div>
-      <p class="hint status-hint-below" data-i18n="statusHint">See how many emails were sent and where sending stopped. If sending stopped, click «Start sending» again to continue.</p>
-      <div id="statusResult" class="status-result" style="display:none;">
-        <div class="status-grid status-grid-2x2" id="statusGrid"></div>
-        <p class="status-next-run hint" id="statusNextRun"></p>
-        <p class="status-stopped hint" id="statusStoppedHint" style="display:none;"></p>
-      </div>
-      <div id="statusLoading" class="status-loading" style="display:none;" data-i18n="statusLoading">Loading…</div>
-      <div id="statusError" class="columns-error" style="display:none;"></div>
-      <div class="status-auto-bar status-auto-bar-bottom" id="statusAutoBar" style="display:none;">
-        <div class="status-progress-bar" id="statusProgressBar"></div>
-        <span class="status-auto-text" id="statusAutoText"></span>
-        <span class="status-last-updated hint" id="statusLastUpdated"></span>
-      </div>
-      <a href="#" role="button" class="status-stop-link" id="btnStopAutoStatus" style="display:none;" data-i18n="statusStopAutoUpdate">Stop auto-update</a>
-      <p class="status-last-start hint" id="statusLastStart"></p>
-    </div>
-    <div class="card card-step">
-      <span class="step-badge">4</span>
-      <h2 class="card-title"><span class="icon">&#128202;</span> <span data-i18n="sheetTitle">Sheet (data source)</span></h2>
-      <label data-i18n="labelSheet">Google Sheet URL</label>
-      <input type="url" id="sheetUrl" class="sheet-url-full" data-i18n-placeholder="placeholderSheet" value="https://docs.google.com/spreadsheets/d/1sUUpVcRs5tE1KzNGaVA4cnQShvr1eI1bvkO44jAsKtI/edit?gid=0#gid=0" />
-      <button type="button" class="btn btn-secondary btn-load-below" id="btnLoadColumnsSheet" data-i18n="btnLoadColumns">Load Columns</button>
-      <p class="hint" data-i18n="hintSheet">Same sheet is used for reading and updating the Email Sent column after sending.</p>
+      <section id="view-training" class="view">
+        <h2>Live Session Groups</h2>
+        <p class="subtitle">Create session groups for trainers and share one link per group.</p>
+        <div id="trainerPanel" class="card">
+          <h3>Create Session</h3>
+          <form id="trainingSessionForm" class="row">
+            <input id="trainingTitle" placeholder="Session title" required />
+            <input id="groupsCount" type="number" min="2" max="12" value="4" />
+            <button class="btn btn-primary" type="submit">Create</button>
+          </form>
+          <p id="trainingMsg" class="inline-note"></p>
+          <div id="trainingLinks"></div>
+        </div>
+        <div id="joinPanel" class="card hidden">
+          <h3 id="joinHeading">Join Group</h3>
+          <form id="joinForm" class="row">
+            <input id="joinName" placeholder="Your display name" required />
+            <button class="btn btn-primary" type="submit">Join chat</button>
+          </form>
+          <p id="joinMsg" class="inline-note"></p>
+        </div>
+        <div id="chatPanel" class="card hidden">
+          <h3>Group Chat</h3>
+          <div id="chatMessages" class="chat-messages"></div>
+          <form id="chatForm" class="row">
+            <input id="chatInput" placeholder="Write a message..." required />
+            <button class="btn btn-primary" type="submit">Send</button>
+          </form>
+        </div>
+      </section>
 
-      <div class="columns-section empty" id="columnsSection">
-        <p class="subtitle" data-i18n="columnsSubtitle">Sheet columns (use in Subject and Body as {{column_name}})</p>
-        <div class="columns-chips" id="columnsChips"></div>
-        <p class="subtitle" data-i18n="sampleRowSubtitle">Sample row (first data row)</p>
-        <div class="sample-table-wrap">
-          <table class="sample-table" id="sampleTable">
-            <thead><tr id="sampleTableHead"></tr></thead>
-            <tbody><tr id="sampleTableBody"></tr></tbody>
+      <section id="view-admin" class="view">
+        <h2>Manage Users</h2>
+        <p class="subtitle">Admin-only controls for account management.</p>
+        <form id="createUserForm" class="card row">
+          <input type="text" id="newUsername" minlength="2" placeholder="New username" required />
+          <input type="password" id="newPassword" minlength="4" placeholder="Password" required />
+          <button type="submit" class="btn btn-primary" id="btnCreateUser">Add user</button>
+        </form>
+        <p id="createUserMsg" class="inline-note"></p>
+        <div class="card">
+          <table id="usersTable">
+            <thead><tr><th>Username</th><th>Role</th><th>Actions</th></tr></thead>
+            <tbody id="usersTableBody"></tbody>
           </table>
         </div>
-        <div class="columns-loading" id="columnsLoading" style="display:none;" data-i18n="loadingColumns">Loading columns...</div>
-        <div class="columns-error" id="columnsError" style="display:none;"></div>
-      </div>
-    </div>
-
-    <div class="card card-step">
-      <span class="step-badge">5</span>
-      <h2 class="card-title"><span class="icon">&#9993;</span> <span data-i18n="subjectTitle">Email subject</span></h2>
-      <input type="text" id="subject" class="subject-input-full" placeholder="Use {{Name}}, {{Email}} for merge fields" data-i18n-placeholder="placeholderSubjectMerge" />
-    </div>
-
-    <div class="card card-step card-editor">
-      <span class="step-badge">6</span>
-      <h2 class="card-title"><span class="icon">&#128221;</span> <span data-i18n="bodyTitle">Email body</span></h2>
-      <div class="editor-top-row">
-        <div class="editor-insert-bar editor-insert-bar-above">
-          <label data-i18n="insertPlaceholder">Insert merge field:</label>
-          <select id="placeholderSelect">
-            <option value="{{Name}}">Name</option>
-            <option value="{{Email}}">Email</option>
-            <option value="{{Coures}}">Coures</option>
-            <option value="{{Certificate}}">Certificate</option>
-          </select>
-          <button type="button" class="btn btn-secondary btn-insert-placeholder" id="btnInsertPlaceholder" data-i18n="btnInsertPlaceholder">Insert</button>
-        </div>
-        <div class="editor-dir-toggle">
-          <button type="button" class="btn-dir" id="dirRtl" data-dir="rtl">RTL</button>
-          <button type="button" class="btn-dir active" id="dirLtr" data-dir="ltr">LTR</button>
-        </div>
-      </div>
-      <div id="editor-wrap"></div>
-      <div class="editor-help" id="editorHelp">
-        <div class="editor-help-summary" data-i18n="editorHelpTitle">How to use the editor tools</div>
-        <div class="editor-help-content" id="editorHelpContent"></div>
-      </div>
-    </div>
-
-    <div class="card card-step">
-      <span class="step-badge">7</span>
-      <h2 class="card-title"><span class="icon">&#128065;</span> <span data-i18n="previewTitle">Preview with sample data</span></h2>
-      <p class="hint" data-i18n="hintPreview">Subject and body after replacing placeholders with sample values.</p>
-      <div class="preview-row">
-        <label class="preview-label">Subject</label>
-        <button type="button" class="btn-icon-copy" id="btnCopySubject" title="Copy subject" aria-label="Copy subject">&#128203;</button>
-      </div>
-      <div class="preview-box subject" id="previewSubject" dir="auto">—</div>
-      <div class="preview-row">
-        <label class="preview-label">Body</label>
-        <button type="button" class="btn-icon-copy" id="btnCopyBody" title="Copy body" aria-label="Copy body">&#128203;</button>
-      </div>
-      <div class="preview-box body" id="previewBody">—</div>
-    </div>
-    </div>
-
-    <div id="tab-qr" class="tab-pane" role="tabpanel">
-    <div class="card">
-      <h2 class="card-title"><span class="icon">&#128241;</span> <span data-i18n="qrTitle">Generate QR Code</span></h2>
-      <p class="hint" data-i18n="qrHint">Enter the link or text to convert to a QR code image, then click Generate.</p>
-      <div class="qr-input-row">
-        <div class="input-wrap">
-          <label data-i18n="qrLabelUrl">Link or text</label>
-          <input type="text" id="qrInputUrl" placeholder="https://example.com" data-i18n-placeholder="qrPlaceholder" />
-        </div>
-        <button type="button" class="btn btn-primary" id="btnGenerateQr" data-i18n="btnGenerateQr">Generate QR</button>
-      </div>
-      <div class="qr-result" id="qrResult" style="display:none;">
-        <img id="qrImage" alt="QR Code" />
-        <a class="btn btn-secondary qr-download" id="qrDownload" download="qrcode.png" data-i18n="btnDownloadQr">Download image</a>
-      </div>
-      <div id="qrError" class="columns-error" style="display:none;"></div>
-    </div>
-    </div>
-
-    <div id="tab-admin" class="tab-pane" role="tabpanel">
-    <div class="card">
-      <h2 class="card-title"><span class="icon">&#128101;</span> <span data-i18n="tabAdmin">Manage users</span></h2>
-      <p class="hint" data-i18n="adminHint">Add a new user (they can log in from any device with the same username and password).</p>
-      <form id="createUserForm" class="admin-form-row">
-        <div class="input-wrap">
-          <label data-i18n="newUsername">New username</label>
-          <input type="text" id="newUsername" minlength="2" required />
-        </div>
-        <div class="input-wrap">
-          <label data-i18n="newPassword">Password</label>
-          <input type="password" id="newPassword" minlength="4" required />
-        </div>
-        <button type="submit" class="btn btn-primary" id="btnCreateUser" data-i18n="btnCreateUser">Add user</button>
-      </form>
-      <p id="createUserMsg" class="msg" style="display:none;"></p>
-      <div class="users-list">
-        <p class="subtitle" data-i18n="usersListTitle">Current users</p>
-        <table id="usersTable">
-          <thead><tr><th data-i18n="thUsername">Username</th><th data-i18n="thRole">Role</th><th data-i18n="thActions">Actions</th></tr></thead>
-          <tbody id="usersTableBody"></tbody>
-        </table>
-      </div>
-    </div>
-    </div>
-  </div>
+      </section>
+    </main>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

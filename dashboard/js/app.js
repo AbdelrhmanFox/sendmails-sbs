@@ -1,587 +1,537 @@
 (function () {
-      const AUTH_TOKEN = 'sbs_token';
-      const AUTH_ROLE = 'sbs_role';
-      const AUTH_USER = 'sbs_username';
+  const AUTH_TOKEN = 'sbs_token';
+  const AUTH_ROLE = 'sbs_role';
+  const AUTH_USER = 'sbs_username';
 
-      var authToken = localStorage.getItem(AUTH_TOKEN);
-      var authRole = localStorage.getItem(AUTH_ROLE);
-      var authUsername = localStorage.getItem(AUTH_USER);
-      var loginScreen = document.getElementById('login-screen');
-      var appEl = document.getElementById('app');
+  const authToken = localStorage.getItem(AUTH_TOKEN);
+  const authRole = localStorage.getItem(AUTH_ROLE);
+  const authUsername = localStorage.getItem(AUTH_USER);
 
-      function showApp() {
-        if (loginScreen) loginScreen.classList.remove('visible');
-        if (appEl) { appEl.classList.remove('hidden'); appEl.style.display = 'block'; }
-        var userEl = document.getElementById('loggedInUser');
-        if (userEl && authUsername) userEl.textContent = authUsername;
-        var adminTab = document.getElementById('tabBtnAdmin');
-        if (authRole === 'admin' && adminTab) adminTab.style.display = '';
-      }
-      function showLogin() {
-        if (loginScreen) loginScreen.classList.add('visible');
-        if (appEl) { appEl.classList.add('hidden'); appEl.style.display = 'none'; }
-      }
+  const loginScreen = document.getElementById('login-screen');
+  const appEl = document.getElementById('app');
+  const loginError = document.getElementById('loginError');
 
-      if (!authToken || !authRole) {
-        showLogin();
-      } else {
-        showApp();
-      }
+  const loggedInUserEl = document.getElementById('loggedInUser');
+  if (loggedInUserEl && authUsername) loggedInUserEl.textContent = `${authUsername} (${authRole || 'user'})`;
 
-      const i18n = {
-        en: {
-          title: 'SBS Sendmails',
-          subtitle: 'Choose the sheet, set subject and body, then trigger sending from one place.',
-          settings: 'Settings',
-          labelWebhook: 'n8n Webhook URL',
-          placeholderWebhook: 'https://your-n8n.com/webhook/sendmails-sbs',
-          hintWebhook: 'One webhook: «Load columns» runs preview, «Start sending» runs the send flow.',
-          chooseAction: 'Choose action',
-          hintAction: 'Choose what the webhook should do now: preview sheet columns only, or start sending emails.',
-          btnLoadColumns: 'Load sheet columns',
-          descLoadColumns: 'Shows column names and a sample row for use in Subject and Body',
-          btnSend: 'Start sending emails',
-          descSend: 'Starts sending emails from the selected sheet (one email every 5 minutes)',
-          sheetTitle: 'Sheet (data source)',
-          labelSheet: 'Google Sheet URL',
-          placeholderSheet: 'https://docs.google.com/spreadsheets/d/...',
-          hintSheet: 'Same sheet is used for reading and updating the «Email Sent» column after sending.',
-          columnsSubtitle: 'Sheet columns (use in Subject and Body as {{column_name}})',
-          sampleRowSubtitle: 'Sample row (first data row)',
-          loadingColumns: 'Loading columns...',
-          chipTitle: 'Use in Subject or Body',
-          subjectTitle: 'Email subject',
-          labelSubject: 'Use merge like {{Name}}, {{Email}}',
-          placeholderSubject: 'e.g. Ramadan Kareem – Webinar invite, dear {{Name}}',
-          placeholderSubjectMerge: 'Use {{Name}}, {{Email}} for merge fields',
-          bodyTitle: 'Email body',
-          labelBody: 'Write content with formatting. Use {{Name}}, {{Email}} for merge.',
-          placeholderBody: 'Write your email body here...',
-          previewTitle: 'Preview with sample data',
-          hintPreview: 'Subject and body after replacing placeholders with sample values.',
-          errWebhookRequired: 'Enter the Webhook URL first.',
-          errWebhookInvalid: 'Invalid webhook URL. It must start with http or https and contain "webhook".',
-          errSheetRequired: 'Enter the sheet URL first.',
-          errSheetInvalid: 'Invalid Google Sheet URL. Example: https://docs.google.com/spreadsheets/d/...',
-          errSubjectRequired: 'Enter the email subject.',
-          errNoColumns: 'No columns returned. Check the sheet and workflow.',
-          errServer: 'Server response {{status}}: {{detail}}',
-          errNetwork: 'Could not reach the server. If opening from a local file (file://), try running from a local server (npx serve) or check webhook URL and CORS.',
-          errGeneric: 'Connection error: {{msg}}',
-          err401: 'Unauthorized (401). Check n8n and webhook settings.',
-          err403: 'Forbidden (403). Check webhook permissions.',
-          err404: 'Webhook not found (404). Make sure the workflow is active and the URL is correct.',
-          err500: 'Server error (500). Check the workflow execution in n8n (Executions).',
-          loginTitle: 'Login',
-          loginUsername: 'Username',
-          loginPassword: 'Password',
-          btnLogin: 'Log in',
-          btnLogout: 'Log out',
-          loginErr: 'Invalid username or password.',
-          tabSendmails: 'Send emails',
-          tabQr: 'QR Code',
-          qrTitle: 'Generate QR Code',
-          qrHint: 'Enter the link or text to convert to a QR code image, then click Generate.',
-          qrLabelUrl: 'Link or text',
-          qrPlaceholder: 'https://example.com or any text',
-          btnGenerateQr: 'Generate QR',
-          btnDownloadQr: 'Download image',
-          qrErrEmpty: 'Enter a link or text first.',
-          tabAdmin: 'Manage users',
-          adminHint: 'Add a new user (they can log in from any device with the same username and password).',
-          newUsername: 'New username',
-          newPassword: 'Password',
-          btnCreateUser: 'Add user',
-          usersListTitle: 'Current users',
-          thUsername: 'Username',
-          thRole: 'Role',
-          thActions: 'Actions',
-          roleAdmin: 'Admin',
-          roleUser: 'User',
-          btnResetPassword: 'Reset password',
-          btnDeleteUser: 'Delete',
-          confirmDelete: 'Delete this user?',
-          passwordResetSuccess: 'Password updated.',
-          passwordResetPrompt: 'New password for',
-          errTimeout: 'Connection timed out. Ensure n8n is running and the URL is correct.',
-          successSend: 'Sending started.',
-          statusTitle: 'Sending status',
-          statusHint: 'See how many emails were sent and where sending stopped. If sending stopped, click «Start sending» again to continue.',
-          btnCheckStatus: 'Check status',
-          btnSave: 'Save',
-          savedWebhook: 'Saved.',
-          statusSent: 'Sent',
-          statusPending: 'Pending',
-          statusLastSentRow: 'Last sent row',
-          statusNextRow: 'Next row to send',
-          statusStoppedHint: 'If sending stopped, click «Start sending» above to continue from the next row.',
-          statusLoading: 'Loading…',
-          statusErrorGeneric: 'Could not load status.',
-          statusLastStart: 'Last sending started:',
-          statusNextRunLine: 'Next run will send from row {{row}} ({{pending}} left).',
-          statusAllDone: 'All rows with email have been sent.',
-          statusAutoUpdate: 'Auto-updating every 1 min',
-          statusLastUpdated: 'Last updated:',
-          statusStopAutoUpdate: 'Stop auto-update',
-          insertPlaceholder: 'Insert merge field:',
-          btnInsertPlaceholder: 'Insert',
-          editorHelpTitle: 'How to use the editor tools',
-          editorHelpIntro: 'Toolbar above the typing area:',
-          editorHelpBold: 'B — Bold text.',
-          editorHelpItalic: 'I — Italic text.',
-          editorHelpUnderline: 'U — Underline.',
-          editorHelpStrike: 'S — Strikethrough.',
-          editorHelpBlockquote: 'Quote — Show a sentence as a block quote.',
-          editorHelpCode: 'Code — Monospace for code or commands.',
-          editorHelpH1: 'Heading 1 / 2 / 3 — Different heading levels.',
-          editorHelpList: 'Numbered or bullet list.',
-          editorHelpIndent: 'Decrease / increase line indent.',
-          editorHelpAlign: 'Align text: right, center, left.',
-          editorHelpLink: 'Link — Insert a URL on selected text.',
-          editorHelpPlaceholder: '«Insert merge field» — Insert a sheet column (e.g. {{Name}}) to merge in each email.',
-          writingDirection: 'Writing direction:',
-          dirRtl: 'Right to left (RTL)',
-          dirLtr: 'Left to right (LTR)',
-        }
+  function showLogin() {
+    loginScreen.classList.add('visible');
+    appEl.classList.add('hidden');
+  }
+
+  function showApp() {
+    loginScreen.classList.remove('visible');
+    appEl.classList.remove('hidden');
+  }
+
+  function getAuthHeaders() {
+    const tok = localStorage.getItem(AUTH_TOKEN);
+    return tok ? { Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
+  }
+
+  async function jsonFetch(url, options = {}) {
+    const res = await fetch(url, options);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+    return data;
+  }
+
+  async function bootAuth() {
+    if (!authToken || !authRole) {
+      showLogin();
+      return;
+    }
+    showApp();
+    applyRoleVisibility();
+    initShell();
+    initCampaigns();
+    initOperations();
+    initTraining();
+    initAdmin();
+  }
+
+  document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const username = String(document.getElementById('loginUsername').value || '').trim();
+    const password = String(document.getElementById('loginPassword').value || '');
+    loginError.textContent = '';
+    if (!username || !password) return;
+    try {
+      const data = await jsonFetch('/.netlify/functions/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+      localStorage.setItem(AUTH_TOKEN, data.token);
+      localStorage.setItem(AUTH_ROLE, data.role);
+      localStorage.setItem(AUTH_USER, data.username || username);
+      window.location.reload();
+    } catch (err) {
+      loginError.textContent = err.message || 'Login failed';
+    }
+  });
+
+  document.getElementById('btnLogout')?.addEventListener('click', () => {
+    localStorage.removeItem(AUTH_TOKEN);
+    localStorage.removeItem(AUTH_ROLE);
+    localStorage.removeItem(AUTH_USER);
+    localStorage.removeItem('sbs_sendmails_webhook');
+    window.location.reload();
+  });
+
+  function applyRoleVisibility() {
+    const role = localStorage.getItem(AUTH_ROLE) || 'user';
+    const adminItem = document.getElementById('menuAdmin');
+    const campaignsItem = document.getElementById('menuCampaigns');
+    if (adminItem) adminItem.style.display = role === 'admin' ? '' : 'none';
+    if (campaignsItem) campaignsItem.style.display = ['admin', 'staff', 'user'].includes(role) ? '' : 'none';
+  }
+
+  function initShell() {
+    const buttons = Array.from(document.querySelectorAll('.menu-item'));
+    buttons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const view = btn.getAttribute('data-view');
+        buttons.forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.view').forEach((v) => v.classList.remove('active'));
+        document.getElementById(`view-${view}`)?.classList.add('active');
+        if (view === 'admin') loadUsers();
+      });
+    });
+  }
+
+  // -------------------------
+  // Operations Data (Enrollments)
+  // -------------------------
+  const enrollments = [];
+
+  function renderEnrollmentRows() {
+    const tbody = document.getElementById('enrollmentsBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    enrollments.forEach((row) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${row.enrollmentId || ''}</td>
+        <td>${row.traineeId || ''}</td>
+        <td>${row.batchId || ''}</td>
+        <td>${row.enrollmentStatus || ''}</td>
+        <td>${row.paymentStatus || ''}</td>
+        <td>${row.amountPaid ?? ''}</td>
+        <td>${row.enrollDate || ''}</td>
+        <td>
+          <button class="btn btn-secondary btn-edit" data-id="${row.id}">Edit</button>
+          <button class="btn btn-secondary btn-delete" data-id="${row.id}">Delete</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+    tbody.querySelectorAll('.btn-edit').forEach((btn) => {
+      btn.addEventListener('click', () => fillEnrollmentForm(btn.getAttribute('data-id')));
+    });
+    tbody.querySelectorAll('.btn-delete').forEach((btn) => {
+      btn.addEventListener('click', () => removeEnrollment(btn.getAttribute('data-id')));
+    });
+  }
+
+  function fillEnrollmentForm(id) {
+    const row = enrollments.find((r) => r.id === id);
+    if (!row) return;
+    document.getElementById('enrollIdDb').value = row.id || '';
+    document.getElementById('enrollmentId').value = row.enrollmentId || '';
+    document.getElementById('traineeId').value = row.traineeId || '';
+    document.getElementById('batchId').value = row.batchId || '';
+    document.getElementById('enrollmentStatus').value = row.enrollmentStatus || 'Registered';
+    document.getElementById('paymentStatus').value = row.paymentStatus || 'Pending';
+    document.getElementById('amountPaid').value = row.amountPaid ?? '';
+    document.getElementById('certificateIssued').value = row.certificateIssued == null ? '' : (row.certificateIssued ? 'yes' : 'no');
+    document.getElementById('enrollDate').value = row.enrollDate || '';
+    document.getElementById('notes').value = row.notes || '';
+  }
+
+  async function loadEnrollments() {
+    const msg = document.getElementById('enrollmentMsg');
+    try {
+      const data = await jsonFetch('/.netlify/functions/enrollments', { headers: getAuthHeaders() });
+      enrollments.length = 0;
+      (data.items || []).forEach((i) => enrollments.push(i));
+      renderEnrollmentRows();
+      if (msg) msg.textContent = `Loaded ${enrollments.length} enrollment record(s).`;
+    } catch (err) {
+      if (msg) msg.textContent = err.message;
+    }
+  }
+
+  async function removeEnrollment(id) {
+    if (!id || !confirm('Delete this enrollment row?')) return;
+    const msg = document.getElementById('enrollmentMsg');
+    try {
+      await jsonFetch(`/.netlify/functions/enrollments?id=${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      });
+      await loadEnrollments();
+      if (msg) msg.textContent = 'Enrollment deleted.';
+    } catch (err) {
+      if (msg) msg.textContent = err.message;
+    }
+  }
+
+  function initOperations() {
+    document.getElementById('btnRefreshEnrollments')?.addEventListener('click', loadEnrollments);
+    document.getElementById('btnResetEnrollment')?.addEventListener('click', () => {
+      document.getElementById('enrollmentForm')?.reset();
+      document.getElementById('enrollIdDb').value = '';
+    });
+    document.getElementById('enrollmentForm')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const msg = document.getElementById('enrollmentMsg');
+      const payload = {
+        id: document.getElementById('enrollIdDb').value,
+        enrollmentId: document.getElementById('enrollmentId').value,
+        traineeId: document.getElementById('traineeId').value,
+        batchId: document.getElementById('batchId').value,
+        enrollmentStatus: document.getElementById('enrollmentStatus').value,
+        paymentStatus: document.getElementById('paymentStatus').value,
+        amountPaid: document.getElementById('amountPaid').value,
+        certificateIssued: document.getElementById('certificateIssued').value === '' ? null : document.getElementById('certificateIssued').value === 'yes',
+        enrollDate: document.getElementById('enrollDate').value,
+        notes: document.getElementById('notes').value,
       };
-
-      let lang = 'en';
-
-      function t(key) {
-        const str = i18n.en[key];
-        return str != null ? str : key;
-      }
-      function tReplace(key, vars) {
-        let str = t(key);
-        if (vars) for (const [k, v] of Object.entries(vars)) str = str.replace(new RegExp('{{' + k + '}}', 'g'), v);
-        return str;
-      }
-
-      function applyLang() {
-        document.documentElement.lang = 'en';
-        document.body.classList.add('lang-en');
-        document.body.setAttribute('dir', 'ltr');
-        document.querySelectorAll('[data-i18n]').forEach(function (el) {
-          const key = el.getAttribute('data-i18n');
-          if (key && i18n.en[key]) el.textContent = i18n.en[key];
-        });
-        document.querySelectorAll('[data-i18n-placeholder]').forEach(function (el) {
-          const key = el.getAttribute('data-i18n-placeholder');
-          if (key && i18n.en[key]) el.placeholder = i18n.en[key];
-        });
-        if (window.quillEditor && i18n.en.placeholderBody) quillEditor.root.setAttribute('data-placeholder', i18n.en.placeholderBody);
-        var helpEl = document.getElementById('editorHelpContent');
-        if (helpEl) {
-          var intro = i18n.en.editorHelpIntro;
-          var items = [['editorHelpBold','editorHelpItalic','editorHelpUnderline','editorHelpStrike'],['editorHelpBlockquote','editorHelpCode'],['editorHelpH1','editorHelpList','editorHelpIndent','editorHelpAlign'],['editorHelpLink'],['editorHelpPlaceholder']];
-          var flat = [];
-          items.forEach(function(row) { row.forEach(function(k) { if (i18n.en[k]) flat.push(i18n.en[k]); }); });
-          helpEl.innerHTML = '<p style="margin:0 0 10px 0">' + intro + '</p><ul style="margin:0; padding-left:1.4em">' + flat.map(function(txt){ return '<li>' + txt + '</li>'; }).join('') + '</ul>';
-        }
-        var lbl = document.querySelector('.editor-insert-bar label');
-        if (lbl && i18n.en.insertPlaceholder) lbl.textContent = i18n.en.insertPlaceholder;
-        var btnIns = document.getElementById('btnInsertPlaceholder');
-        if (btnIns && i18n.en.btnInsertPlaceholder) btnIns.textContent = i18n.en.btnInsertPlaceholder;
-        var sum = document.querySelector('.editor-help-summary');
-        if (sum && i18n.en.editorHelpTitle) sum.textContent = i18n.en.editorHelpTitle;
-        var dirRtlBtn = document.getElementById('dirRtl');
-        if (dirRtlBtn) dirRtlBtn.textContent = 'RTL';
-        var dirLtrBtn = document.getElementById('dirLtr');
-        if (dirLtrBtn) dirLtrBtn.textContent = 'LTR';
-      }
-
-      var loginForm = document.getElementById('loginForm');
-      var loginError = document.getElementById('loginError');
-      var btnLogin = document.getElementById('btnLogin');
-      if (loginForm) {
-        loginForm.addEventListener('submit', async function (e) {
-          e.preventDefault();
-          var u = (document.getElementById('loginUsername').value || '').trim();
-          var p = document.getElementById('loginPassword').value;
-          if (loginError) { loginError.classList.remove('visible'); loginError.textContent = ''; }
-          if (!u || !p) return;
-          if (btnLogin) btnLogin.disabled = true;
-          try {
-            var res = await fetch('/.netlify/functions/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: u, password: p }) });
-            var data = {};
-            try { data = await res.json(); } catch (_) { data = { error: 'Invalid response from server' }; }
-            if (res.ok && data.token && data.role) {
-              localStorage.setItem(AUTH_TOKEN, data.token);
-              localStorage.setItem(AUTH_ROLE, data.role);
-              localStorage.setItem(AUTH_USER, data.username || u);
-              window.location.reload();
-              return;
-            }
-            var errMsg = data.error || t('loginErr');
-            if (res.status === 500 && errMsg === 'Server config missing') errMsg = 'Server config missing. Set SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY and JWT_SECRET (or SUPABASE_JWT_SECRET) in Netlify Environment variables.';
-            if (res.status === 401 && errMsg === 'Invalid username or password') errMsg = 'Invalid username or password. If this is the first time, create the admin user: run seed (see SUPABASE_SETUP.md) or call /.netlify/functions/seed?key=YOUR_SEED_SECRET';
-            if (loginError) { loginError.textContent = errMsg; loginError.classList.add('visible'); }
-          } catch (err) {
-            if (loginError) { loginError.textContent = (err.message || t('loginErr')) + ' (check console)'; loginError.classList.add('visible'); }
-          }
-          if (btnLogin) btnLogin.disabled = false;
-        });
-      }
-
-      var btnLogout = document.getElementById('btnLogout');
-      if (btnLogout) btnLogout.addEventListener('click', function () { localStorage.removeItem(AUTH_TOKEN); localStorage.removeItem(AUTH_ROLE); localStorage.removeItem(AUTH_USER); window.location.reload(); });
-
-      function getAuthHeaders() { var tok = localStorage.getItem(AUTH_TOKEN); return tok ? { 'Authorization': 'Bearer ' + tok, 'Content-Type': 'application/json' } : {}; }
-
-      const webhookUrlEl = document.getElementById('webhookUrl');
-      const sheetUrlEl = document.getElementById('sheetUrl');
-      const subjectEl = document.getElementById('subject');
-      const previewSubject = document.getElementById('previewSubject');
-      const previewBody = document.getElementById('previewBody');
-      const btnSend = document.getElementById('btnSend');
-      const btnLoadColumns = document.getElementById('btnLoadColumns');
-      const messageEl = document.getElementById('message');
-      const columnsSection = document.getElementById('columnsSection');
-      const columnsChips = document.getElementById('columnsChips');
-      const sampleTableHead = document.getElementById('sampleTableHead');
-      const sampleTableBody = document.getElementById('sampleTableBody');
-      const columnsLoading = document.getElementById('columnsLoading');
-      const columnsError = document.getElementById('columnsError');
-
       try {
-        var saved = localStorage.getItem('sbs_sendmails_webhook');
-        if (saved && webhookUrlEl) webhookUrlEl.value = saved;
-      } catch (_) {}
-      var btnSaveWebhook = document.getElementById('btnSaveWebhook');
-      if (btnSaveWebhook && webhookUrlEl) {
-        btnSaveWebhook.addEventListener('click', function() {
-          try {
-            localStorage.setItem('sbs_sendmails_webhook', webhookUrlEl.value || '');
-            if (messageEl) messageEl.innerHTML = '<span class="msg success">' + (t('savedWebhook') || 'Saved.') + '</span>';
-          } catch (_) {}
+        await jsonFetch('/.netlify/functions/enrollments', {
+          method: payload.id ? 'PUT' : 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify(payload),
         });
+        document.getElementById('enrollmentForm')?.reset();
+        document.getElementById('enrollIdDb').value = '';
+        await loadEnrollments();
+        if (msg) msg.textContent = 'Enrollment saved.';
+      } catch (err) {
+        if (msg) msg.textContent = err.message;
       }
+    });
+    loadEnrollments();
+  }
 
-      var toolbarOptions = [
-        ['bold', 'italic', 'underline', 'strike'],
-        ['blockquote', 'code-block'],
-        [{ 'header': [1, 2, 3, false] }],
-        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-        [{ 'indent': '-1' }, { 'indent': '+1' }],
-        ['link']
-      ];
-      var quill;
+  // -------------------------
+  // Campaigns (n8n)
+  // -------------------------
+  let quill;
+  let campaignSample = {};
+
+  function renderCampaignPreview() {
+    const subject = String(document.getElementById('subject')?.value || '');
+    const html = quill ? quill.root.innerHTML : '';
+    const replace = (text) => text.replace(/\{\{([^}]+)\}\}/g, (_, k) => campaignSample[k.trim()] ?? `{{${k}}}`);
+    document.getElementById('previewSubject').textContent = replace(subject);
+    document.getElementById('previewBody').innerHTML = replace(html);
+  }
+
+  function showCampaignMessage(text, isError = false) {
+    const el = document.getElementById('campaignMsg');
+    if (!el) return;
+    el.textContent = text || '';
+    el.style.color = isError ? '#ff8f8f' : '';
+  }
+
+  async function loadColumns() {
+    const webhook = String(document.getElementById('webhookUrl').value || '').trim();
+    const sheetUrl = String(document.getElementById('sheetUrl').value || '').trim();
+    if (!webhook || !sheetUrl) return showCampaignMessage('Webhook URL and sheet URL are required.', true);
+    try {
+      const data = await jsonFetch(webhook, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'preview', sheetUrl }),
+      });
+      const chips = document.getElementById('columnsChips');
+      const head = document.getElementById('sampleTableHead');
+      const body = document.getElementById('sampleTableBody');
+      chips.innerHTML = '';
+      (data.columns || []).forEach((c) => {
+        const chip = document.createElement('span');
+        chip.className = 'chip';
+        chip.textContent = c;
+        chips.appendChild(chip);
+      });
+      head.innerHTML = (data.columns || []).map((c) => `<th>${c}</th>`).join('');
+      body.innerHTML = (data.columns || []).map((c) => `<td>${data.sampleRow?.[c] ?? ''}</td>`).join('');
+      campaignSample = data.sampleRow || {};
+      const select = document.getElementById('placeholderSelect');
+      select.innerHTML = (data.columns || []).map((c) => `<option value="{{${c}}}">{{${c}}}</option>`).join('');
+      document.getElementById('btnSend').disabled = !(data.columns || []).length;
+      renderCampaignPreview();
+      showCampaignMessage('Columns loaded.');
+    } catch (err) {
+      showCampaignMessage(err.message, true);
+    }
+  }
+
+  async function startCampaign() {
+    const webhook = String(document.getElementById('webhookUrl').value || '').trim();
+    const sheetUrl = String(document.getElementById('sheetUrl').value || '').trim();
+    const subject = String(document.getElementById('subject').value || '').trim();
+    if (!webhook || !sheetUrl || !subject) return showCampaignMessage('Webhook URL, sheet URL, and subject are required.', true);
+    try {
+      await jsonFetch(webhook, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'send', sheetUrl, subject, bodyHtml: quill?.root?.innerHTML || '' }),
+      });
+      showCampaignMessage('Sending started.');
+      refreshCampaignStatus();
+    } catch (err) {
+      showCampaignMessage(err.message, true);
+    }
+  }
+
+  async function refreshCampaignStatus() {
+    const webhook = String(document.getElementById('webhookUrl').value || '').trim();
+    const sheetUrl = String(document.getElementById('sheetUrl').value || '').trim();
+    if (!webhook || !sheetUrl) return;
+    try {
+      const data = await jsonFetch(webhook, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'status', sheetUrl }),
+      });
+      const statusGrid = document.getElementById('statusGrid');
+      statusGrid.innerHTML = `
+        <div class="stat"><span class="k">Sent</span><span class="v">${data.sent ?? '-'}</span></div>
+        <div class="stat"><span class="k">Pending</span><span class="v">${data.pending ?? '-'}</span></div>
+        <div class="stat"><span class="k">Last Sent Row</span><span class="v">${data.lastSentRow ?? '-'}</span></div>
+        <div class="stat"><span class="k">Next Row</span><span class="v">${data.nextRowToSend ?? '-'}</span></div>
+      `;
+      document.getElementById('statusError').textContent = '';
+    } catch (err) {
+      document.getElementById('statusError').textContent = err.message;
+    }
+  }
+
+  function initCampaigns() {
+    quill = new Quill('#editor-wrap', { theme: 'snow', placeholder: 'Write your email body...' });
+    const savedWebhook = localStorage.getItem('sbs_sendmails_webhook');
+    if (savedWebhook) document.getElementById('webhookUrl').value = savedWebhook;
+    document.getElementById('btnSaveWebhook')?.addEventListener('click', () => {
+      localStorage.setItem('sbs_sendmails_webhook', document.getElementById('webhookUrl').value || '');
+      showCampaignMessage('Webhook URL saved.');
+    });
+    document.getElementById('btnLoadColumns')?.addEventListener('click', loadColumns);
+    document.getElementById('btnSend')?.addEventListener('click', startCampaign);
+    document.getElementById('btnCheckStatus')?.addEventListener('click', refreshCampaignStatus);
+    document.getElementById('subject')?.addEventListener('input', renderCampaignPreview);
+    quill.on('text-change', renderCampaignPreview);
+    document.getElementById('btnInsertPlaceholder')?.addEventListener('click', () => {
+      const value = document.getElementById('placeholderSelect').value;
+      const range = quill.getSelection(true);
+      quill.insertText(range?.index || 0, value);
+    });
+    renderCampaignPreview();
+  }
+
+  // -------------------------
+  // Training Groups
+  // -------------------------
+  let trainingState = {
+    groupId: null,
+    participantId: null,
+    senderName: null,
+    channel: null,
+    supabase: null,
+  };
+
+  function appendChatMessage(m) {
+    const box = document.getElementById('chatMessages');
+    const line = document.createElement('div');
+    line.className = 'chat-line';
+    const ts = new Date(m.created_at || Date.now()).toLocaleTimeString();
+    line.innerHTML = `<div class="meta">${m.sender_name || 'User'} • ${ts}</div><div>${m.body || ''}</div>`;
+    box.appendChild(line);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  async function loadRecentMessages() {
+    if (!trainingState.groupId) return;
+    const data = await jsonFetch(`/.netlify/functions/training-messages?groupId=${encodeURIComponent(trainingState.groupId)}`);
+    const box = document.getElementById('chatMessages');
+    box.innerHTML = '';
+    (data.messages || []).forEach(appendChatMessage);
+  }
+
+  async function initRealtime() {
+    try {
+      const cfg = await jsonFetch('/.netlify/functions/public-config');
+      if (!cfg.realtimeEnabled || !window.supabase) return;
+      trainingState.supabase = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+      trainingState.channel = trainingState.supabase
+        .channel(`group-${trainingState.groupId}`)
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'training_messages', filter: `group_id=eq.${trainingState.groupId}` }, (payload) => {
+          appendChatMessage(payload.new);
+        })
+        .subscribe();
+    } catch (_) {
+      // keep polling fallback only
+    }
+  }
+
+  async function joinByTokenFlow(token) {
+    const panel = document.getElementById('joinPanel');
+    panel.classList.remove('hidden');
+    const joinData = await jsonFetch(`/.netlify/functions/training-join?token=${encodeURIComponent(token)}`);
+    document.getElementById('joinHeading').textContent = `${joinData.sessionTitle} — Group ${joinData.groupNumber}`;
+    document.getElementById('joinForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const displayName = String(document.getElementById('joinName').value || '').trim();
+      if (!displayName) return;
+      const joined = await jsonFetch(`/.netlify/functions/training-join?token=${encodeURIComponent(token)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ displayName }),
+      });
+      trainingState.groupId = joined.groupId;
+      trainingState.participantId = joined.participant.id;
+      trainingState.senderName = joined.participant.display_name;
+      panel.classList.add('hidden');
+      document.getElementById('chatPanel').classList.remove('hidden');
+      await loadRecentMessages();
+      await initRealtime();
+      setInterval(loadRecentMessages, 10000);
+    };
+  }
+
+  async function initTraining() {
+    const query = new URLSearchParams(window.location.search);
+    const token = query.get('group');
+    if (token) {
+      document.querySelectorAll('.view').forEach((v) => v.classList.remove('active'));
+      document.getElementById('view-training').classList.add('active');
+      document.querySelectorAll('.menu-item').forEach((m) => m.classList.remove('active'));
+      await joinByTokenFlow(token);
+    }
+
+    document.getElementById('trainingSessionForm')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const title = String(document.getElementById('trainingTitle').value || '').trim();
+      const groupsCount = Number(document.getElementById('groupsCount').value || 4);
+      if (!title) return;
+      const msg = document.getElementById('trainingMsg');
+      const links = document.getElementById('trainingLinks');
       try {
-        quill = new Quill('#editor-wrap', {
-          theme: 'snow',
-          placeholder: t('placeholderBody'),
-          modules: { toolbar: toolbarOptions }
+        const data = await jsonFetch('/.netlify/functions/training-sessions', {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ title, groupsCount }),
         });
-      } catch (e) {
-        quill = new Quill('#editor-wrap', { theme: 'snow', placeholder: t('placeholderBody') });
+        const base = `${window.location.origin}${window.location.pathname}`;
+        links.innerHTML = `<h4>Session Links</h4>${(data.groups || []).map((g) => (
+          `<p>Group ${g.group_number}: <a href="${base}?group=${g.join_token}" target="_blank" rel="noopener">${base}?group=${g.join_token}</a></p>`
+        )).join('')}`;
+        msg.textContent = 'Session created.';
+      } catch (err) {
+        msg.textContent = err.message;
       }
-      window.quillEditor = quill;
+    });
 
-      var editorDirection = localStorage.getItem('sbs_sendmails_editor_dir') || 'ltr';
-      function setEditorDirection(dir) {
-        editorDirection = dir;
-        localStorage.setItem('sbs_sendmails_editor_dir', dir);
-        if (quill && quill.root) quill.root.setAttribute('dir', dir);
-        var r = document.getElementById('dirRtl');
-        var l = document.getElementById('dirLtr');
-        if (r) r.classList.toggle('active', dir === 'rtl');
-        if (l) l.classList.toggle('active', dir === 'ltr');
-      }
-
+    document.getElementById('chatForm')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const input = document.getElementById('chatInput');
+      const body = String(input.value || '').trim();
+      if (!body || !trainingState.groupId) return;
       try {
-        (function bindDirToggle() {
-          document.querySelectorAll('.editor-dir-toggle .btn-dir, .ql-toolbar .dir-btn').forEach(function(btn) {
-            btn.addEventListener('click', function() { setEditorDirection(this.getAttribute('data-dir')); });
+        const sent = await jsonFetch('/.netlify/functions/training-messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            groupId: trainingState.groupId,
+            participantId: trainingState.participantId,
+            senderName: trainingState.senderName || authUsername || 'User',
+            body,
+          }),
+        });
+        if (!trainingState.channel) appendChatMessage(sent.message);
+        input.value = '';
+      } catch (_) {
+        // no-op
+      }
+    });
+  }
+
+  // -------------------------
+  // Admin
+  // -------------------------
+  async function loadUsers() {
+    const tbody = document.getElementById('usersTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    try {
+      const data = await jsonFetch('/.netlify/functions/list-users', { headers: getAuthHeaders() });
+      const users = data.users || [];
+      users.forEach((u) => {
+        const tr = document.createElement('tr');
+        const canDelete = u.role !== 'admin' && u.username !== authUsername;
+        tr.innerHTML = `
+          <td>${u.username}</td>
+          <td>${u.role}</td>
+          <td>
+            <button class="btn btn-secondary btn-reset" data-user="${u.username}">Reset password</button>
+            ${canDelete ? `<button class="btn btn-secondary btn-del" data-user="${u.username}">Delete</button>` : ''}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+      tbody.querySelectorAll('.btn-reset').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const username = btn.getAttribute('data-user');
+          const newPassword = prompt(`New password for ${username}:`);
+          if (!newPassword || newPassword.length < 4) return;
+          await jsonFetch('/.netlify/functions/reset-password', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ username, newPassword }),
           });
-        })();
-      } catch (e) {}
-
-      document.querySelectorAll('.tab-btn').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-          var tab = this.getAttribute('data-tab');
-          document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
-          document.querySelectorAll('.tab-pane').forEach(function(p) { p.classList.remove('active'); });
-          this.classList.add('active');
-          var pane = document.getElementById(tab);
-          if (pane) pane.classList.add('active');
-          if (tab === 'tab-admin') loadUsersList();
+          document.getElementById('createUserMsg').textContent = 'Password updated.';
         });
       });
-
-      var createUserForm = document.getElementById('createUserForm');
-      var createUserMsg = document.getElementById('createUserMsg');
-      if (createUserForm) {
-        createUserForm.addEventListener('submit', async function(e) {
-          e.preventDefault();
-          var un = (document.getElementById('newUsername').value || '').trim();
-          var pw = document.getElementById('newPassword').value;
-          if (createUserMsg) { createUserMsg.style.display = 'none'; createUserMsg.textContent = ''; }
-          if (!un || !pw) return;
-          try {
-            var r = await fetch('/.netlify/functions/create-user', { method: 'POST', headers: getAuthHeaders(), body: JSON.stringify({ username: un, password: pw }) });
-            var d = await r.json().catch(function() { return {}; });
-            if (r.ok && createUserMsg) { createUserMsg.textContent = 'User added.'; createUserMsg.className = 'msg success'; createUserMsg.style.display = 'block'; createUserForm.reset(); loadUsersList(); }
-            else if (createUserMsg) { createUserMsg.textContent = d.error || 'Error'; createUserMsg.className = 'msg error'; createUserMsg.style.display = 'block'; }
-          } catch (err) { if (createUserMsg) { createUserMsg.textContent = err.message; createUserMsg.className = 'msg error'; createUserMsg.style.display = 'block'; } }
-        });
-      }
-      function loadUsersList() {
-        var tbody = document.getElementById('usersTableBody');
-        if (!tbody) return;
-        tbody.innerHTML = '';
-        var currentUser = localStorage.getItem(AUTH_USER) || '';
-        fetch('/.netlify/functions/list-users', { headers: getAuthHeaders() }).then(function(r) { return r.json(); }).then(function(d) {
-          var list = d.users || [];
-          list.forEach(function(u) {
-            var tr = document.createElement('tr');
-            var username = u.username || '';
-            var roleLabel = u.role === 'admin' ? t('roleAdmin') : t('roleUser');
-            var isAdmin = u.role === 'admin';
-            var isSelf = username === currentUser;
-            var canDelete = !isAdmin && !isSelf;
-            var actions = '';
-            actions += '<button type="button" class="btn btn-secondary btn-sm btn-reset-pw" data-username="' + username.replace(/"/g, '&quot;') + '">' + t('btnResetPassword') + '</button> ';
-            if (canDelete) actions += '<button type="button" class="btn btn-secondary btn-sm btn-delete-user" data-username="' + username.replace(/"/g, '&quot;') + '">' + t('btnDeleteUser') + '</button>';
-            else actions += '<span class="text-secondary">—</span>';
-            tr.innerHTML = '<td>' + username + '</td><td>' + roleLabel + '</td><td class="admin-actions">' + actions + '</td>';
-            tbody.appendChild(tr);
+      tbody.querySelectorAll('.btn-del').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const username = btn.getAttribute('data-user');
+          if (!confirm(`Delete ${username}?`)) return;
+          await jsonFetch('/.netlify/functions/delete-user', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ username }),
           });
-          tbody.querySelectorAll('.btn-reset-pw').forEach(function(btn) {
-            btn.addEventListener('click', function() {
-              var un = this.getAttribute('data-username');
-              var newPass = prompt(t('passwordResetPrompt') + ' ' + un + ':');
-              if (!newPass || newPass.length < 4) return;
-              fetch('/.netlify/functions/reset-password', { method: 'POST', headers: getAuthHeaders(), body: JSON.stringify({ username: un, newPassword: newPass }) })
-                .then(function(r) { return r.json(); })
-                .then(function(data) {
-                  if (data.ok) { if (createUserMsg) { createUserMsg.textContent = t('passwordResetSuccess'); createUserMsg.className = 'msg success'; createUserMsg.style.display = 'block'; } loadUsersList(); }
-                  else { if (createUserMsg) { createUserMsg.textContent = data.error || 'Error'; createUserMsg.className = 'msg error'; createUserMsg.style.display = 'block'; } }
-                })
-                .catch(function() {});
-            });
-          });
-          tbody.querySelectorAll('.btn-delete-user').forEach(function(btn) {
-            btn.addEventListener('click', function() {
-              var un = this.getAttribute('data-username');
-              if (!confirm(t('confirmDelete'))) return;
-              fetch('/.netlify/functions/delete-user', { method: 'POST', headers: getAuthHeaders(), body: JSON.stringify({ username: un }) })
-                .then(function(r) { return r.json(); })
-                .then(function(data) {
-                  if (data.ok) loadUsersList();
-                  else if (createUserMsg) { createUserMsg.textContent = data.error || 'Error'; createUserMsg.className = 'msg error'; createUserMsg.style.display = 'block'; }
-                })
-                .catch(function() {});
-            });
-          });
-        }).catch(function() {});
-      }
-
-      function updatePreview() {
-        var subj = (subjectEl && subjectEl.value) || '';
-        var html = (quill && quill.root) ? quill.root.innerHTML : '';
-        var sample = { Name: 'Sample', Email: 'sample@example.com' };
-        function repl(_, k) { return sample[k] != null ? sample[k] : '{{' + k + '}}'; }
-        if (previewSubject) previewSubject.textContent = subj.replace(/\{\{(\w+)\}\}/g, repl);
-        if (previewBody) previewBody.innerHTML = html.replace(/\{\{(\w+)\}\}/g, repl);
-      }
-      if (subjectEl) subjectEl.addEventListener('input', updatePreview);
-      if (quill && quill.on) quill.on('text-change', updatePreview);
-
-      if (btnLoadColumns) {
-        btnLoadColumns.addEventListener('click', doLoadColumns);
-      }
-      var btnLoadColumnsSheet = document.getElementById('btnLoadColumnsSheet');
-      if (btnLoadColumnsSheet) {
-        btnLoadColumnsSheet.addEventListener('click', doLoadColumns);
-      }
-      async function doLoadColumns() {
-        var url = (webhookUrlEl && webhookUrlEl.value) || '';
-        var sheetUrl = (sheetUrlEl && sheetUrlEl.value) || '';
-        if (!url || url.indexOf('webhook') === -1) { if (messageEl) messageEl.innerHTML = '<span class="msg error">' + t('errWebhookRequired') + '</span>'; return; }
-        if (!sheetUrl) { if (messageEl) messageEl.innerHTML = '<span class="msg error">' + t('errSheetRequired') + '</span>'; return; }
-        if (columnsSection) { columnsSection.classList.remove('empty'); columnsSection.classList.add('empty'); }
-        if (columnsLoading) columnsLoading.style.display = 'block';
-        if (columnsError) columnsError.style.display = 'none';
-        try {
-          var res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'preview', sheetUrl: sheetUrl }) });
-          var data = await res.json().catch(function() { return {}; });
-          if (columnsLoading) columnsLoading.style.display = 'none';
-          if (data.columns && data.columns.length) {
-            if (columnsChips) { columnsChips.innerHTML = ''; data.columns.forEach(function(c) { var chip = document.createElement('span'); chip.className = 'chip'; chip.textContent = c; chip.title = t('chipTitle'); columnsChips.appendChild(chip); }); }
-            if (sampleTableHead) sampleTableHead.innerHTML = data.columns.map(function(c) { return '<th>' + c + '</th>'; }).join('');
-            if (sampleTableBody && data.sampleRow) sampleTableBody.innerHTML = data.columns.map(function(c) { return '<td>' + (data.sampleRow[c] != null ? data.sampleRow[c] : '') + '</td>'; }).join('');
-            if (columnsSection) columnsSection.classList.remove('empty');
-            if (btnSend) btnSend.disabled = false;
-          } else {
-            if (columnsError) { columnsError.textContent = data.error || t('errNoColumns'); columnsError.style.display = 'block'; }
-          }
-        } catch (err) {
-          if (columnsLoading) columnsLoading.style.display = 'none';
-          if (columnsError) { columnsError.textContent = err.message || t('errNetwork'); columnsError.style.display = 'block'; }
-        }
-      }
-
-      if (btnSend) {
-        btnSend.addEventListener('click', async function() {
-          var url = (webhookUrlEl && webhookUrlEl.value) || '';
-          var sheetUrl = (sheetUrlEl && sheetUrlEl.value) || '';
-          var subj = (subjectEl && subjectEl.value) || '';
-          var html = (quill && quill.root) ? quill.root.innerHTML : '';
-          if (!url || url.indexOf('webhook') === -1) { if (messageEl) messageEl.innerHTML = '<span class="msg error">' + t('errWebhookRequired') + '</span>'; return; }
-          if (!sheetUrl) { if (messageEl) messageEl.innerHTML = '<span class="msg error">' + t('errSheetRequired') + '</span>'; return; }
-          if (!subj) { if (messageEl) messageEl.innerHTML = '<span class="msg error">' + t('errSubjectRequired') + '</span>'; return; }
-          if (messageEl) messageEl.innerHTML = '';
-          try {
-            var res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'send', sheetUrl: sheetUrl, subject: subj, bodyHtml: html }) });
-            var data = await res.json().catch(function() { return {}; });
-            if (res.ok && data.ok) { if (messageEl) messageEl.innerHTML = '<span class="msg success">' + t('successSend') + '</span>'; }
-            else { if (messageEl) messageEl.innerHTML = '<span class="msg error">' + (data.error || data.message || t('errGeneric').replace('{{msg}}', res.status)) + '</span>'; }
-          } catch (err) { if (messageEl) messageEl.innerHTML = '<span class="msg error">' + (err.message || t('errNetwork')) + '</span>'; }
-          if (res.ok && data.ok) {
-            try { localStorage.setItem('sbs_sendmails_last_start', new Date().toISOString()); } catch (_) {}
-            updateStatusLastStart();
-            startAutoStatus();
-          }
+          loadUsers();
         });
-      }
+      });
+    } catch (err) {
+      document.getElementById('createUserMsg').textContent = err.message;
+    }
+  }
 
-      function updateStatusLastStart() {
-        var el = document.getElementById('statusLastStart');
-        if (!el) return;
-        try {
-          var raw = localStorage.getItem('sbs_sendmails_last_start');
-          if (raw) {
-            var d = new Date(raw);
-            el.textContent = (t('statusLastStart') || 'Last sending started:') + ' ' + d.toLocaleString();
-            el.style.display = 'block';
-          } else { el.style.display = 'none'; }
-        } catch (_) { el.style.display = 'none'; }
-      }
-      updateStatusLastStart();
-
-      var btnCheckStatus = document.getElementById('btnCheckStatus');
-      var statusResult = document.getElementById('statusResult');
-      var statusGrid = document.getElementById('statusGrid');
-      var statusNextRun = document.getElementById('statusNextRun');
-      var statusStoppedHint = document.getElementById('statusStoppedHint');
-      var statusLoading = document.getElementById('statusLoading');
-      var statusError = document.getElementById('statusError');
-      var statusAutoBar = document.getElementById('statusAutoBar');
-      var statusAutoText = document.getElementById('statusAutoText');
-      var statusLastUpdated = document.getElementById('statusLastUpdated');
-      var btnStopAutoStatus = document.getElementById('btnStopAutoStatus');
-
-      var statusRefreshInterval = null;
-      var STATUS_POLL_INTERVAL_MS = 60000;
-      var FIRST_POLL_DELAY_MS = 10000;
-
-      function renderStatusData(data) {
-        if (!data.ok || data.sent === undefined) return;
-        if (statusGrid) {
-          statusGrid.innerHTML = '<div class="status-item"><span class="status-label">' + t('statusSent') + '</span><strong class="status-value">' + data.sent + '</strong></div>' +
-            '<div class="status-item"><span class="status-label">' + t('statusPending') + '</span><strong class="status-value">' + data.pending + '</strong></div>' +
-            '<div class="status-item"><span class="status-label">' + t('statusLastSentRow') + '</span><strong class="status-value">' + (data.lastSentRow || '—') + '</strong></div>' +
-            '<div class="status-item"><span class="status-label">' + t('statusNextRow') + '</span><strong class="status-value">' + (data.nextRowToSend || '—') + '</strong></div>';
-        }
-        if (statusNextRun) statusNextRun.textContent = data.pending > 0 ? tReplace('statusNextRunLine', { row: data.nextRowToSend || '', pending: data.pending }) : t('statusAllDone');
-        if (statusStoppedHint) { statusStoppedHint.style.display = data.pending > 0 ? 'block' : 'none'; statusStoppedHint.textContent = t('statusStoppedHint'); }
-        if (statusResult) statusResult.style.display = 'block';
-        if (statusLastUpdated) statusLastUpdated.textContent = (t('statusLastUpdated') || 'Last updated:') + ' ' + new Date().toLocaleTimeString();
-        if (data.pending === 0) stopAutoStatus();
-      }
-
-      function stopAutoStatus() {
-        if (statusRefreshInterval) { clearInterval(statusRefreshInterval); statusRefreshInterval = null; }
-        if (statusAutoBar) statusAutoBar.style.display = 'none';
-        if (btnStopAutoStatus) btnStopAutoStatus.style.display = 'none';
-      }
-
-      function startAutoStatus() {
-        stopAutoStatus();
-        if (statusAutoBar) statusAutoBar.style.display = 'flex';
-        if (statusAutoText) statusAutoText.textContent = t('statusAutoUpdate') || 'Auto-updating every 1 min';
-        if (btnStopAutoStatus) btnStopAutoStatus.style.display = 'inline-block';
-        setTimeout(function() { refreshStatus(true); }, FIRST_POLL_DELAY_MS);
-        statusRefreshInterval = setInterval(function() { refreshStatus(true); }, STATUS_POLL_INTERVAL_MS);
-      }
-
-      async function refreshStatus(silent) {
-        var url = (webhookUrlEl && webhookUrlEl.value) || '';
-        var sheetUrl = (sheetUrlEl && sheetUrlEl.value) || '';
-        if (!url || url.indexOf('webhook') === -1 || !sheetUrl) return;
-        if (!silent) {
-          if (statusError) { statusError.style.display = 'none'; statusError.textContent = ''; }
-          if (statusResult) statusResult.style.display = 'none';
-          if (statusLoading) statusLoading.style.display = 'block';
-        }
-        try {
-          var res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'status', sheetUrl: sheetUrl }) });
-          var data = await res.json().catch(function() { return {}; });
-          if (statusLoading) statusLoading.style.display = 'none';
-          if (data.ok && data.sent !== undefined) {
-            renderStatusData(data);
-          } else if (!silent && statusError) {
-            statusError.textContent = data.error || t('statusErrorGeneric');
-            statusError.style.display = 'block';
-          }
-        } catch (err) {
-          if (statusLoading) statusLoading.style.display = 'none';
-          if (!silent && statusError) { statusError.textContent = err.message || t('statusErrorGeneric'); statusError.style.display = 'block'; }
-        }
-      }
-
-      if (btnCheckStatus) {
-        btnCheckStatus.addEventListener('click', function() { refreshStatus(false); });
-      }
-      if (btnStopAutoStatus) {
-        btnStopAutoStatus.addEventListener('click', function(e) { e.preventDefault(); stopAutoStatus(); });
-      }
-
-      var btnInsertPlaceholder = document.getElementById('btnInsertPlaceholder');
-      var placeholderSelect = document.getElementById('placeholderSelect');
-      if (btnInsertPlaceholder && placeholderSelect && quill) {
-        btnInsertPlaceholder.addEventListener('click', function() {
-          var val = placeholderSelect.value;
-          if (val && quill) { var range = quill.getSelection(true); quill.insertText(range.index, val); }
+  function initAdmin() {
+    document.getElementById('createUserForm')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const username = String(document.getElementById('newUsername').value || '').trim();
+      const password = String(document.getElementById('newPassword').value || '');
+      if (!username || !password) return;
+      try {
+        await jsonFetch('/.netlify/functions/create-user', {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ username, password }),
         });
+        document.getElementById('createUserMsg').textContent = 'User added.';
+        document.getElementById('createUserForm').reset();
+        loadUsers();
+      } catch (err) {
+        document.getElementById('createUserMsg').textContent = err.message;
       }
-      var editorHelp = document.getElementById('editorHelp');
-      if (editorHelp && editorHelp.querySelector('.editor-help-summary')) {
-        editorHelp.querySelector('.editor-help-summary').addEventListener('click', function() { editorHelp.classList.toggle('open'); });
-      }
+    });
+  }
 
-      var btnCopySubject = document.getElementById('btnCopySubject');
-      var btnCopyBody = document.getElementById('btnCopyBody');
-      if (btnCopySubject && previewSubject) {
-        btnCopySubject.addEventListener('click', function() {
-          try { navigator.clipboard.writeText(previewSubject.textContent || ''); } catch (_) {}
-        });
-      }
-      if (btnCopyBody && previewBody) {
-        btnCopyBody.addEventListener('click', function() {
-          try { navigator.clipboard.writeText(previewBody.textContent || previewBody.innerText || ''); } catch (_) {}
-        });
-      }
-
-      var qrInputUrl = document.getElementById('qrInputUrl');
-      var qrResult = document.getElementById('qrResult');
-      var qrImage = document.getElementById('qrImage');
-      var qrDownload = document.getElementById('qrDownload');
-      var qrError = document.getElementById('qrError');
-      var btnGenerateQr = document.getElementById('btnGenerateQr');
-      if (btnGenerateQr && qrInputUrl) {
-        btnGenerateQr.addEventListener('click', function() {
-          var text = (qrInputUrl.value || '').trim();
-          if (qrError) qrError.style.display = 'none';
-          if (!text) { if (qrError) { qrError.textContent = t('qrErrEmpty'); qrError.style.display = 'block'; } return; }
-          if (qrResult) qrResult.style.display = 'none';
-          var apiUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(text);
-          if (qrImage) qrImage.src = apiUrl;
-          if (qrResult) qrResult.style.display = 'block';
-          if (qrDownload) qrDownload.href = apiUrl;
-        });
-      }
-
-      applyLang();
-      updatePreview();
-      })();
+  bootAuth();
+})();

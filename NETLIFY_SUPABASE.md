@@ -1,38 +1,28 @@
-# Netlify + Supabase (sbstools project)
+# Netlify + Supabase Notes
 
-With Netlify linked to your Supabase project (**SBsloution's Project**), these are set automatically:
+## Required environment values
+
+Set these in Netlify project environment variables:
+
+- `SUPABASE_URL` (or `SUPABASE_PROJECT_REF`)
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `SUPABASE_ANON_KEY`
-- `SUPABASE_JWT_SECRET`
-- `SUPABASE_DATABASE_URL`
+- `JWT_SECRET` (or rely on `SUPABASE_JWT_SECRET`)
+- `SEED_SECRET` (optional)
 
-## Add manually in Netlify
+## First deployment checklist
 
-In **Project configuration** → **Environment variables**:
+1. Set publish directory to `dashboard`.
+2. Ensure functions are deployed from `netlify/functions`.
+3. Run `supabase/schema.sql` in Supabase SQL Editor.
+4. Seed admin once via `/.netlify/functions/seed?key=...` or local script.
+5. Login and verify all modules:
+   - Operations Data
+   - Email Campaigns
+   - Live Session Groups
+   - Admin (role-based)
 
-| Variable | Value |
-|----------|--------|
-| `SUPABASE_PROJECT_REF` | `lpvoooyqhndizycsukcm` |
-| `SEED_SECRET` | A secret of your choice (e.g. `my-seed-2024`) for one-time seed |
+## Security reminder
 
-No separate `JWT_SECRET` needed; the code uses `SUPABASE_JWT_SECRET` from the link.
-
-## Create the table in Supabase (once)
-
-1. Go to [Supabase](https://supabase.com) → your project → **SQL Editor**.
-2. Copy the contents of **`supabase/schema.sql`** and paste into a new query.
-3. Click **Run**.
-
-## Create admin user (once after deploy)
-
-1. After adding `SEED_SECRET` in Netlify, trigger a **Redeploy**.
-2. Open (replace `YOUR_SEED_SECRET` with your value):
-
-   **https://sbstools.netlify.app/.netlify/functions/seed?key=YOUR_SEED_SECRET**
-
-3. If you see something like `{"ok":true,"message":"Admin created (admin / 123)"}`, the admin was created.
-4. Go to **https://sbstools.netlify.app/** and log in with **admin** / **123**.
-
----
-
-**Summary:** Add `SUPABASE_PROJECT_REF` and `SEED_SECRET` in Netlify → run `supabase/schema.sql` in Supabase → Redeploy → open the seed URL once → login works.
+- Never expose `SUPABASE_SERVICE_ROLE_KEY` to frontend.
+- `public-config` endpoint only returns public Supabase values needed for realtime.
