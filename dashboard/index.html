@@ -6,13 +6,17 @@
   <title>SBS Company Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet" />
   <link rel="stylesheet" href="css/tokens.css" />
   <link rel="stylesheet" href="css/main.css" />
 </head>
 <body>
   <div id="login-screen" class="login-screen visible">
+    <div class="login-decor" aria-hidden="true">
+      <img src="assets/stickers/sticker-1.jpg" alt="" class="login-sticker login-sticker--left" />
+      <img src="assets/stickers/sticker-3.jpg" alt="" class="login-sticker login-sticker--right" />
+    </div>
     <div class="login-card">
       <h1>SBS Staff Dashboard</h1>
       <p class="subtitle">Internal operations platform for educational services.</p>
@@ -52,8 +56,15 @@
 
     <main class="main">
       <section id="view-home" class="view active">
-        <h2>Welcome</h2>
-        <p class="subtitle">Use the left menu to manage staff operations, campaigns, and live training groups.</p>
+        <div class="home-hero">
+          <div class="home-hero-text">
+            <h2>Welcome</h2>
+            <p class="subtitle">Use the left menu to manage staff operations, campaigns, and live training groups.</p>
+          </div>
+          <div class="home-stickers" aria-hidden="true">
+            <img src="assets/stickers/sticker-2.jpg" alt="" class="home-sticker" />
+          </div>
+        </div>
         <div class="grid-three">
           <article class="card"><h3>Operations Data</h3><p>Create and update enrollment records from your workbook-driven database model.</p></article>
           <article class="card"><h3>Email Campaigns</h3><p>Run the existing n8n sendmail automation when the feature is enabled for your role.</p></article>

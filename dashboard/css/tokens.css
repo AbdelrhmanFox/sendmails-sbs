@@ -1,20 +1,23 @@
 :root {
   /*
-   * Color source of truth: brand/palette.json
-   * (Derived from Main Logo + Color Palette PDF; update both when brand changes.)
+   * Colors from brand/Color Palette/ColorPalette.pdf (Adobe XMP RGB swatches).
+   * Keep in sync with brand/palette.json.
    */
-  --brand-bg: #0a101c;
-  --brand-surface: #121b2e;
-  --brand-surface-2: #1a2438;
-  --brand-border: #2a3d56;
-  --brand-text: #eef2f8;
-  --brand-muted: #8ea0b8;
-  --brand-primary: #10e5bc;
-  --brand-primary-2: #496fdf;
-  --brand-accent: #f59e0b;
-  --brand-accent-2: #d97706;
-  --brand-danger: #ef4444;
-  --brand-success: #22c55e;
+  --brand-bg: #0e1035;
+  --brand-surface: #161a4f;
+  --brand-surface-2: #1e245e;
+  --brand-border: #3438a0;
+  --brand-navy: #1b1464;
+  --brand-indigo: #2e3192;
+  --brand-text: #f4f3fb;
+  --brand-muted: #b4b0c8;
+  --brand-primary: #00a99d;
+  --brand-primary-2: #29abe2;
+  --brand-primary-deep: #0071bc;
+  --brand-accent: #f7931e;
+  --brand-accent-2: #f59e3b;
+  --brand-danger: #ed1c24;
+  --brand-success: #39b54a;
   --brand-radius: 12px;
-  --brand-shadow: 0 8px 24px rgba(6, 12, 28, 0.45);
+  --brand-shadow: 0 10px 32px rgba(8, 10, 40, 0.55);
 }

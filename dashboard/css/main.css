@@ -1,11 +1,12 @@
 * { box-sizing: border-box; }
 body {
   margin: 0;
-  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  font-family: Montserrat, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
   background: var(--brand-bg);
   background:
-    radial-gradient(900px 480px at 0% 0%, color-mix(in oklab, var(--brand-primary) 22%, transparent) 0%, transparent 55%),
-    radial-gradient(700px 400px at 100% 20%, color-mix(in oklab, var(--brand-primary-2) 18%, transparent) 0%, transparent 50%),
+    radial-gradient(1000px 520px at 0% 0%, color-mix(in oklab, var(--brand-primary) 26%, transparent) 0%, transparent 58%),
+    radial-gradient(820px 440px at 100% 15%, color-mix(in oklab, var(--brand-primary-2) 22%, transparent) 0%, transparent 52%),
+    radial-gradient(600px 400px at 50% 100%, color-mix(in oklab, var(--brand-indigo) 20%, transparent) 0%, transparent 45%),
     var(--brand-bg);
   color: var(--brand-text);
 }
@@ -19,9 +20,42 @@ h1, h2, h3, h4, p { margin-top: 0; }
 .config-help-list code { font-size: 12px; color: var(--brand-text); }
 .subtitle { color: var(--brand-muted); margin-bottom: 18px; }
 
-.login-screen { min-height: 100vh; display: none; align-items: center; justify-content: center; padding: 24px; }
+.login-screen {
+  position: relative;
+  overflow: hidden;
+  min-height: 100vh;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
 .login-screen.visible { display: flex; }
+.login-decor {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+.login-sticker {
+  position: absolute;
+  opacity: 0.32;
+  max-height: min(48vh, 420px);
+  width: auto;
+  object-fit: contain;
+}
+.login-sticker--left {
+  left: max(-4%, -40px);
+  bottom: -6%;
+  max-width: min(44vw, 520px);
+}
+.login-sticker--right {
+  right: max(-3%, -32px);
+  bottom: -4%;
+  max-width: min(40vw, 480px);
+}
 .login-card {
+  position: relative;
+  z-index: 1;
   width: 100%;
   max-width: 420px;
   background: var(--brand-surface);
@@ -34,8 +68,12 @@ h1, h2, h3, h4, p { margin-top: 0; }
 
 .app { min-height: 100vh; display: grid; grid-template-columns: 270px 1fr; }
 .sidebar {
-  border-right: 1px solid var(--brand-border);
-  background: var(--brand-surface);
+  border-right: 1px solid color-mix(in oklab, var(--brand-border) 75%, var(--brand-navy));
+  background: linear-gradient(
+    180deg,
+    var(--brand-surface) 0%,
+    color-mix(in oklab, var(--brand-navy) 42%, var(--brand-surface)) 100%
+  );
   display: flex;
   flex-direction: column;
   padding: 20px 14px;
@@ -72,13 +110,44 @@ h1, h2, h3, h4, p { margin-top: 0; }
 .view-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
 .grid-three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
 
+.home-hero {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 24px;
+  align-items: start;
+  margin-bottom: 8px;
+}
+.home-hero-text .subtitle { margin-bottom: 0; }
+.home-stickers { display: flex; justify-content: flex-end; align-items: flex-start; }
+.home-sticker {
+  max-height: 160px;
+  width: auto;
+  max-width: min(100%, 280px);
+  object-fit: contain;
+  border-radius: var(--brand-radius);
+  box-shadow: var(--brand-shadow);
+  border: 1px solid color-mix(in oklab, var(--brand-border) 60%, transparent);
+}
+
 .card {
+  position: relative;
+  overflow: hidden;
   background: var(--brand-surface);
   border: 1px solid var(--brand-border);
   border-radius: var(--brand-radius);
   padding: 16px;
   margin-bottom: 14px;
   box-shadow: var(--brand-shadow);
+}
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--brand-primary), var(--brand-primary-2));
+  pointer-events: none;
 }
 
 label { display: block; margin-bottom: 6px; font-size: 13px; color: var(--brand-muted); }
@@ -107,8 +176,8 @@ input:focus, select:focus {
 }
 .btn:hover { filter: brightness(1.08); }
 .btn-primary {
-  border-color: var(--brand-primary);
-  background: var(--brand-primary);
+  border-color: color-mix(in oklab, var(--brand-primary) 85%, #000);
+  background: linear-gradient(135deg, var(--brand-primary) 0%, color-mix(in oklab, var(--brand-primary-2) 55%, var(--brand-primary)) 100%);
   color: #fff;
 }
 .btn-secondary { background: var(--brand-surface-2); }
@@ -116,7 +185,7 @@ input:focus, select:focus {
 
 .inline-note, .inline-error { font-size: 13px; margin: 8px 0 0; }
 .inline-note { color: var(--brand-muted); }
-.inline-error { color: #ff8f8f; }
+.inline-error { color: color-mix(in oklab, var(--brand-danger) 88%, #fff); }
 
 .form-grid {
   display: grid;
@@ -137,8 +206,9 @@ th { color: var(--brand-muted); font-weight: 600; }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
 .chip {
   font-size: 12px;
-  background: color-mix(in oklab, var(--brand-primary) 25%, transparent);
-  color: #b9fbff;
+  background: color-mix(in oklab, var(--brand-primary) 22%, transparent);
+  color: var(--brand-text);
+  border: 1px solid color-mix(in oklab, var(--brand-primary) 35%, transparent);
   padding: 4px 10px;
   border-radius: 999px;
 }
@@ -149,11 +219,11 @@ h2 {
 h2::after {
   content: '';
   display: block;
-  width: 56px;
+  width: 72px;
   height: 3px;
   border-radius: 2px;
   margin-top: 8px;
-  background: linear-gradient(90deg, var(--brand-accent), transparent);
+  background: linear-gradient(90deg, var(--brand-primary), var(--brand-primary-2));
 }
 
 #editor-wrap { background: #fff; color: #111; border-radius: 10px; overflow: hidden; margin-top: 8px; margin-bottom: 8px; }
@@ -193,4 +263,10 @@ h2::after {
   .grid-three { grid-template-columns: 1fr; }
   .form-grid { grid-template-columns: 1fr; }
   .status-grid { grid-template-columns: 1fr 1fr; }
+  .home-hero { grid-template-columns: 1fr; }
+  .home-stickers { justify-content: flex-start; }
+}
+
+@media (max-width: 520px) {
+  .login-sticker { opacity: 0.18; max-height: 36vh; }
 }
