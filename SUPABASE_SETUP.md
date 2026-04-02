@@ -53,7 +53,7 @@ npm run import:workbook
 
 Source file:
 
-- `DataBase(SBS)v01.xlsm`
+- `docs/DataBase(SBS)v01.xlsm` (canonical; root `DataBase(SBS)v01.xlsm` is a legacy fallback)
 - exported sheets in `docs/excel-export/*.csv`
 
 ## Troubleshooting

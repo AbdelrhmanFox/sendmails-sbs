@@ -1,0 +1,16 @@
+{
+  "brandBg": "#0b1220",
+  "brandSurface": "#121d31",
+  "brandSurface2": "#1b2940",
+  "brandBorder": "#2a3d5e",
+  "brandText": "#edf3fb",
+  "brandMuted": "#9db0ca",
+  "brandPrimary": "#00a9b7",
+  "brandPrimary2": "#007f93",
+  "brandAccent": "#f1a437",
+  "brandAccent2": "#d08a28",
+  "brandDanger": "#cf4f4f",
+  "brandSuccess": "#35a16a",
+  "brandRadius": "12px",
+  "brandShadow": "0 8px 24px rgba(4, 15, 32, 0.35)"
+}

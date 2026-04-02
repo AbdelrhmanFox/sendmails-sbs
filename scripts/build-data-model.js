@@ -6,8 +6,8 @@ const ROOT = process.cwd();
 const EXPORT_DIR = path.join(ROOT, 'docs', 'excel-export');
 const MODEL_PATH = path.join(ROOT, 'docs', 'DATA_MODEL.md');
 const XLSM_CANDIDATES = [
-  path.join(ROOT, 'DataBase(SBS)v01.xlsm'),
   path.join(ROOT, 'docs', 'DataBase(SBS)v01.xlsm'),
+  path.join(ROOT, 'DataBase(SBS)v01.xlsm'),
 ];
 
 function detectWorkbookPath() {

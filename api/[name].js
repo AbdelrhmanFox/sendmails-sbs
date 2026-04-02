@@ -7,7 +7,6 @@ const netlifyToVercel = require('../netlify/vercelAdapter');
 const HANDLERS = {
   login: require('../netlify/functions/login').handler,
   seed: require('../netlify/functions/seed').handler,
-  enrollments: require('../netlify/functions/enrollments').handler,
   'training-sessions': require('../netlify/functions/training-sessions').handler,
   'training-join': require('../netlify/functions/training-join').handler,
   'training-messages': require('../netlify/functions/training-messages').handler,

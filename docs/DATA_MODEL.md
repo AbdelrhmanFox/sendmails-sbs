@@ -4,7 +4,7 @@ This document is generated from workbook source and exported CSV sheets.
 
 ## Source lock
 
-- Locked workbook source: `DataBase(SBS)v01.xlsm`
+- Locked workbook source: `docs/DataBase(SBS)v01.xlsm` (fallback: `DataBase(SBS)v01.xlsm` at repo root)
 - CSV export folder: `docs/excel-export`
 
 ## Workbook Inventory

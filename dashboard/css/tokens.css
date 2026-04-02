@@ -1,5 +1,8 @@
 :root {
-  /* Approximated manually from available .ai identity sources */
+  /*
+   * Color source of truth: brand/palette.json
+   * Keep CSS custom properties aligned when the palette file changes.
+   */
   --brand-bg: #0b1220;
   --brand-surface: #121d31;
   --brand-surface-2: #1b2940;
