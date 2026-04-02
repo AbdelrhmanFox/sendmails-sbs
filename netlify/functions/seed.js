@@ -1,6 +1,6 @@
 const { createClient } = require('@supabase/supabase-js');
 const bcrypt = require('bcryptjs');
-const { getSupabaseApiUrl } = require('./_shared');
+const { getSupabaseApiUrl } = require('../lib/_shared');
 
 const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type' };
 

@@ -3,7 +3,7 @@ const cors = {
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 
-const { getSupabaseApiUrl } = require('./_shared');
+const { getSupabaseApiUrl } = require('../lib/_shared');
 
 function json(body, status = 200) {
   return { statusCode: status, headers: { 'Content-Type': 'application/json', ...cors }, body: JSON.stringify(body) };

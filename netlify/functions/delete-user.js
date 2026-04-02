@@ -1,6 +1,6 @@
 const { createClient } = require('@supabase/supabase-js');
 const jwt = require('jsonwebtoken');
-const { getSupabaseApiUrl } = require('./_shared');
+const { getSupabaseApiUrl } = require('../lib/_shared');
 
 const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization' };
 

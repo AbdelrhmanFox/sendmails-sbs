@@ -7,6 +7,10 @@
 [build.environment]
   NODE_VERSION = "18"
 
+# Shared code lives in netlify/lib (not deployable as a function).
+[functions]
+  node_bundler = "esbuild"
+
 # Optional: prevent caching of index.html so updates show immediately
 [[headers]]
   for = "/*"

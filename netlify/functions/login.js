@@ -1,7 +1,7 @@
 const { createClient } = require('@supabase/supabase-js');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { getSupabaseApiUrl } = require('./_shared');
+const { getSupabaseApiUrl, assertSupabaseServiceRoleKey } = require('../lib/_shared');
 
 const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization' };
 
@@ -25,12 +25,17 @@ exports.handler = async (event) => {
   const { username, password } = body;
   if (!username || typeof password !== 'string') return json({ error: 'Username and password required' }, 400);
 
-  const supabaseUrl = process.env.SUPABASE_URL || (process.env.SUPABASE_PROJECT_REF && `https://${process.env.SUPABASE_PROJECT_REF}.supabase.co`);
+  const supabaseUrl = getSupabaseApiUrl();
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const jwtSecret = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET;
 
   if (isLocalLogin(username, password)) {
-    if (!jwtSecret) return json({ error: 'Server config missing' }, 500);
+    if (!jwtSecret) {
+      return json({
+        error: 'Server config missing',
+        hint: 'Set JWT_SECRET or SUPABASE_JWT_SECRET on Netlify and redeploy.',
+      }, 500);
+    }
     const token = jwt.sign({ username: LOCAL_USER, role: 'admin' }, jwtSecret, { expiresIn: '7d' });
     return json({ token, role: 'admin', username: LOCAL_USER });
   }
@@ -42,12 +47,8 @@ exports.handler = async (event) => {
     }, 500);
   }
 
-  if (String(supabaseKey).startsWith('sb_publishable_')) {
-    return json({
-      error: 'Server misconfiguration',
-      hint: 'SUPABASE_SERVICE_ROLE_KEY must be the secret key (sb_secret_… or legacy service_role), not the publishable key.',
-    }, 500);
-  }
+  const keyHint = assertSupabaseServiceRoleKey(supabaseKey);
+  if (keyHint) return json({ error: 'Server misconfiguration', hint: keyHint }, 500);
 
   const supabase = createClient(supabaseUrl, supabaseKey);
   const { data: user, error: fetchErr } = await supabase.from('app_users').select('username, password_hash, role').eq('username', String(username).trim()).maybeSingle();

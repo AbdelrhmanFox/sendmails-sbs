@@ -1,4 +1,4 @@
-const { cors, json, getSupabaseServiceClient } = require('./_shared');
+const { cors, json, getSupabaseServiceClient } = require('../lib/_shared');
 
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: cors };

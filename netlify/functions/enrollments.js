@@ -1,4 +1,4 @@
-const { cors, json, getSupabaseServiceClient, verifyAuth, normalizeDate } = require('./_shared');
+const { cors, json, getSupabaseServiceClient, verifyAuth, normalizeDate } = require('../lib/_shared');
 
 function mapRow(row) {
   return {

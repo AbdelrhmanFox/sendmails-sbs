@@ -29,9 +29,13 @@ Set these in Netlify project environment variables:
 
 ## Login returns 500 "Database error"
 
-1. **Wrong key in Netlify:** `SUPABASE_SERVICE_ROLE_KEY` must be the **secret** key (`sb_secret_…` or legacy **service_role** JWT). Do **not** put the publishable / anon key there; the login function will reject keys that start with `sb_publishable_`.
+1. **Wrong key in Netlify:** `SUPABASE_SERVICE_ROLE_KEY` must be the **service_role** JWT (legacy `eyJ…` with role `service_role`) or **`sb_secret_…`**. Do **not** put the **anon** JWT there — the app detects `role: anon` in legacy JWTs and returns a clear misconfiguration hint. Do **not** use the publishable key (`sb_publishable_…`) for this variable.
 2. **URL:** `SUPABASE_URL` must be exactly `https://<project-ref>.supabase.co` for the same project as the keys.
 3. **JWT for the app:** Set `JWT_SECRET` (or `SUPABASE_JWT_SECRET`) to any long random string (used only to sign dashboard session tokens).
 4. **RLS on `app_users`:** If login still fails, run `supabase/fix-login-database-error.sql` in the SQL Editor, then redeploy is not required for SQL-only fixes.
 5. **Debug:** Set Netlify env `LOGIN_DEBUG=1`, redeploy, try login once, then check the JSON body for `details` (or Netlify function logs). Remove `LOGIN_DEBUG` afterward.
 6. **Empty `app_users`:** After the above works, create the admin user with `npm run seed:admin` (local `.env` pointing at the same Supabase project) or insert a bcrypt-hashed password — plain text passwords will not work.
+
+7. **Production vs Preview:** In Netlify → Environment variables, confirm the same Supabase values exist for **Production** (not only Deploy previews).
+
+8. **Shared code location:** Function helpers live in `netlify/lib/_shared.js` (not under `netlify/functions/`) so Netlify does not deploy them as a fake `/_shared` function.
