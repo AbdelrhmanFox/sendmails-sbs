@@ -9,6 +9,10 @@ h1, h2, h3, h4, p { margin-top: 0; }
 
 .hidden { display: none !important; }
 .muted { color: var(--brand-muted); font-size: 13px; }
+.config-help h3 { margin: 0 0 10px; font-size: 15px; font-weight: 600; }
+.config-help .small-margin { margin-top: 10px; margin-bottom: 0; }
+.config-help-list { margin: 10px 0 0; padding-left: 1.25rem; color: var(--brand-muted); font-size: 13px; line-height: 1.55; }
+.config-help-list code { font-size: 12px; color: var(--brand-text); }
 .subtitle { color: var(--brand-muted); margin-bottom: 18px; }
 
 .login-screen { min-height: 100vh; display: none; align-items: center; justify-content: center; padding: 24px; }

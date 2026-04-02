@@ -55,10 +55,19 @@ function normalizeDate(value) {
   return null;
 }
 
+/** Returns a hint string if the env var looks like a publishable (anon) key by mistake. */
+function assertSupabaseServiceRoleKey(supabaseKey) {
+  if (supabaseKey && String(supabaseKey).startsWith('sb_publishable_')) {
+    return 'SUPABASE_SERVICE_ROLE_KEY must be the secret key (sb_secret_… or legacy service_role), not the publishable key. Set it in Netlify → Site configuration → Environment variables, then redeploy.';
+  }
+  return null;
+}
+
 module.exports = {
   cors,
   json,
   getSupabaseServiceClient,
   verifyAuth,
   normalizeDate,
+  assertSupabaseServiceRoleKey,
 };

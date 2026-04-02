@@ -1,6 +1,7 @@
 const { createClient } = require('@supabase/supabase-js');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { assertSupabaseServiceRoleKey } = require('./_shared');
 
 const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization' };
 
@@ -37,6 +38,13 @@ exports.handler = async (event) => {
 
   const password_hash = await bcrypt.hash(password, 10);
   const { error: insertErr } = await supabase.from('app_users').insert({ username: un, password_hash, role: 'user' });
-  if (insertErr) return json({ error: 'Could not create user' }, 500);
+  if (insertErr) {
+    console.error('[create-user] Supabase insert:', insertErr);
+    return json({
+      error: 'Could not create user',
+      hint: 'Confirm Netlify has the correct SUPABASE_URL and secret SUPABASE_SERVICE_ROLE_KEY; run supabase/fix-login-database-error.sql if needed.',
+      ...(process.env.LOGIN_DEBUG === '1' && { details: insertErr.message }),
+    }, 500);
+  }
   return json({ ok: true, username: un });
 };
