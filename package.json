@@ -4,6 +4,7 @@
   "description": "SBS Sendmails dashboard + auth",
   "private": true,
   "scripts": {
+    "dev": "netlify dev",
     "seed:admin": "node scripts/seed-admin.js",
     "import:enrollments": "node scripts/import-enrollments.js",
     "import:workbook": "node scripts/import-workbook-data.js",
@@ -17,6 +18,7 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+    "netlify-cli": "^17.38.1"
   }
 }
