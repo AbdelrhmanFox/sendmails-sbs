@@ -16,7 +16,7 @@ This folder holds the **source of truth** for brand colors and marks used by the
 ## Dashboard wiring
 
 - **`dashboard/assets/logo.png`** — copy of `Main Logo/Colored (White Text).png` for static hosting.
-- **`dashboard/assets/stickers/`** — decorative sticker JPGs for login and Home (English UI only; images are `alt=""` decorative).
+- **`dashboard/assets/stickers/`** — decorative sticker JPGs on login and each main view header (Home, Operations, Campaigns, Training, Admin); images use `alt=""` as decoration only.
 - **`dashboard/css/tokens.css`** — maps `--brand-*` from **`palette.json`**. Plain CSS cannot import JSON; keep them aligned when colors change.
 - **Typography:** the dashboard loads **Montserrat** (see PDF font list) from Google Fonts.
 
