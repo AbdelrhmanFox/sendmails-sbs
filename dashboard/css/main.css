@@ -110,19 +110,27 @@ h1, h2, h3, h4, p { margin-top: 0; }
 .view-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
 .grid-three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
 
-.home-hero {
+.view-hero {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 24px;
   align-items: start;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
-.home-hero-text .subtitle { margin-bottom: 0; }
-.home-stickers { display: flex; justify-content: flex-end; align-items: flex-start; }
-.home-sticker {
-  max-height: 160px;
+.view-hero-text { min-width: 0; }
+.view-hero-text .subtitle { margin-bottom: 12px; }
+.view-hero .view-header {
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+.view-hero .view-header h2 { margin-bottom: 0; flex: 1; min-width: 0; }
+.view-hero .view-header .btn { flex-shrink: 0; }
+.view-stickers { display: flex; justify-content: flex-end; align-items: flex-start; }
+.view-sticker {
+  max-height: 140px;
   width: auto;
-  max-width: min(100%, 280px);
+  max-width: min(100%, 260px);
   object-fit: contain;
   border-radius: var(--brand-radius);
   box-shadow: var(--brand-shadow);
@@ -263,8 +271,8 @@ h2::after {
   .grid-three { grid-template-columns: 1fr; }
   .form-grid { grid-template-columns: 1fr; }
   .status-grid { grid-template-columns: 1fr 1fr; }
-  .home-hero { grid-template-columns: 1fr; }
-  .home-stickers { justify-content: flex-start; }
+  .view-hero { grid-template-columns: 1fr; }
+  .view-stickers { justify-content: flex-start; }
 }
 
 @media (max-width: 520px) {

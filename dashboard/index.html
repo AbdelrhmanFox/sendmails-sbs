@@ -56,13 +56,13 @@
 
     <main class="main">
       <section id="view-home" class="view active">
-        <div class="home-hero">
-          <div class="home-hero-text">
+        <div class="view-hero">
+          <div class="view-hero-text">
             <h2>Welcome</h2>
             <p class="subtitle">Use the left menu to manage staff operations, campaigns, and live training groups.</p>
           </div>
-          <div class="home-stickers" aria-hidden="true">
-            <img src="assets/stickers/sticker-2.jpg" alt="" class="home-sticker" />
+          <div class="view-stickers" aria-hidden="true">
+            <img src="assets/stickers/sticker-2.jpg" alt="" class="view-sticker" />
           </div>
         </div>
         <div class="grid-three">
@@ -73,11 +73,18 @@
       </section>
 
       <section id="view-operations" class="view">
-        <div class="view-header">
-          <h2>Operations Data</h2>
-          <button class="btn btn-secondary" id="btnRefreshEnrollments">Refresh</button>
+        <div class="view-hero">
+          <div class="view-hero-text">
+            <div class="view-header">
+              <h2>Operations Data</h2>
+              <button class="btn btn-secondary" id="btnRefreshEnrollments">Refresh</button>
+            </div>
+            <p class="subtitle">Workbook-driven entities (trainees, courses, batches, enrollments, payments).</p>
+          </div>
+          <div class="view-stickers" aria-hidden="true">
+            <img src="assets/stickers/sticker-1.jpg" alt="" class="view-sticker" />
+          </div>
         </div>
-        <p class="subtitle">Workbook-driven entities (trainees, courses, batches, enrollments, payments).</p>
         <form id="operationsEntityForm" class="card row">
           <label for="entitySelect">Entity</label>
           <select id="entitySelect">
@@ -110,8 +117,15 @@
       </section>
 
       <section id="view-campaigns" class="view">
-        <h2>Email Campaigns</h2>
-        <p class="subtitle">Optional module powered by existing n8n workflow.</p>
+        <div class="view-hero">
+          <div class="view-hero-text">
+            <h2>Email Campaigns</h2>
+            <p class="subtitle">Optional module powered by existing n8n workflow.</p>
+          </div>
+          <div class="view-stickers" aria-hidden="true">
+            <img src="assets/stickers/sticker-3.jpg" alt="" class="view-sticker" />
+          </div>
+        </div>
         <div class="card">
           <label for="webhookUrl">n8n Webhook URL</label>
           <div class="row">
@@ -154,8 +168,15 @@
       </section>
 
       <section id="view-training" class="view">
-        <h2>Live Session Groups</h2>
-        <p class="subtitle">Create session groups for trainers and share one link per group.</p>
+        <div class="view-hero">
+          <div class="view-hero-text">
+            <h2>Live Session Groups</h2>
+            <p class="subtitle">Create session groups for trainers and share one link per group.</p>
+          </div>
+          <div class="view-stickers" aria-hidden="true">
+            <img src="assets/stickers/sticker-2.jpg" alt="" class="view-sticker" />
+          </div>
+        </div>
         <div id="trainerPanel" class="card">
           <h3>Create Session</h3>
           <form id="trainingSessionForm" class="row">
@@ -185,8 +206,15 @@
       </section>
 
       <section id="view-admin" class="view">
-        <h2>Manage Users</h2>
-        <p class="subtitle">Admin-only controls for account management.</p>
+        <div class="view-hero">
+          <div class="view-hero-text">
+            <h2>Manage Users</h2>
+            <p class="subtitle">Admin-only controls for account management.</p>
+          </div>
+          <div class="view-stickers" aria-hidden="true">
+            <img src="assets/stickers/sticker-1.jpg" alt="" class="view-sticker" />
+          </div>
+        </div>
         <div class="card config-help">
           <h3>Backend configuration (not entered here)</h3>
           <p class="muted">The dashboard never stores Supabase keys. Add them once in <strong>Netlify</strong> for this site, then <strong>redeploy</strong>.</p>
