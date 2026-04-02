@@ -1,20 +1,20 @@
 :root {
   /*
    * Color source of truth: brand/palette.json
-   * Keep CSS custom properties aligned when the palette file changes.
+   * (Derived from Main Logo + Color Palette PDF; update both when brand changes.)
    */
-  --brand-bg: #0b1220;
-  --brand-surface: #121d31;
-  --brand-surface-2: #1b2940;
-  --brand-border: #2a3d5e;
-  --brand-text: #edf3fb;
-  --brand-muted: #9db0ca;
-  --brand-primary: #00a9b7;
-  --brand-primary-2: #007f93;
-  --brand-accent: #f1a437;
-  --brand-accent-2: #d08a28;
-  --brand-danger: #cf4f4f;
-  --brand-success: #35a16a;
+  --brand-bg: #0a101c;
+  --brand-surface: #121b2e;
+  --brand-surface-2: #1a2438;
+  --brand-border: #2a3d56;
+  --brand-text: #eef2f8;
+  --brand-muted: #8ea0b8;
+  --brand-primary: #10e5bc;
+  --brand-primary-2: #496fdf;
+  --brand-accent: #f59e0b;
+  --brand-accent-2: #d97706;
+  --brand-danger: #ef4444;
+  --brand-success: #22c55e;
   --brand-radius: 12px;
-  --brand-shadow: 0 8px 24px rgba(4, 15, 32, 0.35);
+  --brand-shadow: 0 8px 24px rgba(6, 12, 28, 0.45);
 }

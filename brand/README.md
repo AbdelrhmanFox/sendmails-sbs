@@ -1,20 +1,22 @@
 # SBS Brand Assets
 
-This folder holds the **source of truth** for brand colors and exported marks used by the dashboard.
+This folder holds the **source of truth** for brand colors and marks used by the dashboard.
 
-## Committed files
+## Layout
 
 | Path | Purpose |
 | --- | --- |
-| `palette.json` | Canonical hex values for the product theme (JSON). |
-| `exports/logo.svg` | Web-ready wordmark; copied to `dashboard/assets/logo.svg` for static hosting. |
-| `Characters/Characters.ai` | Optional Illustrator source; prefer exporting SVG/PNG for the app. |
+| `Main Logo/` | Official logo exports (PNG). **Sidebar uses `Colored (White Text).png`** on dark UI. |
+| `Color Palette/` | `ColorPalette.pdf` — full brand color system (primary, solids, gradients). `palette.json` hex values align with the logo and PDF; adjust both when marketing updates the PDF. |
+| `palette.json` | Canonical hex values consumed by `dashboard/css/tokens.css` (update manually in sync). |
+| `exports/logo.png` | Copy of the white-text mark for deployment parity with `dashboard/assets/logo.png`. |
+| `Characters/` | Illustration assets (optional for marketing; not required for the staff dashboard). |
 
-## Deriving the UI theme
+## Dashboard wiring
 
-- **`dashboard/css/tokens.css`** maps `--brand-*` variables from **`palette.json`**. When you change the palette, update `tokens.css` to match (there is no JSON import in plain CSS).
-- The sidebar logo is **`dashboard/assets/logo.svg`** (keep in sync with `exports/logo.svg` or replace both with an approved export).
+- **`dashboard/assets/logo.png`** — copy of `Main Logo/Colored (White Text).png` for static hosting.
+- **`dashboard/css/tokens.css`** — maps `--brand-*` from **`palette.json`**. Plain CSS cannot import JSON; keep them aligned when colors change.
 
 ## Source binaries
 
-Heavy `.ai` files are optional in git. If the team only needs exported SVG/PNG in-repo, you may add `brand/**/*.ai` to the root `.gitignore` and remove cached copies from the index (`git rm --cached`) so only web assets remain tracked.
+Heavy `.ai` files are optional in git. To drop Illustrator sources from the repo while keeping PNG/PDF, add `brand/**/*.ai` to the root `.gitignore` and run `git rm --cached` on those paths.
