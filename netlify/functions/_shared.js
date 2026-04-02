@@ -14,8 +14,31 @@ function json(body, status = 200) {
   };
 }
 
+/**
+ * HTTPS REST URL for @supabase/supabase-js (e.g. https://abcd.supabase.co).
+ * Netlify's Supabase integration often sets SUPABASE_DATABASE_URL / DATABASE_URL
+ * but not SUPABASE_URL; we derive the API host from the Postgres URL when needed.
+ */
+function getSupabaseApiUrl() {
+  const direct = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  if (direct && /^https:\/\//i.test(String(direct).trim())) {
+    return String(direct).trim().replace(/\/$/, '');
+  }
+  const ref = process.env.SUPABASE_PROJECT_REF;
+  if (ref && String(ref).trim()) return `https://${String(ref).trim()}.supabase.co`;
+
+  const dbUrl = process.env.SUPABASE_DATABASE_URL || process.env.DATABASE_URL;
+  if (!dbUrl) return null;
+  const s = String(dbUrl);
+  const dbHost = s.match(/@db\.([a-z0-9]+)\.supabase\.co/i);
+  if (dbHost) return `https://${dbHost[1]}.supabase.co`;
+  const poolerUser = s.match(/\/\/postgres\.([a-z0-9]+):/i);
+  if (poolerUser) return `https://${poolerUser[1]}.supabase.co`;
+  return null;
+}
+
 function getSupabaseServiceClient() {
-  const supabaseUrl = process.env.SUPABASE_URL || (process.env.SUPABASE_PROJECT_REF && `https://${process.env.SUPABASE_PROJECT_REF}.supabase.co`);
+  const supabaseUrl = getSupabaseApiUrl();
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!supabaseUrl || !supabaseKey) return null;
   return createClient(supabaseUrl, supabaseKey);
@@ -66,6 +89,7 @@ function assertSupabaseServiceRoleKey(supabaseKey) {
 module.exports = {
   cors,
   json,
+  getSupabaseApiUrl,
   getSupabaseServiceClient,
   verifyAuth,
   normalizeDate,

@@ -180,12 +180,13 @@
           <h3>Backend configuration (not entered here)</h3>
           <p class="muted">The dashboard never stores Supabase keys. Add them once in <strong>Netlify</strong> for this site, then <strong>redeploy</strong>.</p>
           <ul class="config-help-list">
-            <li><code>SUPABASE_URL</code> — <code>https://&lt;project-ref&gt;.supabase.co</code> (Supabase → Settings → General)</li>
-            <li><code>SUPABASE_SERVICE_ROLE_KEY</code> — <strong>Secret</strong> key (<code>sb_secret_…</code> or legacy service_role). Never the publishable key.</li>
-            <li><code>SUPABASE_ANON_KEY</code> — Publishable key (for Live Session chat / realtime only).</li>
-            <li><code>JWT_SECRET</code> — Any long random string; signs login tokens for this app.</li>
+            <li>If you use <strong>Netlify’s Supabase integration</strong>, it usually sets <code>SUPABASE_DATABASE_URL</code>, keys, and <code>SUPABASE_JWT_SECRET</code>. Check <strong>“Redeploy site”</strong> when saving so functions reload.</li>
+            <li><code>SUPABASE_URL</code> — Optional if <code>SUPABASE_DATABASE_URL</code> is present; otherwise <code>https://&lt;project-ref&gt;.supabase.co</code>.</li>
+            <li><code>SUPABASE_SERVICE_ROLE_KEY</code> — <strong>Secret</strong> key (<code>sb_secret_…</code>). Not the publishable key.</li>
+            <li><code>SUPABASE_ANON_KEY</code> — Publishable key (Live Session / realtime).</li>
+            <li><code>JWT_SECRET</code> or <code>SUPABASE_JWT_SECRET</code> — Used to sign dashboard login tokens.</li>
           </ul>
-          <p class="muted small-margin">Copy from <code>.env.example</code> in the repo into Netlify env vars. Local dev uses a <code>.env</code> file (gitignored).</p>
+          <p class="muted small-margin">See <code>.env.example</code> for names. Local dev uses <code>.env</code> (gitignored).</p>
         </div>
         <form id="createUserForm" class="card row">
           <input type="text" id="newUsername" minlength="2" placeholder="New username" required />

@@ -1,5 +1,6 @@
 const { createClient } = require('@supabase/supabase-js');
 const bcrypt = require('bcryptjs');
+const { getSupabaseApiUrl } = require('./_shared');
 
 const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type' };
 
@@ -15,7 +16,7 @@ exports.handler = async (event) => {
   const secret = process.env.SEED_SECRET;
   if (!secret || key !== secret) return json({ error: 'Forbidden' }, 403);
 
-  const supabaseUrl = process.env.SUPABASE_URL || (process.env.SUPABASE_PROJECT_REF && `https://${process.env.SUPABASE_PROJECT_REF}.supabase.co`);
+  const supabaseUrl = getSupabaseApiUrl();
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!supabaseUrl || !supabaseKey) return json({ error: 'Server config missing' }, 500);
 

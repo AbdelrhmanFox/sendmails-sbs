@@ -1,6 +1,7 @@
 const { createClient } = require('@supabase/supabase-js');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { getSupabaseApiUrl } = require('./_shared');
 
 const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization' };
 
@@ -34,7 +35,12 @@ exports.handler = async (event) => {
     return json({ token, role: 'admin', username: LOCAL_USER });
   }
 
-  if (!supabaseUrl || !supabaseKey || !jwtSecret) return json({ error: 'Server config missing' }, 500);
+  if (!supabaseUrl || !supabaseKey || !jwtSecret) {
+    return json({
+      error: 'Server config missing',
+      hint: 'Netlify: confirm Supabase extension is saved and production env includes SUPABASE_SERVICE_ROLE_KEY. If there is no SUPABASE_URL, add it as https://<ref>.supabase.co or rely on SUPABASE_DATABASE_URL (this build derives the API URL from it). Redeploy after changes.',
+    }, 500);
+  }
 
   if (String(supabaseKey).startsWith('sb_publishable_')) {
     return json({

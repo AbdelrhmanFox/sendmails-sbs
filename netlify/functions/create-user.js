@@ -1,7 +1,7 @@
 const { createClient } = require('@supabase/supabase-js');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { assertSupabaseServiceRoleKey } = require('./_shared');
+const { assertSupabaseServiceRoleKey, getSupabaseApiUrl } = require('./_shared');
 
 const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'Content-Type, Authorization' };
 
@@ -16,9 +16,16 @@ exports.handler = async (event) => {
   const auth = event.headers.authorization || event.headers.Authorization || '';
   const token = auth.replace(/^Bearer\s+/i, '');
   const jwtSecret = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET;
-  const supabaseUrl = process.env.SUPABASE_URL || (process.env.SUPABASE_PROJECT_REF && `https://${process.env.SUPABASE_PROJECT_REF}.supabase.co`);
+  const supabaseUrl = getSupabaseApiUrl();
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!jwtSecret || !supabaseUrl || !supabaseKey) return json({ error: 'Server config missing' }, 500);
+  if (!jwtSecret || !supabaseUrl || !supabaseKey) {
+    return json({
+      error: 'Server config missing',
+      hint: 'Set SUPABASE_SERVICE_ROLE_KEY and JWT_SECRET / SUPABASE_JWT_SECRET in Netlify; SUPABASE_URL or SUPABASE_DATABASE_URL for API host. Redeploy.',
+    }, 500);
+  }
+  const keyHint = assertSupabaseServiceRoleKey(supabaseKey);
+  if (keyHint) return json({ error: 'Server misconfiguration', hint: keyHint }, 500);
   if (!token) return json({ error: 'Unauthorized' }, 401);
 
   let payload;
