@@ -6,7 +6,7 @@ This project now includes:
 - **Operations Data** (workbook-driven database UI for trainees, courses, batches, enrollments)
 - **Email Campaigns** (existing n8n sendmail automation, feature-gated by role)
 - **Live Session Groups** (trainer creates groups, participants join with links, chat)
-- **Auth + user management** (Supabase + Netlify Functions)
+- **Auth + user management** (Supabase + Netlify Functions or Vercel — see `VERCEL_DEPLOY.md`)
 
 All shipped UI and docs are English-only.
 
@@ -18,6 +18,8 @@ All shipped UI and docs are English-only.
 | --- | --- |
 | `dashboard/` | Static frontend app (staff shell, data module, campaigns, training, admin). |
 | `netlify/functions/` | API endpoints for auth, user management, enrollments CRUD, training sessions/chat, public config. |
+| `api/` | Vercel Serverless wrappers (same handlers as `netlify/functions/`). |
+| `vercel.json` | Vercel build output (`dashboard/`) and `/.netlify/functions/*` → `/api/*` rewrites. |
 | `supabase/schema.sql` | Supabase schema (users, enrollments, training tables, RLS policies). |
 | `automation/workflow.json` | n8n workflow for campaign preview/send/status. |
 | `docs/excel-export/` | Workbook exports (CSV source of truth for data model). |

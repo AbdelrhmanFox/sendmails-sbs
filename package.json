@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "netlify dev",
+    "vercel:dev": "npx vercel dev",
     "seed:admin": "node scripts/seed-admin.js",
     "import:enrollments": "node scripts/import-enrollments.js",
     "import:workbook": "node scripts/import-workbook-data.js",
@@ -20,5 +21,8 @@
   "devDependencies": {
     "dotenv": "^16.4.5",
     "netlify-cli": "^17.38.1"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }
