@@ -4,7 +4,7 @@
 
 Set these in Netlify project environment variables:
 
-- `SUPABASE_URL` (or `SUPABASE_PROJECT_REF`), **or** rely on `SUPABASE_DATABASE_URL` / `DATABASE_URL` from the Netlify Supabase extension (functions derive `https://<ref>.supabase.co` from the Postgres host).
+- `SUPABASE_URL` (or `SUPABASE_PROJECT_REF`), **or** rely on `SUPABASE_DATABASE_URL` from the Netlify Supabase extension — that value may be either a `postgresql://…` string **or** the HTTPS project URL `https://<ref>.supabase.co` (both are supported).
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `SUPABASE_ANON_KEY`
 - `JWT_SECRET` or `SUPABASE_JWT_SECRET` (the Supabase extension usually provides the latter)

@@ -28,8 +28,8 @@ function decodeJwtPayloadUnverified(token) {
 
 /**
  * HTTPS REST URL for @supabase/supabase-js (e.g. https://abcd.supabase.co).
- * Netlify's Supabase integration often sets DATABASE_URL / SUPABASE_DATABASE_URL
- * but not SUPABASE_URL; we derive the API host from the Postgres URL when needed.
+ * Netlify's Supabase integration may set SUPABASE_DATABASE_URL to either a postgres://
+ * connection string or the REST project URL (https://<ref>.supabase.co).
  */
 function getSupabaseApiUrl() {
   const direct = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
@@ -45,7 +45,19 @@ function getSupabaseApiUrl() {
     process.env.SUPABASE_DB_URL ||
     process.env.NETLIFY_DATABASE_URL;
   if (!dbUrl) return null;
-  const s = String(dbUrl);
+  const s = String(dbUrl).trim();
+
+  // Netlify UI labels this "database URL" but it is often the HTTPS API base (not postgres://).
+  if (/^https:\/\//i.test(s) && /\.supabase\.co(\/|$)/i.test(s)) {
+    try {
+      const u = new URL(s);
+      if (/\.supabase\.co$/i.test(u.hostname)) {
+        return `https://${u.hostname}`;
+      }
+    } catch (_) {
+      /* ignore */
+    }
+  }
 
   const dbHost = s.match(/@db\.([a-z0-9]+)\.supabase\.co/i);
   if (dbHost) return `https://${dbHost[1]}.supabase.co`;
