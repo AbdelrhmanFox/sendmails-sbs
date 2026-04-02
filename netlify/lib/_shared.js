@@ -14,6 +14,16 @@ function json(body, status = 200) {
   };
 }
 
+/** Netlify / dashboards sometimes store values with wrapping quotes or trailing spaces. */
+function trimEnvValue(v) {
+  if (v == null) return '';
+  let s = String(v).trim();
+  if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
+    s = s.slice(1, -1).trim();
+  }
+  return s;
+}
+
 function decodeJwtPayloadUnverified(token) {
   try {
     const part = String(token).split('.')[1];
@@ -32,20 +42,23 @@ function decodeJwtPayloadUnverified(token) {
  * connection string or the REST project URL (https://<ref>.supabase.co).
  */
 function getSupabaseApiUrl() {
-  const direct = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
-  if (direct && /^https:\/\//i.test(String(direct).trim())) {
-    return String(direct).trim().replace(/\/$/, '');
+  const direct = trimEnvValue(
+    process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL,
+  );
+  if (direct && /^https:\/\//i.test(direct)) {
+    return direct.replace(/\/$/, '');
   }
-  const ref = process.env.SUPABASE_PROJECT_REF;
-  if (ref && String(ref).trim()) return `https://${String(ref).trim()}.supabase.co`;
+  const ref = trimEnvValue(process.env.SUPABASE_PROJECT_REF);
+  if (ref) return `https://${ref}.supabase.co`;
 
-  const dbUrl =
+  const dbUrl = trimEnvValue(
     process.env.SUPABASE_DATABASE_URL ||
-    process.env.DATABASE_URL ||
-    process.env.SUPABASE_DB_URL ||
-    process.env.NETLIFY_DATABASE_URL;
+      process.env.DATABASE_URL ||
+      process.env.SUPABASE_DB_URL ||
+      process.env.NETLIFY_DATABASE_URL,
+  );
   if (!dbUrl) return null;
-  const s = String(dbUrl).trim();
+  const s = dbUrl;
 
   // Netlify UI labels this "database URL" but it is often the HTTPS API base (not postgres://).
   if (/^https:\/\//i.test(s) && /\.supabase\.co(\/|$)/i.test(s)) {
@@ -73,7 +86,7 @@ function getSupabaseApiUrl() {
 
 function getSupabaseServiceClient() {
   const supabaseUrl = getSupabaseApiUrl();
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const supabaseKey = trimEnvValue(process.env.SUPABASE_SERVICE_ROLE_KEY);
   if (!supabaseUrl || !supabaseKey) return null;
   return createClient(supabaseUrl, supabaseKey);
 }
@@ -81,7 +94,7 @@ function getSupabaseServiceClient() {
 function verifyAuth(event) {
   const auth = event.headers.authorization || event.headers.Authorization || '';
   const token = auth.replace(/^Bearer\s+/i, '');
-  const jwtSecret = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET;
+  const jwtSecret = trimEnvValue(process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET);
   if (!token || !jwtSecret) return null;
   try {
     return jwt.verify(token, jwtSecret);
@@ -127,6 +140,7 @@ function assertSupabaseServiceRoleKey(supabaseKey) {
 module.exports = {
   cors,
   json,
+  trimEnvValue,
   getSupabaseApiUrl,
   getSupabaseServiceClient,
   verifyAuth,
