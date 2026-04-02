@@ -1,5 +1,26 @@
 # Netlify + Supabase Notes
 
+## Connect Netlify to Supabase (manual — most reliable)
+
+The Netlify **Supabase extension** can fill variables automatically, but if anything is wrong you should set these **by hand** in **Netlify → Site configuration → Environment variables** for **Production**, then **Deploy** again.
+
+Copy values from **Supabase → Project Settings → API** (same project for all of them).
+
+| Netlify variable | Where to copy in Supabase |
+|------------------|---------------------------|
+| `SUPABASE_URL` | **Project URL** — must be `https://<project-ref>.supabase.co` (no trailing path). |
+| `SUPABASE_SERVICE_ROLE_KEY` | **`service_role` `secret`** — long JWT starting with `eyJ…` (role inside payload is `service_role`). **Never** paste the `anon` key here. |
+| `SUPABASE_ANON_KEY` | **`anon` `public`** JWT — for training chat / `public-config`. |
+| `SUPABASE_JWT_SECRET` | **JWT Secret** (Settings → API) — used by this app to sign dashboard session tokens (can match Supabase’s JWT secret). |
+| `JWT_SECRET` | Optional duplicate of `SUPABASE_JWT_SECRET` if you prefer that name. |
+
+**Checks:**
+
+1. All variables use the **same** project ref in the URL and inside both JWTs (decode the middle part of the JWT at [jwt.io](https://jwt.io) — the `ref` field must match).
+2. **Production** scope: variables exist for **Production**, not only branch previews.
+3. After saving, **trigger a new deploy** (env vars apply on deploy).
+4. Open **`https://<your-site>.netlify.app/.netlify/functions/health-supabase`** in the browser. You should see `"ok": true` and REST reachable. If `authHealth` or `restProbe` shows `fetch failed`, see item 9 below (IPv4 / `NODE_OPTIONS`).
+
 ## Required environment values
 
 Set these in Netlify project environment variables:
