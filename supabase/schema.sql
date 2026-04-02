@@ -8,6 +8,54 @@ create table if not exists app_users (
   created_at timestamptz not null default now()
 );
 
+create table if not exists trainees (
+  id uuid primary key default gen_random_uuid(),
+  trainee_id text unique not null,
+  full_name text,
+  email text,
+  phone text,
+  trainee_type text,
+  company_name text,
+  job_title text,
+  university text,
+  specialty text,
+  city text,
+  created_date date,
+  status text not null default 'Active' check (status in ('Active', 'Inactive')),
+  notes text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists courses (
+  id uuid primary key default gen_random_uuid(),
+  course_id text unique not null,
+  course_name text not null,
+  category text,
+  target_audience text,
+  duration_hours numeric(10,2),
+  delivery_type text check (delivery_type in ('Online', 'Offline', 'Hybrid')),
+  price numeric(12,2),
+  description text,
+  status text check (status in ('Active', 'Archived')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists batches (
+  id uuid primary key default gen_random_uuid(),
+  batch_id text unique not null,
+  course_id text,
+  batch_name text,
+  trainer text,
+  location text,
+  capacity int,
+  start_date date,
+  end_date date,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists enrollments (
   id uuid primary key default gen_random_uuid(),
   enrollment_id text unique not null,
@@ -65,10 +113,22 @@ create table if not exists training_messages (
 create index if not exists idx_training_messages_group_id_created_at on training_messages (group_id, created_at);
 
 alter table enrollments enable row level security;
+alter table trainees enable row level security;
+alter table courses enable row level security;
+alter table batches enable row level security;
 alter table training_sessions enable row level security;
 alter table training_groups enable row level security;
 alter table training_participants enable row level security;
 alter table training_messages enable row level security;
+
+drop policy if exists trainees_deny_all on trainees;
+create policy trainees_deny_all on trainees for all using (false);
+
+drop policy if exists courses_deny_all on courses;
+create policy courses_deny_all on courses for all using (false);
+
+drop policy if exists batches_deny_all on batches;
+create policy batches_deny_all on batches for all using (false);
 
 drop policy if exists enrollments_deny_all on enrollments;
 create policy enrollments_deny_all on enrollments for all using (false);

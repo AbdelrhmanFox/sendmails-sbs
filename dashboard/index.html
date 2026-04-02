@@ -66,49 +66,33 @@
           <h2>Operations Data</h2>
           <button class="btn btn-secondary" id="btnRefreshEnrollments">Refresh</button>
         </div>
-        <p class="subtitle">Workbook-driven enrollment records (English UI, source data kept as provided).</p>
-        <form id="enrollmentForm" class="card form-grid">
-          <input type="hidden" id="enrollIdDb" />
-          <div><label for="enrollmentId">Enrollment ID</label><input id="enrollmentId" required /></div>
-          <div><label for="traineeId">Trainee ID</label><input id="traineeId" required /></div>
-          <div><label for="batchId">Batch ID</label><input id="batchId" required /></div>
-          <div>
-            <label for="enrollmentStatus">Enrollment Status</label>
-            <select id="enrollmentStatus">
-              <option>Registered</option><option>Attended</option><option>Cancelled</option><option>Completed</option>
-            </select>
-          </div>
-          <div>
-            <label for="paymentStatus">Payment Status</label>
-            <select id="paymentStatus">
-              <option>Pending</option><option>Paid</option><option>Waived</option>
-            </select>
-          </div>
-          <div><label for="amountPaid">Amount Paid</label><input id="amountPaid" type="number" step="0.01" /></div>
-          <div>
-            <label for="certificateIssued">Certificate Issued</label>
-            <select id="certificateIssued">
-              <option value="">Not set</option><option value="yes">Yes</option><option value="no">No</option>
-            </select>
-          </div>
-          <div><label for="enrollDate">Enroll Date</label><input id="enrollDate" placeholder="YYYY-MM-DD or source format" /></div>
-          <div class="full"><label for="notes">Notes</label><input id="notes" /></div>
+        <p class="subtitle">Workbook-driven entities (trainees, courses, batches, enrollments, payments).</p>
+        <form id="operationsEntityForm" class="card row">
+          <label for="entitySelect">Entity</label>
+          <select id="entitySelect">
+            <option value="trainees">Trainees</option>
+            <option value="courses">Courses</option>
+            <option value="batches">Batches</option>
+            <option value="enrollments" selected>Enrollments</option>
+          </select>
+          <button class="btn btn-secondary" type="button" id="btnLoadEntity">Load</button>
+        </form>
+
+        <form id="entityRecordForm" class="card form-grid">
+          <input type="hidden" id="recordInternalId" />
+          <div id="dynamicFields" class="full"></div>
           <div class="full form-actions">
-            <button class="btn btn-primary" type="submit" id="btnSaveEnrollment">Save Enrollment</button>
-            <button class="btn btn-secondary" type="button" id="btnResetEnrollment">Clear</button>
+            <button class="btn btn-primary" type="submit" id="btnSaveRecord">Save Record</button>
+            <button class="btn btn-secondary" type="button" id="btnResetRecord">Clear</button>
           </div>
-          <p id="enrollmentMsg" class="inline-note full"></p>
+          <p id="entityMsg" class="inline-note full"></p>
         </form>
         <div class="card">
-          <h3>Enrollment Records</h3>
+          <h3 id="entityTableTitle">Enrollment Records</h3>
           <div class="table-wrap">
-            <table id="enrollmentsTable">
-              <thead>
-                <tr>
-                  <th>Enrollment</th><th>Trainee</th><th>Batch</th><th>Enroll Status</th><th>Payment</th><th>Amount</th><th>Date</th><th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="enrollmentsBody"></tbody>
+            <table id="entityTable">
+              <thead><tr id="entityHeadRow"></tr></thead>
+              <tbody id="entityBody"></tbody>
             </table>
           </div>
         </div>

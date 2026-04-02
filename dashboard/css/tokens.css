@@ -1,13 +1,17 @@
 :root {
-  --brand-bg: #0f1723;
-  --brand-surface: #162231;
-  --brand-surface-2: #1d2b3d;
-  --brand-border: #2c3f57;
-  --brand-text: #e9f0f8;
-  --brand-muted: #9fb0c5;
-  --brand-primary: #00a3ad;
-  --brand-primary-2: #00838d;
-  --brand-danger: #c94444;
-  --brand-success: #2f9f5f;
+  /* Approximated manually from available .ai identity sources */
+  --brand-bg: #0b1220;
+  --brand-surface: #121d31;
+  --brand-surface-2: #1b2940;
+  --brand-border: #2a3d5e;
+  --brand-text: #edf3fb;
+  --brand-muted: #9db0ca;
+  --brand-primary: #00a9b7;
+  --brand-primary-2: #007f93;
+  --brand-accent: #f1a437;
+  --brand-accent-2: #d08a28;
+  --brand-danger: #cf4f4f;
+  --brand-success: #35a16a;
   --brand-radius: 12px;
+  --brand-shadow: 0 8px 24px rgba(4, 15, 32, 0.35);
 }

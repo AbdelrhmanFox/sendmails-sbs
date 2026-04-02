@@ -102,118 +102,205 @@
   }
 
   // -------------------------
-  // Operations Data (Enrollments)
+  // Operations Data (Workbook entities)
   // -------------------------
-  const enrollments = [];
+  const entitySchema = {
+    trainees: {
+      title: 'Trainee Records',
+      fields: [
+        { key: 'trainee_id', label: 'Trainee ID', required: true },
+        { key: 'full_name', label: 'Full Name' },
+        { key: 'email', label: 'Email' },
+        { key: 'phone', label: 'Phone' },
+        { key: 'trainee_type', label: 'Type' },
+        { key: 'company_name', label: 'Company Name' },
+        { key: 'job_title', label: 'Job Title' },
+        { key: 'university', label: 'University' },
+        { key: 'specialty', label: 'Specialty' },
+        { key: 'city', label: 'City' },
+        { key: 'created_date', label: 'Created Date' },
+        { key: 'status', label: 'Status' },
+        { key: 'notes', label: 'Notes' },
+      ],
+      list: ['trainee_id', 'full_name', 'email', 'phone', 'trainee_type', 'city'],
+    },
+    courses: {
+      title: 'Course Records',
+      fields: [
+        { key: 'course_id', label: 'Course ID', required: true },
+        { key: 'course_name', label: 'Course Name', required: true },
+        { key: 'category', label: 'Category' },
+        { key: 'target_audience', label: 'Target Audience' },
+        { key: 'duration_hours', label: 'Duration Hours' },
+        { key: 'delivery_type', label: 'Delivery Type' },
+        { key: 'price', label: 'Price' },
+        { key: 'description', label: 'Description' },
+        { key: 'status', label: 'Status' },
+      ],
+      list: ['course_id', 'course_name', 'category', 'delivery_type', 'price', 'status'],
+    },
+    batches: {
+      title: 'Batch Records',
+      fields: [
+        { key: 'batch_id', label: 'Batch ID', required: true },
+        { key: 'course_id', label: 'Course ID' },
+        { key: 'batch_name', label: 'Batch Name' },
+        { key: 'trainer', label: 'Trainer' },
+        { key: 'location', label: 'Location' },
+        { key: 'capacity', label: 'Capacity' },
+        { key: 'start_date', label: 'Start Date' },
+        { key: 'end_date', label: 'End Date' },
+      ],
+      list: ['batch_id', 'course_id', 'batch_name', 'trainer', 'location', 'capacity', 'start_date', 'end_date'],
+    },
+    enrollments: {
+      title: 'Enrollment Records',
+      fields: [
+        { key: 'enrollment_id', label: 'Enrollment ID', required: true },
+        { key: 'trainee_id', label: 'Trainee ID', required: true },
+        { key: 'batch_id', label: 'Batch ID', required: true },
+        { key: 'enrollment_status', label: 'Enrollment Status' },
+        { key: 'payment_status', label: 'Payment Status' },
+        { key: 'amount_paid', label: 'Amount Paid' },
+        { key: 'certificate_issued', label: 'Certificate Issued' },
+        { key: 'enroll_date', label: 'Enroll Date' },
+        { key: 'notes', label: 'Notes' },
+      ],
+      list: ['enrollment_id', 'trainee_id', 'batch_id', 'enrollment_status', 'payment_status', 'amount_paid'],
+    },
+  };
+  const entityRows = [];
 
-  function renderEnrollmentRows() {
-    const tbody = document.getElementById('enrollmentsBody');
-    if (!tbody) return;
-    tbody.innerHTML = '';
-    enrollments.forEach((row) => {
+  function currentEntity() {
+    return String(document.getElementById('entitySelect')?.value || 'enrollments');
+  }
+
+  function renderEntityForm() {
+    const entity = currentEntity();
+    const cfg = entitySchema[entity];
+    const wrap = document.getElementById('dynamicFields');
+    const title = document.getElementById('entityTableTitle');
+    if (!cfg || !wrap) return;
+    title.textContent = cfg.title;
+    wrap.innerHTML = cfg.fields
+      .map((f) => `
+      <div>
+        <label for="fld_${f.key}">${f.label}</label>
+        <input id="fld_${f.key}" ${f.required ? 'required' : ''} />
+      </div>`)
+      .join('');
+  }
+
+  function renderEntityTable() {
+    const entity = currentEntity();
+    const cfg = entitySchema[entity];
+    const head = document.getElementById('entityHeadRow');
+    const body = document.getElementById('entityBody');
+    if (!cfg || !head || !body) return;
+    head.innerHTML = cfg.list.map((k) => `<th>${k}</th>`).join('') + '<th>Actions</th>';
+    body.innerHTML = '';
+    entityRows.forEach((row) => {
       const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${row.enrollmentId || ''}</td>
-        <td>${row.traineeId || ''}</td>
-        <td>${row.batchId || ''}</td>
-        <td>${row.enrollmentStatus || ''}</td>
-        <td>${row.paymentStatus || ''}</td>
-        <td>${row.amountPaid ?? ''}</td>
-        <td>${row.enrollDate || ''}</td>
-        <td>
-          <button class="btn btn-secondary btn-edit" data-id="${row.id}">Edit</button>
-          <button class="btn btn-secondary btn-delete" data-id="${row.id}">Delete</button>
-        </td>
-      `;
-      tbody.appendChild(tr);
+      tr.innerHTML =
+        cfg.list.map((k) => `<td>${row[k] ?? ''}</td>`).join('') +
+        `<td><button class="btn btn-secondary btn-edit-row" data-id="${row.id}">Edit</button> <button class="btn btn-secondary btn-del-row" data-id="${row.id}">Delete</button></td>`;
+      body.appendChild(tr);
     });
-    tbody.querySelectorAll('.btn-edit').forEach((btn) => {
-      btn.addEventListener('click', () => fillEnrollmentForm(btn.getAttribute('data-id')));
-    });
-    tbody.querySelectorAll('.btn-delete').forEach((btn) => {
-      btn.addEventListener('click', () => removeEnrollment(btn.getAttribute('data-id')));
+    body.querySelectorAll('.btn-edit-row').forEach((b) => b.addEventListener('click', () => fillEntityForm(b.getAttribute('data-id'))));
+    body.querySelectorAll('.btn-del-row').forEach((b) => b.addEventListener('click', () => deleteEntityRow(b.getAttribute('data-id'))));
+  }
+
+  function fillEntityForm(id) {
+    const row = entityRows.find((r) => String(r.id) === String(id));
+    const cfg = entitySchema[currentEntity()];
+    if (!row || !cfg) return;
+    document.getElementById('recordInternalId').value = row.id || '';
+    cfg.fields.forEach((f) => {
+      const el = document.getElementById(`fld_${f.key}`);
+      if (el) el.value = row[f.key] ?? '';
     });
   }
 
-  function fillEnrollmentForm(id) {
-    const row = enrollments.find((r) => r.id === id);
-    if (!row) return;
-    document.getElementById('enrollIdDb').value = row.id || '';
-    document.getElementById('enrollmentId').value = row.enrollmentId || '';
-    document.getElementById('traineeId').value = row.traineeId || '';
-    document.getElementById('batchId').value = row.batchId || '';
-    document.getElementById('enrollmentStatus').value = row.enrollmentStatus || 'Registered';
-    document.getElementById('paymentStatus').value = row.paymentStatus || 'Pending';
-    document.getElementById('amountPaid').value = row.amountPaid ?? '';
-    document.getElementById('certificateIssued').value = row.certificateIssued == null ? '' : (row.certificateIssued ? 'yes' : 'no');
-    document.getElementById('enrollDate').value = row.enrollDate || '';
-    document.getElementById('notes').value = row.notes || '';
-  }
-
-  async function loadEnrollments() {
-    const msg = document.getElementById('enrollmentMsg');
+  async function loadEntityRows() {
+    const entity = currentEntity();
+    const msg = document.getElementById('entityMsg');
     try {
-      const data = await jsonFetch('/.netlify/functions/enrollments', { headers: getAuthHeaders() });
-      enrollments.length = 0;
-      (data.items || []).forEach((i) => enrollments.push(i));
-      renderEnrollmentRows();
-      if (msg) msg.textContent = `Loaded ${enrollments.length} enrollment record(s).`;
+      const data = await jsonFetch(`/.netlify/functions/operations-data?entity=${encodeURIComponent(entity)}`, { headers: getAuthHeaders() });
+      entityRows.length = 0;
+      (data.items || []).forEach((r) => entityRows.push(r));
+      renderEntityTable();
+      if (msg) msg.textContent = `Loaded ${entityRows.length} row(s) for ${entity}.`;
     } catch (err) {
       if (msg) msg.textContent = err.message;
     }
   }
 
-  async function removeEnrollment(id) {
-    if (!id || !confirm('Delete this enrollment row?')) return;
-    const msg = document.getElementById('enrollmentMsg');
+  async function deleteEntityRow(id) {
+    if (!id || !confirm('Delete this row?')) return;
+    const entity = currentEntity();
+    const msg = document.getElementById('entityMsg');
     try {
-      await jsonFetch(`/.netlify/functions/enrollments?id=${encodeURIComponent(id)}`, {
+      await jsonFetch(`/.netlify/functions/operations-data?entity=${encodeURIComponent(entity)}&id=${encodeURIComponent(id)}`, {
         method: 'DELETE',
         headers: getAuthHeaders(),
       });
-      await loadEnrollments();
-      if (msg) msg.textContent = 'Enrollment deleted.';
+      await loadEntityRows();
+      if (msg) msg.textContent = 'Row deleted.';
     } catch (err) {
       if (msg) msg.textContent = err.message;
     }
   }
 
-  function initOperations() {
-    document.getElementById('btnRefreshEnrollments')?.addEventListener('click', loadEnrollments);
-    document.getElementById('btnResetEnrollment')?.addEventListener('click', () => {
-      document.getElementById('enrollmentForm')?.reset();
-      document.getElementById('enrollIdDb').value = '';
+  function readEntityPayload() {
+    const cfg = entitySchema[currentEntity()];
+    const payload = {};
+    cfg.fields.forEach((f) => {
+      const el = document.getElementById(`fld_${f.key}`);
+      payload[f.key] = el ? el.value : '';
     });
-    document.getElementById('enrollmentForm')?.addEventListener('submit', async (e) => {
+    const id = document.getElementById('recordInternalId').value;
+    if (id) payload.id = id;
+    return payload;
+  }
+
+  function resetEntityForm() {
+    document.getElementById('recordInternalId').value = '';
+    const cfg = entitySchema[currentEntity()];
+    cfg.fields.forEach((f) => {
+      const el = document.getElementById(`fld_${f.key}`);
+      if (el) el.value = '';
+    });
+  }
+
+  function initOperations() {
+    renderEntityForm();
+    document.getElementById('entitySelect')?.addEventListener('change', () => {
+      renderEntityForm();
+      resetEntityForm();
+      loadEntityRows();
+    });
+    document.getElementById('btnLoadEntity')?.addEventListener('click', loadEntityRows);
+    document.getElementById('btnRefreshEnrollments')?.addEventListener('click', loadEntityRows);
+    document.getElementById('btnResetRecord')?.addEventListener('click', resetEntityForm);
+    document.getElementById('entityRecordForm')?.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const msg = document.getElementById('enrollmentMsg');
-      const payload = {
-        id: document.getElementById('enrollIdDb').value,
-        enrollmentId: document.getElementById('enrollmentId').value,
-        traineeId: document.getElementById('traineeId').value,
-        batchId: document.getElementById('batchId').value,
-        enrollmentStatus: document.getElementById('enrollmentStatus').value,
-        paymentStatus: document.getElementById('paymentStatus').value,
-        amountPaid: document.getElementById('amountPaid').value,
-        certificateIssued: document.getElementById('certificateIssued').value === '' ? null : document.getElementById('certificateIssued').value === 'yes',
-        enrollDate: document.getElementById('enrollDate').value,
-        notes: document.getElementById('notes').value,
-      };
+      const entity = currentEntity();
+      const msg = document.getElementById('entityMsg');
+      const payload = readEntityPayload();
       try {
-        await jsonFetch('/.netlify/functions/enrollments', {
+        await jsonFetch(`/.netlify/functions/operations-data?entity=${encodeURIComponent(entity)}`, {
           method: payload.id ? 'PUT' : 'POST',
           headers: getAuthHeaders(),
           body: JSON.stringify(payload),
         });
-        document.getElementById('enrollmentForm')?.reset();
-        document.getElementById('enrollIdDb').value = '';
-        await loadEnrollments();
-        if (msg) msg.textContent = 'Enrollment saved.';
+        resetEntityForm();
+        await loadEntityRows();
+        if (msg) msg.textContent = 'Record saved.';
       } catch (err) {
         if (msg) msg.textContent = err.message;
       }
     });
-    loadEnrollments();
+    loadEntityRows();
   }
 
   // -------------------------

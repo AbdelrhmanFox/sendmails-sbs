@@ -5,12 +5,16 @@
   "private": true,
   "scripts": {
     "seed:admin": "node scripts/seed-admin.js",
-    "import:enrollments": "node scripts/import-enrollments.js"
+    "import:enrollments": "node scripts/import-enrollments.js",
+    "import:workbook": "node scripts/import-workbook-data.js",
+    "workbook:export": "node scripts/export-workbook.js",
+    "data-model:build": "node scripts/build-data-model.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
     "bcryptjs": "^2.4.3",
-    "jsonwebtoken": "^9.0.2"
+    "jsonwebtoken": "^9.0.2",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "dotenv": "^16.4.5"

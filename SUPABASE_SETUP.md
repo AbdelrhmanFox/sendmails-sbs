@@ -46,12 +46,15 @@ Default admin credentials from seed: `admin / 123`.
 ## 4) Optional workbook import
 
 ```bash
-npm run import:enrollments
+npm run workbook:export
+npm run data-model:build
+npm run import:workbook
 ```
 
 Source file:
 
-- `docs/excel-export/enrollments.csv`
+- `DataBase(SBS)v01.xlsm`
+- exported sheets in `docs/excel-export/*.csv`
 
 ## Troubleshooting
 

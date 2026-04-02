@@ -3,7 +3,7 @@
 Internal staff dashboard for an educational services company.  
 This project now includes:
 
-- **Operations Data** (workbook-driven database UI for enrollments)
+- **Operations Data** (workbook-driven database UI for trainees, courses, batches, enrollments)
 - **Email Campaigns** (existing n8n sendmail automation, feature-gated by role)
 - **Live Session Groups** (trainer creates groups, participants join with links, chat)
 - **Auth + user management** (Supabase + Netlify Functions)
@@ -63,7 +63,9 @@ or Netlify:
 ### 4) Import workbook sample data (optional)
 
 ```bash
-npm run import:enrollments
+npm run workbook:export
+npm run data-model:build
+npm run import:workbook
 ```
 
 ### 5) Configure n8n campaigns
@@ -78,7 +80,7 @@ Import `automation/workflow.json`, set Google Sheets + SMTP credentials, activat
 - **Functions directory:** `netlify/functions`
 - Push to GitHub, deploy from GitHub, then verify:
   - Login works
-  - Enrollment CRUD works
+  - Operations entities CRUD works (trainees/courses/batches/enrollments)
   - Training group link + chat works
   - Campaign preview/send/status works with n8n webhook
 
