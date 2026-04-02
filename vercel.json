@@ -10,8 +10,7 @@
     }
   ],
   "functions": {
-    "api/**/*.js": {
-      "memory": 1024,
+    "api/[name].js": {
       "maxDuration": 30
     }
   }

@@ -18,7 +18,7 @@ All shipped UI and docs are English-only.
 | --- | --- |
 | `dashboard/` | Static frontend app (staff shell, data module, campaigns, training, admin). |
 | `netlify/functions/` | API endpoints for auth, user management, enrollments CRUD, training sessions/chat, public config. |
-| `api/` | Vercel Serverless wrappers (same handlers as `netlify/functions/`). |
+| `api/[name].js` | Single Vercel Serverless entry (Hobby-friendly); dispatches to `netlify/functions/*`. |
 | `vercel.json` | Vercel build output (`dashboard/`) and `/.netlify/functions/*` → `/api/*` rewrites. |
 | `supabase/schema.sql` | Supabase schema (users, enrollments, training tables, RLS policies). |
 | `automation/workflow.json` | n8n workflow for campaign preview/send/status. |
