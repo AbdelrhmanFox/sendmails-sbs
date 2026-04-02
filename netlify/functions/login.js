@@ -36,9 +36,26 @@ exports.handler = async (event) => {
 
   if (!supabaseUrl || !supabaseKey || !jwtSecret) return json({ error: 'Server config missing' }, 500);
 
+  if (String(supabaseKey).startsWith('sb_publishable_')) {
+    return json({
+      error: 'Server misconfiguration',
+      hint: 'SUPABASE_SERVICE_ROLE_KEY must be the secret key (sb_secret_… or legacy service_role), not the publishable key.',
+    }, 500);
+  }
+
   const supabase = createClient(supabaseUrl, supabaseKey);
   const { data: user, error: fetchErr } = await supabase.from('app_users').select('username, password_hash, role').eq('username', String(username).trim()).maybeSingle();
-  if (fetchErr) return json({ error: 'Database error' }, 500);
+  if (fetchErr) {
+    console.error('[login] Supabase query error:', fetchErr.code, fetchErr.message, fetchErr.details);
+    const debug = process.env.LOGIN_DEBUG === '1';
+    return json(
+      {
+        error: 'Database error',
+        ...(debug && { details: fetchErr.message, code: fetchErr.code }),
+      },
+      500,
+    );
+  }
   if (!user || !user.password_hash) return json({ error: 'Invalid username or password' }, 401);
 
   const match = await bcrypt.compare(password, user.password_hash);

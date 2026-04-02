@@ -23,7 +23,7 @@ create table if not exists trainees (
   created_date date,
   status text not null default 'Active' check (status in ('Active', 'Inactive')),
   notes text,
-  created_at timestamptz not null default now(),
+  created_at timestamptz not null default now(),    
   updated_at timestamptz not null default now()
 );
 
@@ -180,6 +180,9 @@ create policy training_messages_public_rw on training_messages
         and g.is_public = true
     )
   );
+
+-- Login reads app_users with the service role only; keep RLS off (if RLS was enabled in the dashboard, login can 500).
+alter table public.app_users disable row level security;
 
 grant usage on schema public to anon, authenticated;
 grant select, insert on training_groups to anon, authenticated;

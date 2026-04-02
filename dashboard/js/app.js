@@ -32,7 +32,11 @@
   async function jsonFetch(url, options = {}) {
     const res = await fetch(url, options);
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+    if (!res.ok) {
+      const parts = [data.error, data.hint, data.details].filter(Boolean);
+      const msg = parts.length ? parts.join(' — ') : `Request failed (${res.status})`;
+      throw new Error(msg);
+    }
     return data;
   }
 
