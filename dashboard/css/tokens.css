@@ -19,5 +19,7 @@
   --brand-danger: #ed1c24;
   --brand-success: #39b54a;
   --brand-radius: 12px;
-  --brand-shadow: 0 10px 32px rgba(8, 10, 40, 0.55);
+  --brand-radius-dense: 8px;
+  --brand-shadow: 0 6px 20px rgba(8, 10, 40, 0.38);
+  --brand-shadow-soft: 0 2px 10px rgba(8, 10, 40, 0.22);
 }

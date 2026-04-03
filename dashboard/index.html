@@ -85,7 +85,7 @@
 
     <main class="main">
       <div id="operationsGlobalBar" class="operations-global-bar hidden" aria-hidden="true">
-        <div class="operations-global-bar-inner card card--compact">
+        <div class="operations-global-bar-inner card card--compact card--plain">
           <label class="visually-hidden" for="opsGlobalSearchInput">Search trainees</label>
           <input
             type="search"
@@ -125,7 +125,7 @@
             <p class="subtitle">Search, filter, and open a trainee profile. IDs are assigned on save (SBS-TR-######).</p>
           </div>
         </div>
-        <div class="card ops-list-toolbar">
+        <div class="card card--plain ops-list-toolbar">
           <div class="ops-toolbar-row">
             <input type="search" id="traineesListQ" class="ops-filter-search" placeholder="Search list…" autocomplete="off" />
             <select id="traineesFilterType" class="ops-filter-select" aria-label="Filter by type">
@@ -167,7 +167,7 @@
           </div>
           <div class="ops-cards-mobile" id="traineesCards"></div>
         </div>
-        <div class="card ops-pagination">
+        <div class="card card--plain ops-pagination">
           <span id="traineesPageInfo" class="muted"></span>
           <div class="ops-pagination-btns">
             <button type="button" class="btn btn-secondary" id="btnTraineesPrev">Previous</button>
@@ -266,14 +266,14 @@
 
       <section id="view-operations-courses" class="view">
         <div class="view-hero"><div class="view-hero-text"><div class="view-header"><h2>Courses</h2><button type="button" class="btn btn-primary" id="btnNewCourse">+ New course</button></div><p class="subtitle">Course IDs are generated as SBS-CO-######.</p></div></div>
-        <div class="card ops-list-toolbar">
+        <div class="card card--plain ops-list-toolbar">
           <input type="search" id="coursesListQ" class="ops-filter-search" placeholder="Search…" />
           <button type="button" class="btn btn-secondary" id="btnCoursesRefresh">Refresh</button>
         </div>
         <div class="table-wrap"><table class="ops-data-table"><thead>
           <tr><th>Course ID</th><th>Name</th><th>Category</th><th>Delivery</th><th>Price</th><th>Status</th><th></th></tr>
         </thead><tbody id="coursesTableBody"></tbody></table></div>
-        <div class="card ops-pagination"><span id="coursesPageInfo" class="muted"></span><button type="button" class="btn btn-secondary" id="btnCoursesPrev">Prev</button> <button type="button" class="btn btn-secondary" id="btnCoursesNext">Next</button></div>
+        <div class="card card--plain ops-pagination"><span id="coursesPageInfo" class="muted"></span><button type="button" class="btn btn-secondary" id="btnCoursesPrev">Prev</button> <button type="button" class="btn btn-secondary" id="btnCoursesNext">Next</button></div>
         <div id="courseFormCard" class="card hidden">
           <h3 id="courseFormTitle">New course</h3>
           <form id="courseForm" class="form-grid">
@@ -295,7 +295,7 @@
 
       <section id="view-operations-batches" class="view">
         <div class="view-hero"><div class="view-hero-text"><div class="view-header"><h2>Batches</h2><button type="button" class="btn btn-primary" id="btnNewBatch">+ New batch</button></div><p class="subtitle">Link each batch to a course. Batch IDs use form SBS-BA- plus course ID plus a sequence (e.g. SBS-BA-SBS-CO-000001-01).</p></div></div>
-        <div class="card ops-list-toolbar">
+        <div class="card card--plain ops-list-toolbar">
           <input type="search" id="batchesListQ" class="ops-filter-search" placeholder="Search…" />
           <label class="visually-hidden" for="batchesFilterCourse">Course</label>
           <select id="batchesFilterCourse" class="ops-filter-select"><option value="">All courses</option></select>
@@ -304,7 +304,7 @@
         <div class="table-wrap"><table class="ops-data-table"><thead>
           <tr><th>Batch ID</th><th>Course</th><th>Name</th><th>Dates</th><th>Trainer</th><th>Cap</th><th>Enrolled</th><th></th></tr>
         </thead><tbody id="batchesTableBody"></tbody></table></div>
-        <div class="card ops-pagination"><span id="batchesPageInfo" class="muted"></span><button type="button" class="btn btn-secondary" id="btnBatchesPrev">Prev</button> <button type="button" class="btn btn-secondary" id="btnBatchesNext">Next</button></div>
+        <div class="card card--plain ops-pagination"><span id="batchesPageInfo" class="muted"></span><button type="button" class="btn btn-secondary" id="btnBatchesPrev">Prev</button> <button type="button" class="btn btn-secondary" id="btnBatchesNext">Next</button></div>
         <div id="batchFormCard" class="card hidden">
           <h3 id="batchFormTitle">New batch</h3>
           <form id="batchForm" class="form-grid">
@@ -362,7 +362,7 @@
           </div>
           <button type="button" class="btn btn-secondary" id="btnWizCancel">Close wizard</button>
         </div>
-        <div class="card ops-list-toolbar">
+        <div class="card card--plain ops-list-toolbar">
           <input type="search" id="enrollmentsListQ" class="ops-filter-search" placeholder="Search…" />
           <select id="enrollmentsFilterStatus" class="ops-filter-select"><option value="">All enrollment statuses</option></select>
           <select id="enrollmentsFilterPay" class="ops-filter-select"><option value="">All payment statuses</option></select>
@@ -371,13 +371,13 @@
         <div class="table-wrap"><table class="ops-data-table"><thead>
           <tr><th><input type="checkbox" id="enrollSelectAll" /></th><th>ID</th><th>Trainee</th><th>Course</th><th>Batch</th><th>Enr.</th><th>Pay</th><th>Amount</th><th></th></tr>
         </thead><tbody id="enrollmentsTableBody"></tbody></table></div>
-        <div class="card ops-bulk-bar hidden" id="enrollmentsBulkBar">
+        <div class="card card--plain ops-bulk-bar hidden" id="enrollmentsBulkBar">
           <span id="enrollmentsBulkCount" class="muted"></span>
           <select id="enrollmentsBulkEnrollmentStatus" class="ops-filter-select"><option value="">Set enrollment status…</option></select>
           <select id="enrollmentsBulkPaymentStatus" class="ops-filter-select"><option value="">Set payment status…</option></select>
           <button type="button" class="btn btn-primary" id="btnEnrollmentsBulkApply">Apply</button>
         </div>
-        <div class="card ops-pagination"><span id="enrollmentsPageInfo" class="muted"></span><button type="button" class="btn btn-secondary" id="btnEnrollmentsPrev">Prev</button> <button type="button" class="btn btn-secondary" id="btnEnrollmentsNext">Next</button></div>
+        <div class="card card--plain ops-pagination"><span id="enrollmentsPageInfo" class="muted"></span><button type="button" class="btn btn-secondary" id="btnEnrollmentsPrev">Prev</button> <button type="button" class="btn btn-secondary" id="btnEnrollmentsNext">Next</button></div>
         <div id="paymentEditCard" class="card hidden">
           <h3>Update payment</h3>
           <input type="hidden" id="pe_enrollment_internal_id" />

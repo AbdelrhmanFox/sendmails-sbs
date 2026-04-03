@@ -15,5 +15,7 @@
   "brandDanger": "#ed1c24",
   "brandSuccess": "#39b54a",
   "brandRadius": "12px",
-  "brandShadow": "0 10px 32px rgba(8, 10, 40, 0.55)"
+  "brandRadiusDense": "8px",
+  "brandShadow": "0 6px 20px rgba(8, 10, 40, 0.38)",
+  "brandShadowSoft": "0 2px 10px rgba(8, 10, 40, 0.22)"
 }
