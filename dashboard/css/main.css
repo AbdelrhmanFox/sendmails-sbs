@@ -480,6 +480,22 @@ th { color: var(--brand-muted); font-weight: 600; }
   margin-bottom: 12px;
   max-width: 52rem;
 }
+.field-with-addon {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+  flex-wrap: wrap;
+}
+.field-with-addon input {
+  flex: 1;
+  margin-bottom: 0;
+  min-width: 140px;
+}
+.field-with-addon .btn {
+  flex-shrink: 0;
+  align-self: center;
+}
+
 .operations-import .import-row {
   align-items: center;
 }

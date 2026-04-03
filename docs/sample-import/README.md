@@ -1,5 +1,7 @@
 # Operations import: Excel column reference
 
+**Sample workbook:** `SBS_operations_sample.xlsx` — generate with `npm run sample-import:xlsx` (writes `docs/sample-import/` and `dashboard/assets/` for the in-app **Download sample .xlsx** button).
+
 Use **`.xlsx`** files where **row 1** is the header row. Column names should match the workbook export (same names as `docs/excel-export/*.csv`) or **snake_case** equivalents (e.g. `trainee_id`, `Trainee_ID`).
 
 In **Operations Data**, select the **entity** (trainees, courses, batches, enrollments), then import. The app picks a sheet whose **name** matches the entity (case-insensitive) or uses the **first sheet**.

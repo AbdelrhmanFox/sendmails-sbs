@@ -8,6 +8,8 @@ const XLSX = require('xlsx');
 
 const ROOT = path.join(__dirname, '..');
 const OUT = path.join(ROOT, 'docs', 'sample-import', 'SBS_operations_sample.xlsx');
+/** Same file for static hosting — "Download sample" in Operations Data. */
+const OUT_DASHBOARD = path.join(ROOT, 'dashboard', 'assets', 'SBS_operations_sample.xlsx');
 
 const trainees = [
   ['Trainee_ID', 'Full_Name', 'Phone', 'Email', 'Type', 'Company_Name', 'Job_Title', 'University', 'Specialty', 'City', 'Company_ID', 'Created_Date', 'Status', 'Notes'],
@@ -41,6 +43,11 @@ function main() {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   XLSX.writeFile(wb, OUT);
   console.log(`Wrote ${OUT}`);
+
+  const dashDir = path.dirname(OUT_DASHBOARD);
+  if (!fs.existsSync(dashDir)) fs.mkdirSync(dashDir, { recursive: true });
+  XLSX.writeFile(wb, OUT_DASHBOARD);
+  console.log(`Wrote ${OUT_DASHBOARD}`);
 }
 
 main();

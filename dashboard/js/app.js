@@ -243,7 +243,12 @@
       title: 'Batch Records',
       fields: [
         { key: 'batch_id', label: 'Batch ID', required: true },
-        { key: 'course_id', label: 'Course ID' },
+        {
+          key: 'course_id',
+          label: 'Course ID',
+          lookup: true,
+          placeholder: 'Pick an existing course or type a new course ID',
+        },
         { key: 'batch_name', label: 'Batch Name' },
         { key: 'trainer', label: 'Trainer' },
         { key: 'location', label: 'Location' },
@@ -256,9 +261,28 @@
     enrollments: {
       title: 'Enrollment Records',
       fields: [
-        { key: 'enrollment_id', label: 'Enrollment ID', required: true },
-        { key: 'trainee_id', label: 'Trainee ID', required: true },
-        { key: 'batch_id', label: 'Batch ID', required: true },
+        {
+          key: 'enrollment_id',
+          label: 'Enrollment ID',
+          required: true,
+          lookup: true,
+          autoId: true,
+          placeholder: 'Pick an existing ID, type a new one, or use Generate',
+        },
+        {
+          key: 'trainee_id',
+          label: 'Trainee ID',
+          required: true,
+          lookup: true,
+          placeholder: 'Pick an existing trainee or type a new trainee ID',
+        },
+        {
+          key: 'batch_id',
+          label: 'Batch ID',
+          required: true,
+          lookup: true,
+          placeholder: 'Pick an existing batch or type a new batch ID',
+        },
         { key: 'enrollment_status', label: 'Enrollment Status' },
         { key: 'payment_status', label: 'Payment Status' },
         { key: 'amount_paid', label: 'Amount Paid' },
@@ -270,6 +294,50 @@
     },
   };
   const entityRows = [];
+  const opLookups = {
+    trainee_ids: [],
+    batch_ids: [],
+    enrollment_ids: [],
+    course_ids: [],
+  };
+
+  function escapeAttr(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/</g, '&lt;');
+  }
+
+  function populateOperationsDatalists() {
+    [
+      ['datalist_trainee_id', opLookups.trainee_ids],
+      ['datalist_batch_id', opLookups.batch_ids],
+      ['datalist_enrollment_id', opLookups.enrollment_ids],
+      ['datalist_course_id', opLookups.course_ids],
+    ].forEach(([id, vals]) => {
+      const dl = document.getElementById(id);
+      if (!dl) return;
+      dl.innerHTML = (vals || []).map((v) => `<option value="${escapeAttr(v)}"></option>`).join('');
+    });
+  }
+
+  async function loadOperationsLookups() {
+    try {
+      const [tr, bat, en, cr] = await Promise.all([
+        jsonFetch('/.netlify/functions/operations-data?entity=trainees', { headers: getAuthHeaders() }),
+        jsonFetch('/.netlify/functions/operations-data?entity=batches', { headers: getAuthHeaders() }),
+        jsonFetch('/.netlify/functions/operations-data?entity=enrollments', { headers: getAuthHeaders() }),
+        jsonFetch('/.netlify/functions/operations-data?entity=courses', { headers: getAuthHeaders() }),
+      ]);
+      opLookups.trainee_ids = [...new Set((tr.items || []).map((r) => r.trainee_id).filter(Boolean))].sort();
+      opLookups.batch_ids = [...new Set((bat.items || []).map((r) => r.batch_id).filter(Boolean))].sort();
+      opLookups.enrollment_ids = [...new Set((en.items || []).map((r) => r.enrollment_id).filter(Boolean))].sort();
+      opLookups.course_ids = [...new Set((cr.items || []).map((r) => r.course_id).filter(Boolean))].sort();
+      populateOperationsDatalists();
+    } catch (_) {
+      /* leave existing datalists */
+    }
+  }
 
   function currentEntity() {
     return String(document.getElementById('entitySelect')?.value || 'enrollments');
@@ -282,13 +350,49 @@
     const title = document.getElementById('entityTableTitle');
     if (!cfg || !wrap) return;
     title.textContent = cfg.title;
+    const ph = (f) => (f.placeholder ? ` placeholder="${escapeAttr(f.placeholder)}"` : '');
     wrap.innerHTML = cfg.fields
-      .map((f) => `
-      <div>
+      .map((f) => {
+        if (f.lookup && f.autoId) {
+          return `<div>
         <label for="fld_${f.key}">${f.label}</label>
-        <input id="fld_${f.key}" ${f.required ? 'required' : ''} />
-      </div>`)
+        <div class="field-with-addon">
+          <input id="fld_${f.key}" list="datalist_${f.key}" ${f.required ? 'required' : ''} autocomplete="off"${ph(
+            f,
+          )} />
+          <button type="button" class="btn btn-secondary btn-auto-enrollment-id">Generate ID</button>
+        </div>
+        <datalist id="datalist_${f.key}"></datalist>
+      </div>`;
+        }
+        if (f.lookup) {
+          return `<div>
+        <label for="fld_${f.key}">${f.label}</label>
+        <input id="fld_${f.key}" list="datalist_${f.key}" ${f.required ? 'required' : ''} autocomplete="off"${ph(
+          f,
+        )} />
+        <datalist id="datalist_${f.key}"></datalist>
+      </div>`;
+        }
+        return `<div>
+        <label for="fld_${f.key}">${f.label}</label>
+        <input id="fld_${f.key}" ${f.required ? 'required' : ''}${ph(f)} />
+      </div>`;
+      })
       .join('');
+    populateOperationsDatalists();
+    document.querySelectorAll('.btn-auto-enrollment-id').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const input = document.getElementById('fld_enrollment_id');
+        if (!input) return;
+        const d = new Date();
+        const y = d.getUTCFullYear();
+        const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(d.getUTCDate()).padStart(2, '0');
+        const rnd = Math.floor(1000 + Math.random() * 9000);
+        input.value = `EN-${y}${m}${day}-${rnd}`;
+      });
+    });
   }
 
   function renderEntityTable() {
@@ -330,6 +434,7 @@
       (data.items || []).forEach((r) => entityRows.push(r));
       renderEntityTable();
       if (msg) msg.textContent = `Loaded ${entityRows.length} row(s) for ${entity}.`;
+      await loadOperationsLookups();
     } catch (err) {
       if (msg) msg.textContent = err.message;
     }

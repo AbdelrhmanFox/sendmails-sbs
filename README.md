@@ -101,7 +101,7 @@ Redeploy after changing variables.
 | Export workbook → CSV | `npm run workbook:export` |
 | Regenerate data model doc | `npm run data-model:build` |
 | Import CSV sample data | `npm run import:workbook` |
-| Regenerate sample Excel for Operations import | `npm run sample-import:xlsx` |
+| Regenerate sample Excel for Operations import | `npm run sample-import:xlsx` (writes `docs/sample-import/` and `dashboard/assets/` for the download link) |
 | Legacy enrollments CSV import | `npm run import:enrollments` |
 
 ---
