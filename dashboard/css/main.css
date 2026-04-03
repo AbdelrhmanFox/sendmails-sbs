@@ -251,6 +251,20 @@ body.participant-join .main {
   margin-top: 12px;
 }
 
+.participant-group-picker {
+  text-align: center;
+}
+.group-picker-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 12px;
+}
+.group-picker-buttons .btn {
+  min-width: 120px;
+}
+
 .menu-item {
   width: 100%;
   text-align: left;

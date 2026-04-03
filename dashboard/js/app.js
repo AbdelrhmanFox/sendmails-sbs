@@ -1309,13 +1309,76 @@
     }
   }
 
+  function setTrainingParticipantHero(title, subtitle) {
+    const trainerHero = document.getElementById('trainingTrainerHero');
+    const studentHero = document.getElementById('trainingStudentHero');
+    if (trainerHero) trainerHero.classList.add('hidden');
+    if (studentHero) {
+      studentHero.classList.remove('hidden');
+      const t = document.getElementById('trainingStudentTitle');
+      const s = document.getElementById('trainingStudentSubtitle');
+      if (t) t.textContent = title || 'Join session';
+      if (s) s.textContent = subtitle || '';
+    }
+  }
+
+  async function showSessionGroupPickerFlow(sessionId) {
+    document.body.classList.add('participant-join');
+    const trainerPanel = document.getElementById('trainerPanel');
+    if (trainerPanel) trainerPanel.classList.add('hidden');
+    document.getElementById('participantLanding')?.classList.add('hidden');
+    document.getElementById('joinPanel')?.classList.add('hidden');
+    document.getElementById('chatPanel')?.classList.add('hidden');
+
+    const picker = document.getElementById('participantGroupPicker');
+    const buttonsEl = document.getElementById('groupPickerButtons');
+    const errEl = document.getElementById('groupPickerError');
+    if (errEl) errEl.textContent = '';
+    if (buttonsEl) buttonsEl.innerHTML = '';
+
+    try {
+      const data = await jsonFetch(
+        `/.netlify/functions/public-training-session?sessionId=${encodeURIComponent(sessionId)}`
+      );
+      setTrainingParticipantHero(
+        data.title || 'Live session',
+        'Choose a group below. You will enter your display name on the next step.'
+      );
+      if (picker) picker.classList.remove('hidden');
+      if (buttonsEl) {
+        (data.groups || []).forEach((g) => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'btn btn-primary';
+          btn.textContent = `Group ${g.group_number}`;
+          btn.onclick = () => {
+            if (picker) picker.classList.add('hidden');
+            const base = `${window.location.origin}${window.location.pathname}`;
+            history.replaceState({}, '', `${base}?group=${encodeURIComponent(g.join_token)}`);
+            joinByTokenFlow(g.join_token);
+          };
+          buttonsEl.appendChild(btn);
+        });
+      }
+    } catch (e) {
+      setTrainingParticipantHero('Session', String(e.message || 'Could not load session.'));
+      if (errEl) errEl.textContent = e.message || 'Could not load groups.';
+      if (picker) picker.classList.remove('hidden');
+    }
+  }
+
   async function joinByTokenFlow(token) {
     document.body.classList.add('participant-join');
+    document.getElementById('participantGroupPicker')?.classList.add('hidden');
     const trainerPanel = document.getElementById('trainerPanel');
     if (trainerPanel) trainerPanel.classList.add('hidden');
     const landing = document.getElementById('participantLanding');
     const panel = document.getElementById('joinPanel');
     const joinData = await jsonFetch(`/.netlify/functions/training-join?token=${encodeURIComponent(token)}`);
+    setTrainingParticipantHero(
+      joinData.sessionTitle || 'Live session',
+      `Group ${joinData.groupNumber} — continue to enter your display name and open the chat.`
+    );
     document.getElementById('participantLandingTitle').textContent = joinData.sessionTitle || 'Live session';
     document.getElementById('participantLandingSubtitle').textContent = `Group ${joinData.groupNumber} — continue to enter your display name and open the chat.`;
     if (landing) landing.classList.remove('hidden');
@@ -1349,19 +1412,27 @@
     document.getElementById('btnParticipantContinue').onclick = startJoin;
   }
 
+  function switchToTrainingView() {
+    document.querySelectorAll('.area-tab').forEach((t) => t.classList.toggle('active', t.getAttribute('data-area') === 'training'));
+    document.querySelectorAll('.subnav').forEach((s) => s.classList.toggle('hidden', s.getAttribute('data-for-area') !== 'training'));
+    const trSub = document.querySelector('.subnav[data-for-area="training"]');
+    if (trSub) {
+      trSub.querySelectorAll('.subnav-item').forEach((b) => b.classList.toggle('active', b.getAttribute('data-view') === 'training'));
+    }
+    document.querySelectorAll('.view').forEach((v) => v.classList.remove('active'));
+    document.getElementById('view-training').classList.add('active');
+  }
+
   async function initTraining() {
     const query = new URLSearchParams(window.location.search);
+    const sessionId = query.get('session');
     const token = query.get('group');
     if (token) {
-      document.querySelectorAll('.area-tab').forEach((t) => t.classList.toggle('active', t.getAttribute('data-area') === 'training'));
-      document.querySelectorAll('.subnav').forEach((s) => s.classList.toggle('hidden', s.getAttribute('data-for-area') !== 'training'));
-      const trSub = document.querySelector('.subnav[data-for-area="training"]');
-      if (trSub) {
-        trSub.querySelectorAll('.subnav-item').forEach((b) => b.classList.toggle('active', b.getAttribute('data-view') === 'training'));
-      }
-      document.querySelectorAll('.view').forEach((v) => v.classList.remove('active'));
-      document.getElementById('view-training').classList.add('active');
+      switchToTrainingView();
       await joinByTokenFlow(token);
+    } else if (sessionId) {
+      switchToTrainingView();
+      await showSessionGroupPickerFlow(sessionId);
     }
 
     document.getElementById('trainingSessionForm')?.addEventListener('submit', async (e) => {
@@ -1379,11 +1450,16 @@
         });
         const base = `${window.location.origin}${window.location.pathname}`;
         const sorted = (data.groups || []).slice().sort((a, b) => a.group_number - b.group_number);
-        const primary = sorted[0];
-        const href = primary ? `${base}?group=${primary.join_token}` : base;
-        links.innerHTML = primary
-          ? `<h4>Share link for students</h4><p class="share-link-wrap"><a href="${href}" target="_blank" rel="noopener">${href}</a></p>${sorted.length > 1 ? `<p class="muted small-margin">Additional groups were created for breakout use; only the link above is shown here.</p>` : ''}`
-          : '';
+        const session = data.session;
+        const href = session && session.id ? `${base}?session=${session.id}` : base;
+        links.innerHTML =
+          session && session.id
+            ? `<h4>Share link for students</h4><p class="share-link-wrap"><a href="${href}" target="_blank" rel="noopener">${href}</a></p>${
+                sorted.length > 1
+                  ? `<p class="muted small-margin">Students choose their group after opening this link.</p>`
+                  : ''
+              }`
+            : '';
         msg.textContent = 'Session created.';
       } catch (err) {
         msg.textContent = err.message;

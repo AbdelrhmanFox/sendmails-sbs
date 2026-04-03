@@ -73,7 +73,7 @@ Dashboard sends:
 - Clear modules and action grouping
 - Campaign module disabled/hidden by role where needed
 - Admin module visible only to admins
-- Training join flow supports public `?group=<token>` link
+- Training join flow: `?session=<id>` (group picker) or direct `?group=<token>`
 
 ## Delivery rules
 

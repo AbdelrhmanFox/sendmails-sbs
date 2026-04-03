@@ -9,7 +9,7 @@ Top-level areas (sidebar):
 | Area | Typical roles | Notes |
 | --- | --- | --- |
 | **Operations** | admin, staff | Overview, Operations Data (CRUD + Excel import), Pipeline, Capacity, Data quality |
-| **Training** | admin, trainer | Live Session Groups (single share link per session), Attendance and materials |
+| **Training** | admin, trainer | Live Session Groups (one `?session=` share URL; multi-group picker), Attendance and materials |
 | **Finance** | admin, accountant | KPIs, payments ledger, AR aging, invoices, CSV export; staff may have read-only access where configured |
 | **Automation** | admin, staff, user | Email Campaigns (n8n webhook + Google Sheets) |
 | **Admin** | admin | Users, backend config hints, finance audit log (admin only) |
@@ -33,7 +33,7 @@ Role-to-areas mapping is defined in `dashboard/js/app.js` (`ROLE_AREAS`): e.g. `
    Scheduled snapshot for n8n: `POST finance-data?resource=n8n-report` with header `X-N8n-Secret` matching `N8N_FINANCE_WEBHOOK_SECRET` (see `docs/N8N_FINANCE.md`).
 
 5. **Training — Live sessions**  
-   Trainers create sessions; **one student share URL** is shown (first group’s join token). Participants open `?group=<token>`: landing screen, then display name, then chat (`training-join`, `training-messages`, optional Realtime).
+   Trainers create sessions; **one student share URL** uses `?session=<session_id>`. For multiple groups, students pick a group, then the app continues with `?group=<join_token>` (same join flow). Direct `?group=<token>` still works. Public metadata: `public-training-session`; join/chat: `training-join`, `training-messages`, optional Realtime.
 
 6. **Training — Tools**  
    `/.netlify/functions/training-data?resource=attendance|materials` for attendance rows and material links.

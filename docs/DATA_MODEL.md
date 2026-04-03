@@ -131,7 +131,7 @@ These tables are defined in `supabase/schema.sql` (and migrations under `supabas
 
 ### Training (existing + extensions)
 
-- `training_sessions`, `training_groups`, `training_participants`, `training_messages` — live chat; `groups_count` may be 1–12 (single share link uses group 1’s `join_token`).
+- `training_sessions`, `training_groups`, `training_participants`, `training_messages` — live chat; `groups_count` may be 1–12 (student share link is session-scoped `?session=`; each group has its own `join_token`).
 - `session_attendance` — per `group_id`, participant name, date, status.
 - `training_materials` — optional `session_id` or `group_id`, title, url.
 

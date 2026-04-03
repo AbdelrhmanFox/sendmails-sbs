@@ -219,13 +219,19 @@
       </section>
 
       <section id="view-training" class="view">
-        <div class="view-hero">
+        <div id="trainingTrainerHero" class="view-hero">
           <div class="view-hero-text">
             <h2>Live Session Groups</h2>
             <p class="subtitle">Create session groups for trainers and share one link per group.</p>
           </div>
           <div class="view-stickers" aria-hidden="true">
             <img src="assets/stickers/sticker-2.jpg" alt="" class="view-sticker" />
+          </div>
+        </div>
+        <div id="trainingStudentHero" class="view-hero hidden">
+          <div class="view-hero-text">
+            <h2 id="trainingStudentTitle">Join session</h2>
+            <p id="trainingStudentSubtitle" class="subtitle">Choose your group, then enter your name to open the chat.</p>
           </div>
         </div>
         <div id="trainerPanel" class="card">
@@ -235,9 +241,13 @@
             <input id="groupsCount" type="number" min="1" max="12" value="1" title="Number of groups (1 = single link for students)" />
             <button class="btn btn-primary" type="submit">Create</button>
           </form>
-          <p class="muted small-margin">Students receive <strong>one</strong> share link (first group). Use more groups only if you need breakout rooms internally.</p>
+          <p class="muted small-margin">Students use <strong>one</strong> session link. If you set more than one group, they pick a group on the next screen.</p>
           <p id="trainingMsg" class="inline-note"></p>
           <div id="trainingLinks"></div>
+        </div>
+        <div id="participantGroupPicker" class="card hidden participant-group-picker">
+          <p id="groupPickerError" class="inline-note" role="alert"></p>
+          <div id="groupPickerButtons" class="group-picker-buttons"></div>
         </div>
         <div id="participantLanding" class="card hidden participant-landing">
           <h3 id="participantLandingTitle">Live session</h3>
