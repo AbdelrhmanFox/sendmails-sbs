@@ -6,6 +6,8 @@ Use **`.xlsx`** files where **row 1** is the header row. Column names should mat
 
 In **Operations Data**, select the **entity** (trainees, courses, batches, enrollments), then import. The app picks a sheet whose **name** matches the entity (case-insensitive) or uses the **first sheet**.
 
+When adding **enrollments** in the form, **Trainee ID**, **Batch ID**, and **Enrollment ID** use browser datalists fed from existing rows (you can still type a new ID). **Generate ID** creates a unique `EN-YYYYMMDD-####` enrollment id.
+
 ## Required columns (must be present and non-empty)
 
 | Entity | Required columns |
