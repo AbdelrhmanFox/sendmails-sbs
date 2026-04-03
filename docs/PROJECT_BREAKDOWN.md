@@ -27,7 +27,7 @@ In short: **Bulk email from a Google Sheet, one every 5 minutes, with merge fiel
 | **Automation** | n8n (self-hosted or cloud) | Single workflow: Webhook → branch by action → Google Sheets read/update, Code, Filter, Split In Batches, SMTP, Wait, Set, Respond. |
 | **Dashboard UI** | HTML | Single page: login screen + app (header, tabs, step cards). |
 | **Dashboard styling** | CSS | Variables, layout, cards, buttons, status grid, editor, preview. No preprocessor. |
-| **Dashboard logic** | Vanilla JavaScript | Auth, webhook fetch calls, Quill init, status polling, i18n, localStorage. |
+| **Dashboard logic** | Vanilla JavaScript | Auth, webhook fetch calls, Quill init, Finance charts (Chart.js CDN), status polling, i18n, localStorage. |
 | **Rich text** | Quill | Email body editor (toolbar + RTL/LTR + merge-field insert). |
 | **Hosting (static)** | Netlify | Serves `dashboard/` as site root. |
 | **Auth DB** | Supabase | Table `app_users` (username, password_hash, role). |

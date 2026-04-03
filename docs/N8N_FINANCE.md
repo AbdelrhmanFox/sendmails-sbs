@@ -28,6 +28,8 @@ Set `N8N_FINANCE_WEBHOOK_SECRET` in Netlify/Vercel environment variables. If uns
 
 Extend the handler in [`netlify/functions/finance-data.js`](../netlify/functions/finance-data.js) if you need richer payloads for email or Sheets.
 
+The **dashboard Finance tab charts** (revenue trend, payment mix, AR aging) use other `finance-data` GET routes (`chart-revenue-trend`, `chart-payment-methods`, `ar-aging`) in the browser with JWT auth; they are unrelated to this `n8n-report` POST.
+
 ## Sample workflow
 
 See [`automation/finance-report-trigger.json`](../automation/finance-report-trigger.json) for a minimal n8n workflow you can import (adjust URL and secret).

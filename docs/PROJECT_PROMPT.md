@@ -17,7 +17,7 @@ Build an internal staff dashboard for SBS (educational/training services), with 
 
 ## Stack
 
-- Frontend: static `dashboard/` (HTML/CSS/JS + Quill)
+- Frontend: static `dashboard/` (HTML/CSS/JS + Quill; Chart.js CDN for Finance charts)
 - Backend: Netlify functions (`netlify/functions/`)
 - Data/Auth: Supabase
 - Automation: n8n (`automation/workflow.json`)
@@ -57,6 +57,10 @@ Workbook exports under `docs/excel-export/` drive the data model (`docs/DATA_MOD
 - `/.netlify/functions/training-join` (GET, POST with `token`)
 - `/.netlify/functions/training-messages` (GET, POST)
 - `/.netlify/functions/public-config` (GET: public Supabase config for realtime)
+
+### Finance
+
+- `/.netlify/functions/finance-data?resource=kpis|ledger|payment|ar-aging|invoices|audit|chart-revenue-trend|chart-payment-methods|…` (GET/POST/PUT/DELETE per route; dashboard Finance tab uses Chart.js for chart resources)
 
 ### Campaigns (n8n webhook)
 

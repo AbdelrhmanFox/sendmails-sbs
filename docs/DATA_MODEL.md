@@ -138,6 +138,7 @@ These tables are defined in `supabase/schema.sql` (and migrations under `supabas
 ### Reporting consistency
 
 - **Cash / revenue KPIs** should use **`payments`** as the source of truth. `enrollments.amount_paid` may remain as legacy; avoid double-counting in dashboards.
+- **Finance tab charts** (static dashboard, Chart.js from CDN) call read-only `finance-data` routes: `chart-revenue-trend` (monthly payment totals), `chart-payment-methods` (totals by payment method over a rolling period), and `ar-aging` (same aging buckets as the AR card).
 
 ### Security (RLS)
 

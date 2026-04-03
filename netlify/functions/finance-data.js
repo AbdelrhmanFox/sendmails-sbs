@@ -85,6 +85,66 @@ exports.handler = async (event) => {
     });
   }
 
+  if (event.httpMethod === 'GET' && resource === 'chart-revenue-trend') {
+    const months = Math.min(24, Math.max(3, parseInt(String(event.queryStringParameters?.months || '6'), 10) || 6));
+    const today = new Date();
+    const start = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - (months - 1), 1));
+    const startIso = start.toISOString();
+    const { data: payments, error } = await supabase.from('payments').select('amount, received_at').gte('received_at', startIso);
+    if (error) return json({ error: error.message || 'Chart query failed' }, 500);
+    const byMonth = {};
+    const keys = [];
+    for (let i = 0; i < months; i += 1) {
+      const d = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - (months - 1 - i), 1));
+      const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+      keys.push(key);
+      byMonth[key] = 0;
+    }
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    (payments || []).forEach((p) => {
+      if (!p.received_at) return;
+      const dt = new Date(p.received_at);
+      const key = `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}`;
+      if (Object.prototype.hasOwnProperty.call(byMonth, key)) {
+        byMonth[key] += Number(p.amount || 0);
+      }
+    });
+    const values = keys.map((k) => byMonth[k] || 0);
+    const labels = keys.map((k) => {
+      const [, m] = k.split('-');
+      const y = k.split('-')[0];
+      return `${monthNames[parseInt(m, 10) - 1]} ${y}`;
+    });
+    return json({ currency: 'EGP', labels, values });
+  }
+
+  if (event.httpMethod === 'GET' && resource === 'chart-payment-methods') {
+    const days = Math.min(365, Math.max(30, parseInt(String(event.queryStringParameters?.days || '90'), 10) || 90));
+    const start = new Date(Date.now() - days * 864e5).toISOString();
+    const { data: payments, error } = await supabase.from('payments').select('amount, method').gte('received_at', start);
+    if (error) return json({ error: error.message || 'Chart query failed' }, 500);
+    const byMethod = {};
+    (payments || []).forEach((p) => {
+      const m = String(p.method || 'Unspecified').trim() || 'Unspecified';
+      byMethod[m] = (byMethod[m] || 0) + Math.abs(Number(p.amount || 0));
+    });
+    const entries = Object.entries(byMethod).sort((a, b) => b[1] - a[1]);
+    const topN = 8;
+    let labels;
+    let values;
+    if (entries.length <= topN) {
+      labels = entries.map((e) => e[0]);
+      values = entries.map((e) => e[1]);
+    } else {
+      const head = entries.slice(0, topN - 1);
+      const rest = entries.slice(topN - 1);
+      const otherSum = rest.reduce((s, e) => s + e[1], 0);
+      labels = [...head.map((e) => e[0]), 'Other'];
+      values = [...head.map((e) => e[1]), otherSum];
+    }
+    return json({ currency: 'EGP', labels, values, days });
+  }
+
   if (event.httpMethod === 'GET' && resource === 'ledger') {
     const { page, pageSize, from, to } = parsePage(event.queryStringParameters || {});
     const fromDate = event.queryStringParameters?.from ? normalizeDate(event.queryStringParameters.from) : null;

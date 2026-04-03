@@ -9,12 +9,13 @@ Internal staff dashboard for **SBS** (educational and training services). The ap
 | **Operations Data** | Workbook-driven CRUD for trainees, courses, batches, and enrollments; **Excel (.xlsx) import** in the UI and bulk upsert via `operations-data` (see below). |
 | **Email Campaigns** | n8n-powered preview, send, and status; webhook + Google Sheets integration. |
 | **Live Session Groups** | Trainers create sessions and groups; participants join with links; realtime chat (Supabase). |
+| **Finance** | KPIs, Chart.js visuals (revenue, payment mix, AR aging), ledger, invoices, and exports via `finance-data`. |
 | **User management** | Admin flows for listing, creating, resetting, and deleting users. |
 | **Authentication** | JWT-based login; same contracts for Netlify Functions and Vercel. |
 
 ## Tech stack
 
-- **Frontend:** Static HTML/CSS/JS under `dashboard/` (Montserrat + design tokens).
+- **Frontend:** Static HTML/CSS/JS under `dashboard/` (Montserrat + design tokens; Quill, SheetJS, Chart.js from CDNs where used).
 - **Backend:** Node serverless handlers in `netlify/functions/` (shared by Netlify and Vercel).
 - **Vercel entry:** Single dispatcher `api/[name].js` (stays within the Hobby **12-function** limit).
 - **Database & auth storage:** Supabase (schema and RLS in `supabase/schema.sql`).

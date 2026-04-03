@@ -179,7 +179,60 @@ h1, h2, h3, h4, p { margin-top: 0; }
   font-size: 14px;
 }
 
-.finance-kpis .status-grid { margin-top: 10px; }
+.finance-kpis .view-header {
+  margin-bottom: 10px;
+}
+.finance-kpis .view-header h3 {
+  margin: 0;
+}
+.finance-kpis .status-grid { margin-top: 0; }
+
+.finance-charts-card .view-header {
+  align-items: flex-start;
+  gap: 12px;
+}
+.finance-charts-card .view-header > div:first-child {
+  flex: 1;
+  min-width: 0;
+}
+.finance-charts-hint {
+  margin-top: 6px;
+  margin-bottom: 0;
+  max-width: 42rem;
+  line-height: 1.45;
+}
+.finance-charts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 4px;
+}
+.chart-panel h4 {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--brand-muted);
+  letter-spacing: 0.02em;
+}
+.chart-panel--full {
+  grid-column: 1 / -1;
+}
+.chart-wrap {
+  position: relative;
+  height: 260px;
+  max-width: 100%;
+}
+.chart-wrap--short {
+  height: 220px;
+}
+@media (max-width: 900px) {
+  .finance-charts-grid {
+    grid-template-columns: 1fr;
+  }
+  .chart-panel--full {
+    grid-column: 1;
+  }
+}
 
 .ledger-filters input,
 .ledger-pager {
@@ -404,9 +457,19 @@ input:focus, select:focus {
 .form-actions { display: flex; gap: 10px; }
 
 .table-wrap { overflow: auto; }
+.table-wrap.table-scroll {
+  max-height: min(70vh, 560px);
+}
 table { width: 100%; border-collapse: collapse; }
 th, td { border-bottom: 1px solid var(--brand-border); padding: 10px; text-align: left; font-size: 14px; white-space: nowrap; }
 th { color: var(--brand-muted); font-weight: 600; }
+.table-wrap.table-scroll thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--brand-surface-2);
+  box-shadow: 0 1px 0 var(--brand-border);
+}
 
 .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .row > input, .row > select { flex: 1; min-width: 180px; margin-bottom: 0; }

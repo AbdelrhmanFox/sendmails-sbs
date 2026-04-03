@@ -340,13 +340,39 @@
         <div class="view-hero">
           <div class="view-hero-text">
             <h2>Finance</h2>
-            <p class="subtitle">Payments ledger, KPIs, invoices, and AR aging.</p>
+            <p class="subtitle">KPIs, interactive charts, payments ledger, open invoices, and AR aging.</p>
           </div>
         </div>
         <div class="card finance-kpis">
-          <h3>Summary</h3>
+          <div class="view-header">
+            <h3>Summary</h3>
+            <button type="button" class="btn btn-secondary" id="btnRefreshFinance">Refresh all</button>
+          </div>
           <div id="financeKpis" class="status-grid"></div>
-          <button type="button" class="btn btn-secondary" id="btnRefreshFinance">Refresh</button>
+        </div>
+        <div class="card finance-charts-card">
+          <div class="view-header">
+            <div>
+              <h3>Charts</h3>
+              <p class="muted small-margin finance-charts-hint">Revenue trend (monthly), payment mix (last 90 days), and overdue AR buckets.</p>
+            </div>
+            <button type="button" class="btn btn-secondary" id="btnRefreshFinanceCharts">Refresh charts</button>
+          </div>
+          <p id="financeChartsMsg" class="inline-note" role="status"></p>
+          <div class="finance-charts-grid">
+            <div class="chart-panel">
+              <h4>Revenue by month</h4>
+              <div class="chart-wrap"><canvas id="chartRevenueTrend" aria-label="Revenue by month"></canvas></div>
+            </div>
+            <div class="chart-panel">
+              <h4>Payments by method</h4>
+              <div class="chart-wrap"><canvas id="chartPaymentMethods" aria-label="Payments by method"></canvas></div>
+            </div>
+            <div class="chart-panel chart-panel--full">
+              <h4>AR aging (open invoices)</h4>
+              <div class="chart-wrap chart-wrap--short"><canvas id="chartArAging" aria-label="Accounts receivable aging"></canvas></div>
+            </div>
+          </div>
         </div>
         <div class="card">
           <h3>Record payment</h3>
@@ -402,7 +428,7 @@
             <span id="ledgerPageInfo" class="muted"></span>
             <button type="button" class="btn btn-secondary" id="btnLedgerNext">Next</button>
           </div>
-          <div class="table-wrap">
+          <div class="table-wrap table-scroll">
             <table id="ledgerTable">
               <thead>
                 <tr>
@@ -428,7 +454,7 @@
         <div class="card">
           <h3>Invoices</h3>
           <button type="button" class="btn btn-secondary" id="btnLoadInvoices">Refresh list</button>
-          <div class="table-wrap">
+          <div class="table-wrap table-scroll">
             <table>
               <thead>
                 <tr><th>Number</th><th>Status</th><th>Issue</th><th>Due</th><th>Total</th><th>Actions</th></tr>
@@ -583,7 +609,7 @@
             <button type="button" class="btn btn-secondary" id="btnAuditNext">Next</button>
             <button type="button" class="btn btn-secondary" id="btnAuditRefresh">Refresh</button>
           </div>
-          <div class="table-wrap">
+          <div class="table-wrap table-scroll">
             <table>
               <thead><tr><th>When</th><th>Actor</th><th>Action</th><th>Entity</th><th>ID</th><th>Payload</th></tr></thead>
               <tbody id="financeAuditBody"></tbody>
@@ -597,6 +623,7 @@
   <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

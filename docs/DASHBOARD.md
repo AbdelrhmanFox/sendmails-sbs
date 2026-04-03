@@ -10,7 +10,7 @@ Top-level areas (sidebar):
 | --- | --- | --- |
 | **Operations** | admin, staff | Overview, Operations Data (CRUD + Excel import), Pipeline, Capacity, Data quality |
 | **Training** | admin, trainer | Live Session Groups (one `?session=` share URL; multi-group picker), Attendance and materials |
-| **Finance** | admin, accountant | KPIs, payments ledger, AR aging, invoices, CSV export; staff may have read-only access where configured |
+| **Finance** | admin, accountant | KPIs, **charts** (revenue trend, payment mix, AR aging), ledger, invoices, exports; staff may have read-only access where configured |
 | **Automation** | admin, staff, user | Email Campaigns (n8n webhook + Google Sheets) |
 | **Admin** | admin | Users, backend config hints, finance audit log (admin only) |
 
@@ -29,7 +29,7 @@ Role-to-areas mapping is defined in `dashboard/js/app.js` (`ROLE_AREAS`): e.g. `
    Status updates for multiple enrollment business IDs via `operations-data` bulk endpoint (see implementation).
 
 4. **Finance**  
-   `/.netlify/functions/finance-data?resource=kpis|ledger|payment|ar-aging|invoices|companies|audit` (exact routes depend on method and query).  
+   `/.netlify/functions/finance-data?resource=kpis|ledger|payment|ar-aging|invoices|companies|audit|chart-revenue-trend|chart-payment-methods` (exact routes depend on method and query). Chart endpoints are GET-only aggregations for the Finance tab (Chart.js 4.x loaded from jsDelivr in `index.html`).  
    Scheduled snapshot for n8n: `POST finance-data?resource=n8n-report` with header `X-N8n-Secret` matching `N8N_FINANCE_WEBHOOK_SECRET` (see `docs/N8N_FINANCE.md`).
 
 5. **Training — Live sessions**  
@@ -46,7 +46,7 @@ Role-to-areas mapping is defined in `dashboard/js/app.js` (`ROLE_AREAS`): e.g. `
 
 ## Frontend files
 
-- `dashboard/index.html`
+- `dashboard/index.html` (Quill, Supabase client, SheetJS, **Chart.js** for Finance)
 - `dashboard/css/tokens.css`, `dashboard/css/main.css`
 - `dashboard/js/app.js`
 

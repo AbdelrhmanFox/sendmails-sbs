@@ -56,6 +56,9 @@
   let auditPage = 1;
   let attendanceRowsCache = [];
   const LEDGER_PAGE_SIZE = 50;
+  let financeChartRevenue = null;
+  let financeChartMethods = null;
+  let financeChartAr = null;
 
   function showView(viewId) {
     document.querySelectorAll('.view').forEach((v) => v.classList.remove('active'));
@@ -580,6 +583,211 @@
     return lines.join('\n');
   }
 
+  function hexToRgb(hex) {
+    const h = String(hex || '').replace('#', '').trim();
+    if (h.length !== 6) return { r: 0, g: 169, b: 157 };
+    return {
+      r: parseInt(h.slice(0, 2), 16),
+      g: parseInt(h.slice(2, 4), 16),
+      b: parseInt(h.slice(4, 6), 16),
+    };
+  }
+
+  function rgbaFromCssVar(varName, alpha) {
+    const raw = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+    if (raw.startsWith('#')) {
+      const { r, g, b } = hexToRgb(raw);
+      return `rgba(${r},${g},${b},${alpha})`;
+    }
+    return raw || `rgba(0,169,157,${alpha})`;
+  }
+
+  function destroyFinanceCharts() {
+    if (financeChartRevenue) {
+      financeChartRevenue.destroy();
+      financeChartRevenue = null;
+    }
+    if (financeChartMethods) {
+      financeChartMethods.destroy();
+      financeChartMethods = null;
+    }
+    if (financeChartAr) {
+      financeChartAr.destroy();
+      financeChartAr = null;
+    }
+  }
+
+  async function refreshFinanceCharts() {
+    const msg = document.getElementById('financeChartsMsg');
+    const cRev = document.getElementById('chartRevenueTrend');
+    const cMeth = document.getElementById('chartPaymentMethods');
+    const cAr = document.getElementById('chartArAging');
+    if (!cRev || !cMeth || !cAr) return;
+    if (typeof Chart === 'undefined') {
+      if (msg) msg.textContent = 'Chart library failed to load.';
+      return;
+    }
+    destroyFinanceCharts();
+    if (msg) msg.textContent = 'Loading…';
+    const textColor = getComputedStyle(document.documentElement).getPropertyValue('--brand-text').trim() || '#f4f3fb';
+    const mutedColor = getComputedStyle(document.documentElement).getPropertyValue('--brand-muted').trim() || '#b4b0c8';
+    const gridColor = 'rgba(180, 176, 200, 0.14)';
+    const teal = getComputedStyle(document.documentElement).getPropertyValue('--brand-primary').trim() || '#00a99d';
+    const teal2 = getComputedStyle(document.documentElement).getPropertyValue('--brand-primary-2').trim() || '#29abe2';
+    const surface = getComputedStyle(document.documentElement).getPropertyValue('--brand-surface').trim() || '#161a4f';
+
+    try {
+      const [rev, meth, ar] = await Promise.all([
+        jsonFetch('/.netlify/functions/finance-data?resource=chart-revenue-trend&months=6', { headers: getAuthHeaders() }),
+        jsonFetch('/.netlify/functions/finance-data?resource=chart-payment-methods&days=90', { headers: getAuthHeaders() }),
+        jsonFetch('/.netlify/functions/finance-data?resource=ar-aging', { headers: getAuthHeaders() }),
+      ]);
+
+      financeChartRevenue = new Chart(cRev, {
+        type: 'line',
+        data: {
+          labels: rev.labels || [],
+          datasets: [
+            {
+              label: `Revenue (${rev.currency || 'EGP'})`,
+              data: rev.values || [],
+              borderColor: teal,
+              backgroundColor: rgbaFromCssVar('--brand-primary', 0.18),
+              fill: true,
+              tension: 0.3,
+              pointRadius: 3,
+              pointHoverRadius: 5,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { intersect: false, mode: 'index' },
+          plugins: {
+            legend: { labels: { color: textColor } },
+            tooltip: {
+              callbacks: {
+                label(ctx) {
+                  const v = ctx.parsed.y;
+                  return `${ctx.dataset.label}: ${Number(v).toFixed(2)}`;
+                },
+              },
+            },
+          },
+          scales: {
+            x: { ticks: { color: mutedColor, maxRotation: 45 }, grid: { color: gridColor } },
+            y: { ticks: { color: mutedColor }, grid: { color: gridColor } },
+          },
+        },
+      });
+
+      const mLabels = meth.labels || [];
+      const mVals = meth.values || [];
+      const sumM = mVals.reduce((a, b) => a + Number(b || 0), 0);
+      const pal = [teal, teal2, '#f7931e', '#39b54a', '#ed1c24', '#2e3192', '#f59e3b', '#0071bc', '#b4b0c8'];
+      if (!sumM || !mLabels.length) {
+        financeChartMethods = new Chart(cMeth, {
+          type: 'doughnut',
+          data: {
+            labels: ['No data'],
+            datasets: [{ data: [1], backgroundColor: ['rgba(180,176,200,0.22)'], borderColor: surface, borderWidth: 1 }],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: { enabled: false },
+            },
+          },
+        });
+      } else {
+        financeChartMethods = new Chart(cMeth, {
+          type: 'doughnut',
+          data: {
+            labels: mLabels,
+            datasets: [
+              {
+                data: mVals,
+                backgroundColor: mLabels.map((_, i) => pal[i % pal.length]),
+                borderWidth: 1,
+                borderColor: surface,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'right',
+                labels: { color: textColor, boxWidth: 12, padding: 10, font: { size: 11 } },
+              },
+              tooltip: {
+                callbacks: {
+                  label(ctx) {
+                    const v = Number(ctx.parsed);
+                    const pct = sumM ? ((v / sumM) * 100).toFixed(1) : '0';
+                    return `${ctx.label}: ${v.toFixed(2)} (${pct}%)`;
+                  },
+                },
+              },
+            },
+          },
+        });
+      }
+
+      const b = ar.buckets || {};
+      const arLabels = ['0–30 days', '31–60 days', '61–90 days', '90+ days'];
+      const arVals = [Number(b.b0_30 || 0), Number(b.b31_60 || 0), Number(b.b61_90 || 0), Number(b.b90p || 0)];
+      financeChartAr = new Chart(cAr, {
+        type: 'bar',
+        data: {
+          labels: arLabels,
+          datasets: [
+            {
+              label: `Outstanding (${ar.currency || 'EGP'})`,
+              data: arVals,
+              backgroundColor: [
+                rgbaFromCssVar('--brand-primary', 0.85),
+                rgbaFromCssVar('--brand-primary-2', 0.75),
+                'rgba(245, 158, 59, 0.85)',
+                'rgba(237, 28, 36, 0.85)',
+              ],
+              borderColor: surface,
+              borderWidth: 1,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label(ctx) {
+                  return `${Number(ctx.parsed.y).toFixed(2)} ${ar.currency || 'EGP'}`;
+                },
+              },
+            },
+          },
+          scales: {
+            x: { ticks: { color: mutedColor }, grid: { display: false } },
+            y: { ticks: { color: mutedColor }, grid: { color: gridColor } },
+          },
+        },
+      });
+
+      const asOf = ar.as_of ? String(ar.as_of).slice(0, 10) : '';
+      if (msg) msg.textContent = asOf ? `Charts updated. AR aging as of ${asOf}.` : 'Charts updated.';
+    } catch (e) {
+      destroyFinanceCharts();
+      if (msg) msg.textContent = e.message || 'Could not load charts.';
+    }
+  }
+
   async function refreshFinanceKpis() {
     const box = document.getElementById('financeKpis');
     if (!box) return;
@@ -788,10 +996,12 @@
     refreshLedger();
     refreshAr();
     refreshInvoices();
+    refreshFinanceCharts();
   }
 
   function initFinance() {
     document.getElementById('btnRefreshFinance')?.addEventListener('click', refreshFinanceAll);
+    document.getElementById('btnRefreshFinanceCharts')?.addEventListener('click', refreshFinanceCharts);
     document.getElementById('btnLoadLedger')?.addEventListener('click', () => {
       ledgerPage = 1;
       refreshLedger();
@@ -925,6 +1135,8 @@
         if (msg) msg.textContent = 'Invoice saved.';
         refreshInvoices();
         refreshFinanceKpis();
+        refreshAr();
+        refreshFinanceCharts();
       } catch (err) {
         if (msg) msg.textContent = err.message;
       }
