@@ -96,6 +96,21 @@
           <button class="btn btn-secondary" type="button" id="btnLoadEntity">Load</button>
         </form>
 
+        <div class="card operations-import">
+          <h3>Import from Excel</h3>
+          <p class="muted import-hint">
+            Upload a <strong>.xlsx</strong> file whose first row contains column headers. The importer uses the sheet that matches the selected entity (e.g. <code>trainees</code>) or the first sheet. Column names should match the workbook export (see <code>docs/DATA_MODEL.md</code>).
+          </p>
+          <div class="row import-row">
+            <input
+              type="file"
+              id="excelImportFile"
+              accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              class="input-file"
+            />
+          </div>
+        </div>
+
         <form id="entityRecordForm" class="card form-grid">
           <input type="hidden" id="recordInternalId" />
           <div id="dynamicFields" class="full"></div>
@@ -245,6 +260,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

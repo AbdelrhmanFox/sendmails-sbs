@@ -12,7 +12,9 @@
    - trainees
    - courses
    - batches
-   - enrollments
+   - enrollments  
+
+   **Import from Excel:** upload a `.xlsx` whose header row matches the workbook export columns (see `docs/DATA_MODEL.md`). The sheet name should match the selected entity or the first sheet is used. Import calls `POST .../operations-data?entity=...&bulk=1` with chunked rows.
 
 3. **Email Campaigns** (optional by role)  
    Uses existing n8n webhook for:

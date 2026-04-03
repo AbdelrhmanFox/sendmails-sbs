@@ -1,4 +1,23 @@
 const { cors, json, getSupabaseServiceClient, verifyAuth, normalizeDate } = require('../lib/_shared');
+const { coerceRow } = require('../lib/operations-import-map');
+
+const UPSERT_CONFLICT = {
+  trainees: 'trainee_id',
+  courses: 'course_id',
+  batches: 'batch_id',
+  enrollments: 'enrollment_id',
+};
+
+const BULK_CHUNK = 75;
+
+function parseCertificateIssued(v) {
+  if (v === '' || v == null) return null;
+  if (typeof v === 'boolean') return v;
+  const s = String(v).trim().toLowerCase();
+  if (['yes', 'true', '1', 'y'].includes(s)) return true;
+  if (['no', 'false', '0', 'n'].includes(s)) return false;
+  return null;
+}
 
 const ENTITY_CONFIG = {
   trainees: {
@@ -66,7 +85,7 @@ const ENTITY_CONFIG = {
       enrollment_status: String(b.enrollment_status || 'Registered').trim(),
       payment_status: String(b.payment_status || 'Pending').trim(),
       amount_paid: b.amount_paid === '' || b.amount_paid == null ? null : Number(b.amount_paid),
-      certificate_issued: b.certificate_issued === '' || b.certificate_issued == null ? null : Boolean(b.certificate_issued),
+      certificate_issued: parseCertificateIssued(b.certificate_issued),
       enroll_date: normalizeDate(b.enroll_date),
       notes: String(b.notes || '').trim() || null,
       updated_at: new Date().toISOString(),
@@ -105,6 +124,49 @@ exports.handler = async (event) => {
     body = JSON.parse(event.body || '{}');
   } catch (_) {
     return json({ error: 'Invalid JSON' }, 400);
+  }
+
+  if (event.httpMethod === 'POST' && Array.isArray(body.items)) {
+    const bulkParam = String(event.queryStringParameters?.bulk || '').trim();
+    if (bulkParam !== '1') return json({ error: 'Bulk import requires query bulk=1' }, 400);
+    const items = body.items;
+    if (!items.length) return json({ ok: true, imported: 0, failed: 0, errors: [] });
+
+    const conflict = UPSERT_CONFLICT[entity];
+    const payloads = [];
+    const errors = [];
+    let skippedBlank = 0;
+
+    items.forEach((raw, index) => {
+      const coerced = coerceRow(entity, raw);
+      const payload = cfg.normalize(coerced);
+      const missing = requireFields(payload, cfg.required);
+      if (missing.length) {
+        errors.push({ index, message: `Missing required fields: ${missing.join(', ')}` });
+        return;
+      }
+      if (!String(payload[conflict] || '').trim()) {
+        skippedBlank += 1;
+        return;
+      }
+      payloads.push(payload);
+    });
+
+    let imported = 0;
+    for (let i = 0; i < payloads.length; i += BULK_CHUNK) {
+      const chunk = payloads.slice(i, i + BULK_CHUNK);
+      const { error } = await supabase.from(cfg.table).upsert(chunk, { onConflict: conflict });
+      if (error) return json({ error: error.message || 'Bulk upsert failed', imported, errors }, 500);
+      imported += chunk.length;
+    }
+
+    return json({
+      ok: true,
+      imported,
+      failed: errors.length,
+      skippedBlank,
+      errors: errors.length ? errors : undefined,
+    });
   }
 
   if (event.httpMethod === 'POST') {

@@ -276,6 +276,86 @@
     });
   }
 
+  const BULK_IMPORT_CHUNK = 75;
+
+  function parseExcelToRows(arrayBuffer, entity) {
+    const wb = XLSX.read(arrayBuffer, { type: 'array', cellDates: true });
+    const names = wb.SheetNames;
+    if (!names.length) throw new Error('The workbook has no sheets.');
+    const want = entity.replace(/_/g, '').toLowerCase();
+    let sheetName = names[0];
+    const match = names.find((n) => {
+      const nl = String(n).replace(/[^a-z0-9]/gi, '').toLowerCase();
+      return nl === want || nl.includes(want) || want.includes(nl);
+    });
+    if (match) sheetName = match;
+    const sheet = wb.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: false });
+    return rows.map((row) => {
+      const o = {};
+      Object.keys(row).forEach((k) => {
+        let v = row[k];
+        if (v instanceof Date && !Number.isNaN(v.getTime())) v = v.toISOString().slice(0, 10);
+        o[k] = v === null || v === undefined ? '' : v;
+      });
+      return o;
+    });
+  }
+
+  async function runExcelImport(arrayBuffer) {
+    const entity = currentEntity();
+    const msg = document.getElementById('entityMsg');
+    if (typeof XLSX === 'undefined') {
+      if (msg) msg.textContent = 'Excel library failed to load. Refresh the page and try again.';
+      return;
+    }
+    let rows;
+    try {
+      rows = parseExcelToRows(arrayBuffer, entity);
+    } catch (err) {
+      if (msg) msg.textContent = err.message || 'Could not parse Excel file.';
+      return;
+    }
+    if (!rows.length) {
+      if (msg) msg.textContent = 'No data rows found in the selected sheet.';
+      return;
+    }
+    if (msg) msg.textContent = `Importing ${rows.length} row(s)…`;
+    let totalImported = 0;
+    let totalFailed = 0;
+    const errorSamples = [];
+    for (let offset = 0; offset < rows.length; offset += BULK_IMPORT_CHUNK) {
+      const chunk = rows.slice(offset, offset + BULK_IMPORT_CHUNK);
+      try {
+        const data = await jsonFetch(
+          `/.netlify/functions/operations-data?entity=${encodeURIComponent(entity)}&bulk=1`,
+          {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ items: chunk }),
+          },
+        );
+        totalImported += data.imported || 0;
+        totalFailed += data.failed || 0;
+        if (data.errors && data.errors.length) {
+          data.errors.forEach((e) => {
+            if (errorSamples.length < 8) {
+              errorSamples.push(`row ${offset + e.index + 1}: ${e.message}`);
+            }
+          });
+        }
+      } catch (err) {
+        if (msg) msg.textContent = err.message || 'Import failed.';
+        return;
+      }
+    }
+    let text = `Imported ${totalImported} row(s).`;
+    if (totalFailed) text += ` ${totalFailed} row(s) failed validation.`;
+    if (errorSamples.length) text += ` Examples: ${errorSamples.join('; ')}`;
+    await loadEntityRows();
+    if (msg) msg.textContent = text;
+  }
+
   function initOperations() {
     renderEntityForm();
     document.getElementById('entitySelect')?.addEventListener('change', () => {
@@ -303,6 +383,19 @@
       } catch (err) {
         if (msg) msg.textContent = err.message;
       }
+    });
+    document.getElementById('excelImportFile')?.addEventListener('change', async (e) => {
+      const f = e.target.files && e.target.files[0];
+      e.target.value = '';
+      if (!f) return;
+      const name = f.name || '';
+      if (!/\.xlsx$/i.test(name)) {
+        const msg = document.getElementById('entityMsg');
+        if (msg) msg.textContent = 'Please choose a .xlsx file.';
+        return;
+      }
+      const buf = await f.arrayBuffer();
+      await runExcelImport(buf);
     });
     loadEntityRows();
   }

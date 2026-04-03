@@ -211,6 +211,21 @@ th { color: var(--brand-muted); font-weight: 600; }
 .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .row > input, .row > select { flex: 1; min-width: 180px; margin-bottom: 0; }
 
+.operations-import .import-hint {
+  font-size: 13px;
+  line-height: 1.5;
+  margin-bottom: 12px;
+  max-width: 52rem;
+}
+.operations-import .import-row {
+  align-items: center;
+}
+.input-file {
+  font-size: 13px;
+  color: var(--brand-muted);
+  max-width: 100%;
+}
+
 .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
 .chip {
   font-size: 12px;

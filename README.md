@@ -6,7 +6,7 @@ Internal staff dashboard for **SBS** (educational and training services). The ap
 
 | Area | Description |
 | --- | --- |
-| **Operations Data** | Workbook-driven CRUD for trainees, courses, batches, and enrollments (via `operations-data` API). |
+| **Operations Data** | Workbook-driven CRUD for trainees, courses, batches, and enrollments; **Excel (.xlsx) import** in the UI and bulk upsert via `operations-data` (see below). |
 | **Email Campaigns** | n8n-powered preview, send, and status; webhook + Google Sheets integration. |
 | **Live Session Groups** | Trainers create sessions and groups; participants join with links; realtime chat (Supabase). |
 | **User management** | Admin flows for listing, creating, resetting, and deleting users. |
@@ -140,6 +140,19 @@ Import `automation/workflow.json`, attach Google Sheets + SMTP credentials, acti
 
 ---
 
+## Operations Data: Excel import (dashboard)
+
+In **Operations Data**, choose the entity (trainees, courses, batches, enrollments), then use **Import from Excel** and select a `.xlsx` file:
+
+- The **first row** must be column headers. Headers can match the **workbook export** (e.g. `Trainee_ID`, `Full_Name`) or snake_case field names; see [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md) and [`docs/excel-export/`](docs/excel-export/) for the expected columns per sheet.
+- The importer picks a sheet whose name matches the selected entity (case-insensitive), or **falls back to the first sheet**.
+- Rows are **upserted** on the business key (`trainee_id`, `course_id`, `batch_id`, or `enrollment_id`), same as `npm run import:workbook` for CSV.
+- The browser loads [SheetJS](https://sheetjs.com/) from a CDN; the API accepts `POST` with query `bulk=1` and body `{ "items": [ ... ] }` (see API section).
+
+CLI import from exported CSV remains: `npm run import:workbook`.
+
+---
+
 ## API surface (single Vercel function)
 
 `api/[name].js` exposes names that mirror Netlify function names, for example:
@@ -150,6 +163,8 @@ Import `automation/workflow.json`, attach Google Sheets + SMTP credentials, acti
 - **Vercel:** `/api/<name>` (and rewrites from `/.netlify/functions/<name>` for compatibility)
 
 Health check: `GET /api/health-supabase` on your deployed origin.
+
+**Bulk operations import:** `POST` `/.netlify/functions/operations-data?entity=<trainees|courses|batches|enrollments>&bulk=1` with JSON body `{ "items": [ { ... }, ... ] }`. Each object is coerced from workbook-style column names then upserted. Requires `Authorization: Bearer <JWT>`.
 
 ---
 
