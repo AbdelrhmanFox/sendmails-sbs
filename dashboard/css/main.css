@@ -719,10 +719,85 @@ body.participant-join .chat-panel {
 #btnToggleMute.hidden {
   display: none !important;
 }
+
+.btn-voice {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 12px;
+  margin: 0;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--brand-text);
+  background: color-mix(in oklab, var(--brand-surface) 55%, var(--brand-surface-2));
+  border: 1px solid var(--brand-border);
+  border-radius: var(--brand-radius-dense);
+  cursor: pointer;
+  box-shadow: var(--brand-shadow-soft);
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, filter 0.18s ease;
+}
+.btn-voice:hover {
+  filter: brightness(1.08);
+  border-color: color-mix(in oklab, var(--brand-primary) 45%, var(--brand-border));
+  background: color-mix(in oklab, var(--brand-surface-2) 75%, var(--brand-surface));
+}
+.btn-voice:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--brand-primary) 55%, transparent);
+  outline-offset: 2px;
+}
+.btn-voice__icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.btn-voice__icon {
+  display: block;
+  flex-shrink: 0;
+}
+.btn-voice__label {
+  white-space: nowrap;
+}
+.btn-voice--join {
+  color: #fff;
+  background: var(--brand-primary);
+  border-color: color-mix(in oklab, var(--brand-primary) 72%, #0a3030);
+}
+.btn-voice--join .btn-voice__icon {
+  color: #fff;
+}
+.btn-voice--join:hover {
+  filter: brightness(1.06);
+  background: color-mix(in oklab, var(--brand-primary) 90%, #fff);
+  border-color: color-mix(in oklab, var(--brand-primary) 55%, var(--brand-border));
+}
+.btn-voice--leave .btn-voice__icon {
+  color: var(--brand-primary-2);
+}
+.btn-voice--leave:hover .btn-voice__icon {
+  color: var(--brand-primary);
+}
+.btn-voice--mute .btn-voice__icon {
+  color: var(--brand-muted);
+}
+.btn-voice--mute:hover .btn-voice__icon {
+  color: var(--brand-primary);
+}
 #btnToggleMute[data-muted='true'] {
-  background: color-mix(in oklab, var(--brand-danger) 20%, var(--brand-surface-2));
-  border-color: color-mix(in oklab, var(--brand-danger) 60%, var(--brand-border));
+  background: color-mix(in oklab, var(--brand-danger) 22%, var(--brand-surface-2));
+  border-color: color-mix(in oklab, var(--brand-danger) 55%, var(--brand-border));
+  color: color-mix(in oklab, var(--brand-danger) 92%, #fff);
+}
+#btnToggleMute[data-muted='true'] .btn-voice__icon {
   color: var(--brand-danger);
+}
+#btnToggleMute[data-muted='true']:hover {
+  filter: brightness(1.06);
+  border-color: color-mix(in oklab, var(--brand-danger) 70%, var(--brand-border));
 }
 
 /* ── Voice participant sticker columns ────────────────────────────────── */
@@ -753,6 +828,10 @@ body.participant-join .chat-panel {
   gap: 4px;
   position: relative;
   animation: vsAppear 0.25s ease-out;
+}
+.voice-sticker-avatar {
+  position: relative;
+  flex-shrink: 0;
 }
 @keyframes vsAppear {
   from { opacity: 0; transform: scale(0.7); }
@@ -792,24 +871,23 @@ body.participant-join .chat-panel {
   color: var(--brand-muted);
   line-height: 1.2;
 }
-.voice-sticker-mute-icon {
+.voice-sticker-mute-x {
   position: absolute;
-  bottom: 22px;
-  right: -2px;
+  right: -1px;
+  bottom: 2px;
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: color-mix(in oklab, var(--brand-danger) 90%, #000);
+  background: var(--brand-danger);
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 9px;
-  line-height: 1;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.4);
-  border: 1px solid rgba(255,255,255,0.15);
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.45);
+  border: 2px solid var(--brand-surface);
+  pointer-events: none;
 }
-.voice-sticker-mute-icon.hidden {
+.voice-sticker-mute-x.hidden {
   display: none !important;
 }
 
@@ -836,6 +914,17 @@ body.participant-join .chat-panel {
   .voice-sticker-circle {
     width: 40px;
     height: 40px;
+  }
+  .voice-sticker-mute-x {
+    width: 15px;
+    height: 15px;
+    right: -2px;
+    bottom: 0;
+    border-width: 1px;
+  }
+  .voice-sticker-mute-x svg {
+    width: 8px;
+    height: 8px;
   }
   .voice-sticker-name {
     max-width: 50px;

@@ -250,11 +250,17 @@ function renderVoiceStickers() {
     wrap.id = `vs-${CSS.escape(id)}`;
     const idx = Math.max(1, Math.min(3, Number(peer.stickerIdx) || 1));
     wrap.innerHTML = `
-      <div class="voice-sticker-circle">
-        <img class="voice-sticker-img" src="assets/stickers/sticker-${idx}.jpg" alt="" width="54" height="54" />
+      <div class="voice-sticker-avatar">
+        <div class="voice-sticker-circle">
+          <img class="voice-sticker-img" src="assets/stickers/sticker-${idx}.jpg" alt="" width="54" height="54" />
+        </div>
+        <span class="voice-sticker-mute-x${peer.muted ? '' : ' hidden'}" title="Muted">
+          <svg width="10" height="10" viewBox="0 0 12 12" aria-hidden="true" focusable="false" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M2.5 2.5l7 7M9.5 2.5l-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </span>
       </div>
       <span class="voice-sticker-name">${vsEsc(peer.name)}</span>
-      <span class="voice-sticker-mute-icon${peer.muted ? '' : ' hidden'}" title="Muted">🔇</span>
     `;
     col.appendChild(wrap);
   }
@@ -571,7 +577,10 @@ function updateVoiceControlsUi() {
     leaveBtn?.classList.remove('hidden');
     muteBtn?.classList.remove('hidden');
     if (muteBtn) {
-      muteBtn.textContent = voiceMuted ? '🔇 Unmute' : '🎤 Mute';
+      const label = muteBtn.querySelector('.btn-voice__label');
+      if (label) label.textContent = voiceMuted ? 'Unmute' : 'Mute';
+      muteBtn.querySelector('.btn-voice__icon--mic')?.classList.toggle('hidden', voiceMuted);
+      muteBtn.querySelector('.btn-voice__icon--mic-off')?.classList.toggle('hidden', !voiceMuted);
       muteBtn.setAttribute('data-muted', String(voiceMuted));
       muteBtn.setAttribute('aria-pressed', String(voiceMuted));
     }
