@@ -342,10 +342,11 @@ async function startJitsiVoice(roomUrl, displayName) {
     if (!roomName) return;
     await loadJitsiScript(host);
     if (!window.JitsiMeetExternalAPI) return;
+    const dn = String(displayName || 'Guest').trim() || 'Guest';
     jitsiVoiceApi = new window.JitsiMeetExternalAPI(host, {
       roomName,
       parentNode: container,
-      userInfo: { displayName: displayName || 'Guest' },
+      userInfo: { displayName: dn },
       width: '100%',
       height: '100%',
       configOverwrite: {
@@ -355,6 +356,13 @@ async function startJitsiVoice(roomUrl, displayName) {
         prejoinConfig: { enabled: false },
         minParticipants: 1,
         readOnlyName: true,
+        requireDisplayName: false,
+        // Skip lobby friction: auto-knock + try to clear lobby once in the room
+        lobby: { autoKnock: true },
+        autoKnockLobby: true,
+        securityUi: { hideLobbyButton: true },
+        visitors: { showJoinMeetingDialog: false },
+        preferVisitor: false,
       },
       interfaceConfigOverwrite: {
         TOOLBAR_BUTTONS: [],
@@ -363,8 +371,25 @@ async function startJitsiVoice(roomUrl, displayName) {
         HIDE_INVITE_MORE_HEADER: true,
       },
     });
+
+    function tryDisableLobbyAndName() {
+      try {
+        jitsiVoiceApi.executeCommand('displayName', dn);
+        jitsiVoiceApi.executeCommand('toggleLobby', false);
+      } catch (_) {
+        /* ignore */
+      }
+    }
+
+    // Run ASAP and again once the conference is up (moderator can turn lobby off).
+    requestAnimationFrame(() => requestAnimationFrame(tryDisableLobbyAndName));
+
     jitsiVoiceApi.addEventListener('videoConferenceJoined', ({ displayName: n }) => {
-      addVoicePeer('_self', n || displayName, true);
+      tryDisableLobbyAndName();
+      addVoicePeer('_self', n || dn, true);
+    });
+    jitsiVoiceApi.addEventListener('participantRoleChanged', (ev) => {
+      if (ev && ev.role === 'moderator') tryDisableLobbyAndName();
     });
     jitsiVoiceApi.addEventListener('videoConferenceLeft', () => removeVoicePeer('_self'));
     jitsiVoiceApi.addEventListener('participantJoined', ({ id, displayName: n }) => addVoicePeer(id, n || 'User', false));
