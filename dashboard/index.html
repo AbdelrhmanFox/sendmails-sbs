@@ -537,7 +537,7 @@
                 placeholder="Leave blank for auto Jitsi room, or paste Meet / Zoom / Jitsi"
               />
               <p class="muted field-hint">
-                If you leave this blank, a Jitsi Meet room is created for the session — participants see voice and video inside the session page (like Discord). You can also paste another https link (Meet/Zoom open in a new tab for students).
+                If you leave this blank, a room URL is created using <code>JITSI_MEET_BASE</code> (default meet.jit.si). <strong>Public meet.jit.si often cannot be used for anonymous in-page voice</strong> — set <code>JITSI_MEET_BASE</code> to your self-hosted Jitsi for reliable training voice. You may paste any other https voice link instead.
               </p>
             </div>
           </form>
@@ -584,6 +584,9 @@
               <button type="button" class="btn btn-secondary chat-whiteboard-toggle hidden" id="btnToggleWhiteboard" aria-expanded="false" aria-controls="whiteboardWrap">Show whiteboard</button>
             </div>
             <div class="chat-voice-controls hidden" id="chatVoiceControls">
+              <p id="chatVoiceMeetJitSiWarn" class="chat-voice-meet-warn hidden" role="status">
+                Public <strong>meet.jit.si</strong> blocks embedded voice and often requires a signed-in moderator or approval (you may see “members only” / lobby). For training without that, deploy your own Jitsi Meet URL and set <code class="chat-voice-code">JITSI_MEET_BASE</code> in Netlify env, or paste that URL when creating a session.
+              </p>
               <button type="button" class="btn btn-primary btn-sm hidden" id="btnJoinVoice">🎤 Join voice</button>
               <button type="button" class="btn btn-secondary btn-sm hidden" id="btnLeaveVoice">Leave voice</button>
               <button type="button" class="btn btn-secondary btn-sm hidden" id="btnToggleMute" aria-pressed="false">🎤 Muted: off</button>

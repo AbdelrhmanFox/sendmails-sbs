@@ -211,7 +211,11 @@ function clearTrainingParticipantPolls() {
 let jitsiVoiceApi = null;
 let voiceJoined = false;
 let voiceMuted = false;
+/** Public meet.jit.si blocks the Embedded API for anonymous users (membersOnly / lobby). We open a tab instead. */
+let voiceMeetJitSiTabMode = false;
 const voicePeers = new Map(); // id → { name, muted, self, side }
+
+const MEET_JIT_SI_HOST = 'meet.jit.si';
 
 function voiceIsJitsiUrl(url) {
   try {
@@ -220,6 +224,50 @@ function voiceIsJitsiUrl(url) {
   } catch (_) {
     return false;
   }
+}
+
+function isPublicMeetJitSiHost(hostname) {
+  return String(hostname || '').toLowerCase() === MEET_JIT_SI_HOST;
+}
+
+/** Tab URL with hash flags (name, audio-only hints). Does not fix meet.jit.si policy; self-hosted works in-app. */
+function jitsiVoiceUrlWithClientConfig(roomUrl, displayName) {
+  try {
+    const u = new URL(String(roomUrl).trim());
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') return String(roomUrl);
+    const path = u.pathname.replace(/\/+$/, '');
+    if (!path || path === '/') return String(roomUrl);
+    const base = `${u.origin}${path}`;
+    const name = String(displayName || '').trim().slice(0, 100) || 'Guest';
+    const hashParts = [
+      `userInfo.displayName=${encodeURIComponent(name)}`,
+      'config.minParticipants=1',
+      'config.prejoinConfig.enabled=false',
+      'config.startAudioOnly=true',
+      'config.startWithVideoMuted=true',
+      'config.startWithAudioMuted=false',
+      'config.readOnlyName=true',
+      'config.lobby.autoKnock=true',
+      'config.autoKnockLobby=true',
+    ];
+    return `${base}#${hashParts.join('&')}`;
+  } catch (_) {
+    return String(roomUrl || '');
+  }
+}
+
+function effectiveVoiceLinkForShare() {
+  const url = trainingState.voiceRoomUrl;
+  if (!url) return '';
+  try {
+    const h = new URL(String(url).trim()).hostname;
+    if (voiceIsJitsiUrl(url) && isPublicMeetJitSiHost(h)) {
+      return jitsiVoiceUrlWithClientConfig(url, trainingState.senderName || 'Guest');
+    }
+  } catch (_) {
+    /* ignore */
+  }
+  return String(url);
 }
 
 function vsEsc(s) {
@@ -286,8 +334,10 @@ function updateVoiceControlsUi() {
   const linkEl = document.getElementById('chatVoiceRoomLink');
   const copyBtn = document.getElementById('btnCopyVoiceLink');
   const mutedSpan = document.getElementById('chatVoiceMuted');
+  const meetWarn = document.getElementById('chatVoiceMeetJitSiWarn');
   if (!controls) return;
   if (!url) {
+    meetWarn?.classList.add('hidden');
     controls.classList.remove('hidden');
     joinBtn?.classList.add('hidden');
     leaveBtn?.classList.add('hidden');
@@ -299,16 +349,30 @@ function updateVoiceControlsUi() {
   }
   controls.classList.remove('hidden');
   mutedSpan?.classList.add('hidden');
-  if (linkEl) { linkEl.href = url; linkEl.classList.remove('hidden'); }
+  let isPublicMj = false;
+  try {
+    isPublicMj = voiceIsJitsiUrl(url) && isPublicMeetJitSiHost(new URL(url).hostname);
+  } catch (_) {
+    isPublicMj = false;
+  }
+  meetWarn?.classList.toggle('hidden', !isPublicMj);
+  if (linkEl) {
+    linkEl.href = isPublicMj ? jitsiVoiceUrlWithClientConfig(url, trainingState.senderName || 'Guest') : url;
+    linkEl.classList.remove('hidden');
+  }
   copyBtn?.classList.remove('hidden');
   if (voiceJoined) {
     joinBtn?.classList.add('hidden');
     leaveBtn?.classList.remove('hidden');
-    muteBtn?.classList.remove('hidden');
-    if (muteBtn) {
-      muteBtn.textContent = voiceMuted ? '🔇 Unmute' : '🎤 Mute';
-      muteBtn.setAttribute('data-muted', String(voiceMuted));
-      muteBtn.setAttribute('aria-pressed', String(voiceMuted));
+    if (voiceMeetJitSiTabMode) {
+      muteBtn?.classList.add('hidden');
+    } else {
+      muteBtn?.classList.remove('hidden');
+      if (muteBtn) {
+        muteBtn.textContent = voiceMuted ? '🔇 Unmute' : '🎤 Mute';
+        muteBtn.setAttribute('data-muted', String(voiceMuted));
+        muteBtn.setAttribute('aria-pressed', String(voiceMuted));
+      }
     }
   } else {
     joinBtn?.classList.remove('hidden');
@@ -417,18 +481,43 @@ async function joinVoiceChannel() {
   if (voiceJoined || !trainingState.voiceRoomUrl) return;
   voiceJoined = true;
   voiceMuted = false;
-  updateVoiceControlsUi();
+  voiceMeetJitSiTabMode = false;
+
   if (voiceIsJitsiUrl(trainingState.voiceRoomUrl)) {
+    let host = '';
+    try {
+      host = new URL(String(trainingState.voiceRoomUrl).trim()).hostname;
+    } catch (_) {
+      host = '';
+    }
+    if (isPublicMeetJitSiHost(host)) {
+      voiceMeetJitSiTabMode = true;
+      const tabUrl = jitsiVoiceUrlWithClientConfig(trainingState.voiceRoomUrl, trainingState.senderName || 'Guest');
+      window.open(tabUrl, '_blank', 'noopener,noreferrer');
+      addVoicePeer('_self', trainingState.senderName || 'Guest', true);
+      const msgEl = document.getElementById('chatVoiceCopyMsg');
+      if (msgEl) {
+        msgEl.textContent =
+          'Voice opened in a new browser tab. meet.jit.si may still require login or moderator approval — use self-hosted Jitsi (JITSI_MEET_BASE) for open training rooms.';
+        window.setTimeout(() => {
+          if (msgEl && msgEl.textContent.startsWith('Voice opened')) msgEl.textContent = '';
+        }, 14000);
+      }
+      updateVoiceControlsUi();
+      return;
+    }
     await startJitsiVoice(trainingState.voiceRoomUrl, trainingState.senderName || 'Guest');
   } else {
     addVoicePeer('_self', trainingState.senderName || 'Guest', true);
   }
+  updateVoiceControlsUi();
 }
 
 function leaveVoiceChannel() {
   if (!voiceJoined) return;
   voiceJoined = false;
   voiceMuted = false;
+  voiceMeetJitSiTabMode = false;
   stopJitsiVoice();
   voicePeers.clear();
   renderVoiceStickers();
@@ -436,7 +525,7 @@ function leaveVoiceChannel() {
 }
 
 function toggleVoiceMute() {
-  if (!voiceJoined) return;
+  if (!voiceJoined || voiceMeetJitSiTabMode) return;
   if (jitsiVoiceApi) {
     jitsiVoiceApi.executeCommand('toggleAudio');
   } else {
@@ -1315,7 +1404,7 @@ export async function initTraining() {
   document.getElementById('btnLeaveVoice')?.addEventListener('click', () => leaveVoiceChannel());
   document.getElementById('btnToggleMute')?.addEventListener('click', () => toggleVoiceMute());
   document.getElementById('btnCopyVoiceLink')?.addEventListener('click', async () => {
-    const u = trainingState.voiceRoomUrl;
+    const u = effectiveVoiceLinkForShare();
     const msgEl = document.getElementById('chatVoiceCopyMsg');
     if (!u) return;
     try {

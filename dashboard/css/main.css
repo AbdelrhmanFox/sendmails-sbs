@@ -715,6 +715,27 @@ body.participant-join .chat-panel {
 .chat-voice-controls.hidden {
   display: none !important;
 }
+.chat-voice-meet-warn {
+  flex-basis: 100%;
+  margin: 0 0 8px;
+  padding: 10px 12px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--brand-text);
+  background: color-mix(in oklab, #f59e0b 14%, var(--brand-surface));
+  border: 1px solid color-mix(in oklab, #f59e0b 45%, var(--brand-border));
+  border-radius: var(--brand-radius-dense);
+}
+.chat-voice-meet-warn.hidden {
+  display: none !important;
+}
+.chat-voice-meet-warn .chat-voice-code {
+  font-size: 11px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: color-mix(in oklab, var(--brand-surface-2) 85%, #000);
+}
+
 .chat-voice-copy-msg {
   flex-basis: 100%;
   margin: 0;
