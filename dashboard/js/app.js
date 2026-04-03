@@ -1592,22 +1592,52 @@
     supabase: null,
   };
 
+  function scrollTrainingChatToBottom() {
+    const el = document.getElementById('trainChatScroll');
+    if (!el) return;
+    requestAnimationFrame(() => {
+      el.scrollTop = el.scrollHeight;
+    });
+  }
+
   function appendChatMessage(m) {
     const box = document.getElementById('chatMessages');
-    const line = document.createElement('div');
-    line.className = 'chat-line';
-    const ts = new Date(m.created_at || Date.now()).toLocaleTimeString();
-    line.innerHTML = `<div class="meta">${m.sender_name || 'User'} • ${ts}</div><div>${m.body || ''}</div>`;
-    box.appendChild(line);
-    box.scrollTop = box.scrollHeight;
+    if (!box) return;
+    const sender = String(m.sender_name || 'User').trim();
+    const mine =
+      trainingState.senderName &&
+      sender.toLowerCase() === String(trainingState.senderName).trim().toLowerCase();
+    const row = document.createElement('div');
+    row.className = `chat-line ${mine ? 'chat-line--out' : 'chat-line--in'}`;
+    const bubble = document.createElement('div');
+    bubble.className = 'chat-bubble';
+    if (!mine) {
+      const who = document.createElement('div');
+      who.className = 'chat-bubble-name';
+      who.textContent = sender || 'User';
+      bubble.appendChild(who);
+    }
+    const text = document.createElement('div');
+    text.className = 'chat-bubble-text';
+    text.textContent = m.body != null ? String(m.body) : '';
+    const foot = document.createElement('div');
+    foot.className = 'chat-bubble-meta';
+    const ts = new Date(m.created_at || Date.now());
+    foot.textContent = ts.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    bubble.appendChild(text);
+    bubble.appendChild(foot);
+    row.appendChild(bubble);
+    box.appendChild(row);
+    scrollTrainingChatToBottom();
   }
 
   async function loadRecentMessages() {
     if (!trainingState.groupId) return;
     const data = await jsonFetch(`/.netlify/functions/training-messages?groupId=${encodeURIComponent(trainingState.groupId)}`);
     const box = document.getElementById('chatMessages');
-    box.innerHTML = '';
+    if (box) box.innerHTML = '';
     (data.messages || []).forEach(appendChatMessage);
+    scrollTrainingChatToBottom();
   }
 
   async function initRealtime() {
@@ -1722,6 +1752,10 @@
         trainingState.senderName = joined.participant.display_name;
         panel.classList.add('hidden');
         document.getElementById('chatPanel').classList.remove('hidden');
+        const sub = document.getElementById('chatPanelSub');
+        if (sub) {
+          sub.textContent = `${joined.sessionTitle || joinData.sessionTitle || 'Live session'} · Group ${joined.groupNumber ?? joinData.groupNumber}`;
+        }
         loadRecentMessages();
         initRealtime();
         setInterval(loadRecentMessages, 10000);
@@ -1879,6 +1913,7 @@
         });
         if (!trainingState.channel) appendChatMessage(sent.message);
         input.value = '';
+        input.focus();
       } catch (_) {
         // no-op
       }

@@ -275,12 +275,18 @@
           </form>
           <p id="joinMsg" class="inline-note"></p>
         </div>
-        <div id="chatPanel" class="card hidden">
-          <h3>Group Chat</h3>
-          <div id="chatMessages" class="chat-messages"></div>
-          <form id="chatForm" class="row">
-            <input id="chatInput" placeholder="Write a message..." required />
-            <button class="btn btn-primary" type="submit">Send</button>
+        <div id="chatPanel" class="card chat-panel hidden">
+          <div class="chat-panel-head">
+            <h3>Group chat</h3>
+            <p class="muted chat-panel-sub" id="chatPanelSub"></p>
+          </div>
+          <div id="trainChatScroll" class="chat-scroll" role="log" aria-live="polite" aria-relevant="additions">
+            <div id="chatMessages" class="chat-messages-inner"></div>
+          </div>
+          <form id="chatForm" class="chat-composer" autocomplete="off">
+            <label class="visually-hidden" for="chatInput">Message</label>
+            <input id="chatInput" type="text" placeholder="Message" required enterkeyhint="send" />
+            <button class="btn btn-primary chat-send" type="submit" aria-label="Send message">Send</button>
           </form>
         </div>
       </section>
