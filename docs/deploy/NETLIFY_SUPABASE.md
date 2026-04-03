@@ -39,8 +39,9 @@ Set these in Netlify project environment variables:
 4. Seed admin once via `/.netlify/functions/seed?key=...` or local script.
 5. Login and verify all modules:
    - Operations Data (CRUD and optional **Import from Excel** for `.xlsx` aligned with workbook columns)
+   - Finance (KPIs, charts, ledger; optional **n8n** snapshot per [`../N8N_FINANCE.md`](../N8N_FINANCE.md))
    - Email Campaigns
-   - Live Session Groups
+   - Live Session Groups (chat and optional shared whiteboard when enabled on the session)
    - Admin (role-based)
 
 ## Security reminder
@@ -59,6 +60,6 @@ Set these in Netlify project environment variables:
 
 7. **Production vs Preview:** In Netlify → Environment variables, confirm the same Supabase values exist for **Production** (not only Deploy previews).
 
-8. **Shared code location:** Function helpers live in `netlify/lib/_shared.js` (not under `netlify/functions/`) so Netlify does not deploy them as a fake `/_shared` function.
+8. **Shared code location:** Function helpers live in `netlify/lib/` (e.g. `_shared.js`, `vercel-adapter.js`, `operations-import-map.js`), not as top-level files under `netlify/functions/`, so Netlify does not treat them as separate serverless endpoints.
 
 9. **`Database error — TypeError: fetch failed`:** Usually outbound HTTPS from Netlify to Supabase failing at DNS/TCP (IPv6 vs IPv4). The repo sets `dns.setDefaultResultOrder('ipv4first')` in `netlify/lib/_shared.js` and `NODE_OPTIONS=--dns-result-order=ipv4first` in `netlify.toml`. Redeploy; if it persists, add the same `NODE_OPTIONS` under **Site configuration → Environment variables** for Production.

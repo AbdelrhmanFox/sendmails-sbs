@@ -46,9 +46,13 @@ Role-to-areas mapping is defined in `dashboard/js/shared.js` (`ROLE_AREAS`): e.g
 
 ## Frontend files
 
-- `dashboard/index.html` (Quill, Supabase client, SheetJS, **Chart.js** for Finance)
-- `dashboard/css/tokens.css`, `dashboard/css/main.css`
-- `dashboard/js/app.js` (ES module entry; feature modules under `dashboard/js/*.js`)
+- `dashboard/index.html` (Quill, Supabase client, SheetJS, **Chart.js** for Finance; `<script type="module" src="js/app.js">`)
+- `dashboard/css/tokens.css`, `dashboard/css/main.css` (training chat + **shared whiteboard** layout; participant view uses a wider main column)
+- `dashboard/js/app.js` — ES module entry (bootstraps shell, wires imports)
+- `dashboard/js/shared.js` — API base helpers, `ROLE_AREAS`, shared UI utilities
+- `dashboard/js/config.js` — runtime config
+- `dashboard/js/nav.js` — sidebar / area visibility
+- `dashboard/js/operations.js`, `finance.js`, `training.js`, `campaigns.js`, `admin.js` — feature modules imported from `app.js`
 
 ## Key behavior
 

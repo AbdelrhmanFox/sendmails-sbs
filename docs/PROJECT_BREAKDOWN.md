@@ -27,7 +27,7 @@ In short: **Bulk email from a Google Sheet, one every 5 minutes, with merge fiel
 | **Automation** | n8n (self-hosted or cloud) | Single workflow: Webhook → branch by action → Google Sheets read/update, Code, Filter, Split In Batches, SMTP, Wait, Set, Respond. |
 | **Dashboard UI** | HTML | Single page: login screen + app (header, tabs, step cards). |
 | **Dashboard styling** | CSS | Variables, layout, cards, buttons, status grid, editor, preview. No preprocessor. |
-| **Dashboard logic** | Vanilla JavaScript | Auth, webhook fetch calls, Quill init, Finance charts (Chart.js CDN), status polling, i18n, localStorage. |
+| **Dashboard logic** | Vanilla JavaScript (ES modules) | Entry `dashboard/js/app.js` imports feature modules (`operations`, `finance`, `training`, `campaigns`, `admin`, `nav`, `shared`, `config`). Auth, webhook fetch calls, Quill init, Finance charts (Chart.js CDN), status polling, localStorage. |
 | **Rich text** | Quill | Email body editor (toolbar + RTL/LTR + merge-field insert). |
 | **Hosting (static)** | Netlify | Serves `dashboard/` as site root. |
 | **Auth DB** | Supabase | Table `app_users` (username, password_hash, role). |
@@ -351,14 +351,16 @@ Current shape (summary):
 
 ```
 project/
-├── automation/workflow.json   # n8n: campaigns (preview, send, status)
-├── api/[name].js              # Vercel: dispatches to netlify/functions handlers
+├── automation/workflow.json   # n8n: campaigns (preview, send, status); see also finance-report-trigger.json
+├── api/[name].js              # Vercel: dispatches to netlify/functions handlers (via netlify/lib/vercel-adapter.js)
 ├── dashboard/                 # Static UI: login, Home, Operations (CRUD + Excel import), Campaigns, Training, Admin
-├── netlify/functions/       # login, operations-data, training-*, users, public-config, seed, …
-├── netlify/lib/             # Shared helpers (e.g. operations-import-map.js, _shared.js)
-├── supabase/schema.sql
-├── docs/                    # DATA_MODEL, WORKBOOK_SOURCE, DASHBOARD, this file, …
-├── brand/                   # palette, logo exports
+├── dashboard/js/              # app.js (entry) + shared, nav, config, operations, finance, training, campaigns, admin
+├── netlify/functions/         # login, operations-data, finance-data, training-*, users, public-config, public-training-session, seed, …
+├── netlify/lib/               # _shared.js, vercel-adapter.js, operations-import-map.js (not deployed as standalone functions)
+├── supabase/schema.sql        # full baseline for new projects
+├── supabase/migrations/       # ordered SQL patches for existing databases
+├── docs/                      # DATA_MODEL, WORKBOOK_SOURCE, DASHBOARD, N8N_FINANCE, this file, …
+├── brand/                     # palette, logo exports, visual-identity kit
 ├── vercel.json, netlify.toml
 └── README.md
 ```

@@ -17,10 +17,10 @@ Build an internal staff dashboard for SBS (educational/training services), with 
 
 ## Stack
 
-- Frontend: static `dashboard/` (HTML/CSS/JS + Quill; Chart.js CDN for Finance charts)
-- Backend: Netlify functions (`netlify/functions/`)
-- Data/Auth: Supabase
-- Automation: n8n (`automation/workflow.json`)
+- Frontend: static `dashboard/` (HTML/CSS/JS as **ES modules** — `js/app.js` plus `shared.js`, `nav.js`, `config.js`, `operations.js`, `finance.js`, `training.js`, `campaigns.js`, `admin.js`; Quill; Chart.js CDN for Finance charts)
+- Backend: Netlify functions (`netlify/functions/`), Vercel router `api/[name].js` → same handlers
+- Data/Auth: Supabase (`supabase/schema.sql`; incremental updates under `supabase/migrations/` for existing DBs)
+- Automation: n8n (`automation/workflow.json`; optional finance snapshot per `docs/N8N_FINANCE.md`)
 
 ## Database requirements
 
@@ -60,7 +60,7 @@ Workbook exports under `docs/excel-export/` drive the data model (`docs/DATA_MOD
 
 ### Finance
 
-- `/.netlify/functions/finance-data?resource=kpis|ledger|payment|ar-aging|invoices|audit|chart-revenue-trend|chart-payment-methods|…` (GET/POST/PUT/DELETE per route; dashboard Finance tab uses Chart.js for chart resources)
+- `/.netlify/functions/finance-data?resource=kpis|ledger|payment|ar-aging|invoices|audit|chart-revenue-trend|chart-payment-methods|n8n-report|…` (GET/POST/PUT/DELETE per route; dashboard Finance tab uses Chart.js for chart resources; **`n8n-report`** is POST with `X-N8n-Secret` for automation)
 
 ### Campaigns (n8n webhook)
 
@@ -78,6 +78,7 @@ Dashboard sends:
 - Campaign module disabled/hidden by role where needed
 - Admin module visible only to admins
 - Training join flow: `?session=<id>` (group picker) or direct `?group=<token>`
+- Training: optional **shared whiteboard** when `training_sessions.whiteboard_enabled` is true (Realtime broadcast; trainer can disable at session creation)
 
 ## Delivery rules
 

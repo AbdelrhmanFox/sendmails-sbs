@@ -8,7 +8,7 @@ This folder holds the **source of truth** for brand colors and marks used by the
 | --- | --- |
 | `Main Logo/` | Official logo exports (PNG). **Sidebar uses `Colored (White Text).png`** on dark UI. |
 | `Color Palette/` | `ColorPalette.pdf` — full brand color system (primary, solids, gradients). `palette.json` hex values align with the logo and PDF; adjust both when marketing updates the PDF. |
-| `source/` | Illustrator sources when present: `Characters.ai`, and optionally `ColorPalette.ai`, `Logo Variations.ai` (marketing-owned binaries may not be in every checkout). |
+| `source/` | Illustrator sources when present (e.g. `Characters.ai`); additional `.ai` files may live under `visual-identity/` or a root-level `Characters/` folder from design handoffs. |
 | `palette.json` | Canonical hex values (aligned with **ColorPalette.pdf** RGB swatches in file metadata). |
 | `exports/logo.png` | Copy of the white-text mark for deployment parity with `dashboard/assets/logo.png`. |
 | `visual-identity/` | Full visual identity kit (Stickers, Elements & Patterns, Logo, Fonts, etc.), moved from the old Drive-style root folder name. |

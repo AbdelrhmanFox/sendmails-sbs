@@ -22,4 +22,6 @@ npm run data-model:build
 
 These commands keep `docs/excel-export/` and `docs/DATA_MODEL.md` aligned with workbook structure.
 
+Database columns that exist only in Supabase (for example training session flags such as `whiteboard_enabled`) are **not** workbook columns; manage them via `supabase/schema.sql` and `supabase/migrations/`, not via the Excel export sheets.
+
 To load data without the CLI, use **Operations Data → Import from Excel** in the dashboard (`.xlsx` with the same headers as the export sheets).

@@ -8,14 +8,14 @@ Internal staff dashboard for **SBS** (educational and training services). The ap
 | --- | --- |
 | **Operations Data** | Workbook-driven CRUD for trainees, courses, batches, and enrollments; **Excel (.xlsx) import** in the UI and bulk upsert via `operations-data` (see below). |
 | **Email Campaigns** | n8n-powered preview, send, and status; webhook + Google Sheets integration. |
-| **Live Session Groups** | Trainers create sessions and groups; participants join with links; realtime chat (Supabase). |
+| **Live Session Groups** | Trainers create sessions and groups; participants join with links; realtime chat (Supabase); optional **shared whiteboard** per session (Realtime broadcast, not persisted). |
 | **Finance** | KPIs, Chart.js visuals (revenue, payment mix, AR aging), ledger, invoices, and exports via `finance-data`. |
 | **User management** | Admin flows for listing, creating, resetting, and deleting users. |
 | **Authentication** | JWT-based login; same contracts for Netlify Functions and Vercel. |
 
 ## Tech stack
 
-- **Frontend:** Static HTML/CSS/JS under `dashboard/` (Montserrat + design tokens; Quill, SheetJS, Chart.js from CDNs where used).
+- **Frontend:** Static HTML/CSS/JS under `dashboard/` as **ES modules** (`js/app.js` entry imports feature modules; Montserrat + design tokens; Quill, SheetJS, Chart.js from CDNs where used).
 - **Backend:** Node serverless handlers in `netlify/functions/` (shared by Netlify and Vercel).
 - **Vercel entry:** Single dispatcher `api/[name].js` (stays within the Hobby **12-function** limit).
 - **Database & auth storage:** Supabase (schema and RLS in `supabase/schema.sql`).
@@ -35,8 +35,10 @@ Internal staff dashboard for **SBS** (educational and training services). The ap
 | `api/[name].js` | Vercel router: maps `/api/<name>` to the matching Netlify handler. |
 | `vercel.json` | Static output `dashboard/`, rewrites `/.netlify/functions/:name` → `/api/:name`. |
 | `netlify.toml` | Netlify build (publish `dashboard`), functions bundler, security headers. |
-| `supabase/schema.sql` | Tables, policies, and training realtime setup. |
+| `supabase/schema.sql` | Tables, policies, and training realtime setup (full baseline for new projects). |
+| `supabase/migrations/` | Timestamped SQL for existing databases (run after baseline schema when listed in release notes). |
 | `supabase/` | One-off SQL helpers (e.g. `fix-login-database-error.sql`) as needed. |
+| `dashboard/js/` | `app.js` (entry) plus `shared.js`, `nav.js`, `config.js`, `operations.js`, `finance.js`, `training.js`, `campaigns.js`, `admin.js`. |
 | `scripts/` | Seed, workbook export/import, data model build. |
 | `automation/workflow.json` | n8n campaign workflow (import into your n8n instance). |
 | `docs/` | Long-form docs, CSV exports under `docs/excel-export/`, sample import under `docs/sample-import/`. |
@@ -69,6 +71,7 @@ For asset layout and syncing rules, see [`brand/README.md`](brand/README.md).
 | [`docs/deploy/VERCEL_DEPLOY.md`](docs/deploy/VERCEL_DEPLOY.md) | Vercel project settings, env vars, and `/api/*` behaviour. |
 | [`docs/deploy/NETLIFY_SUPABASE.md`](docs/deploy/NETLIFY_SUPABASE.md) | Netlify + Supabase integration notes. |
 | [`docs/deploy/SUPABASE_SETUP.md`](docs/deploy/SUPABASE_SETUP.md) | Schema overview and optional workbook import. |
+| [`docs/N8N_FINANCE.md`](docs/N8N_FINANCE.md) | Scheduled finance snapshot for n8n (`finance-data?resource=n8n-report`). |
 | [`CLAUDE.md`](CLAUDE.md) | Agent and delivery rules for this codebase. |
 
 ---
@@ -85,6 +88,7 @@ Set these on **Netlify** and/or **Vercel** (same names; configure per platform).
 | `JWT_SECRET` or `SUPABASE_JWT_SECRET` | Sign and verify dashboard login tokens. |
 | `SUPABASE_DATABASE_URL` | Optional; some Netlify Supabase integrations expose Postgres URL first. |
 | `SEED_SECRET` | Optional; protects the `seed` function. |
+| `N8N_FINANCE_WEBHOOK_SECRET` | Optional; required for `POST …/finance-data?resource=n8n-report` from n8n (see [`docs/N8N_FINANCE.md`](docs/N8N_FINANCE.md)). |
 | `NODE_OPTIONS` | Optional; e.g. `--dns-result-order=ipv4first` if Supabase fetch fails (see `netlify.toml` / [`docs/deploy/VERCEL_DEPLOY.md`](docs/deploy/VERCEL_DEPLOY.md)). |
 
 Redeploy after changing variables.
@@ -160,7 +164,7 @@ CLI import from exported CSV remains: `npm run import:workbook`.
 
 `api/[name].js` exposes names that mirror Netlify function names, for example:
 
-`login`, `seed`, `operations-data`, `training-sessions`, `training-join`, `training-messages`, `create-user`, `list-users`, `public-config`, `delete-user`, `reset-password`, `health-supabase`.
+`login`, `seed`, `operations-data`, `finance-data`, `training-data`, `training-sessions`, `training-join`, `training-messages`, `public-config`, `public-training-session`, `create-user`, `list-users`, `delete-user`, `reset-password`, `health-supabase`.
 
 - **Netlify:** `/.netlify/functions/<name>`
 - **Vercel:** `/api/<name>` (and rewrites from `/.netlify/functions/<name>` for compatibility)
@@ -193,7 +197,7 @@ Use **one** primary production domain per environment to avoid confusion; env va
 ## Security notes
 
 - Never commit `.env`, tokens, or service-role keys.
-- `training_*` flows use scoped tokens for join/chat; treat live session links as sensitive during active sessions.
+- `training_*` flows use scoped tokens for join/chat and whiteboard broadcast; treat live session links as sensitive during active sessions.
 - Service-role keys must only run in serverless functions, never in the static dashboard bundle.
 
 ---

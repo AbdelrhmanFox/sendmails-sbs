@@ -21,9 +21,9 @@
 
 ## Architecture Rules
 
-- Frontend remains a static dashboard in `dashboard/`.
-- Server functions remain under `netlify/functions/`.
-- Database schema and RLS live in `supabase/schema.sql`.
+- Frontend remains a static dashboard in `dashboard/` (ES module entry `dashboard/js/app.js` and feature modules under `dashboard/js/`).
+- Server functions remain under `netlify/functions/` (Vercel uses `api/[name].js` + `netlify/lib/vercel-adapter.js`).
+- Database schema and RLS: baseline in `supabase/schema.sql`; apply `supabase/migrations/*.sql` in order when evolving existing databases.
 - n8n workflow file remains in `automation/workflow.json`.
 
 ## Delivery Rules

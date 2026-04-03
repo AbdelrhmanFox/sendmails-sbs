@@ -90,8 +90,9 @@ This document is generated from workbook source and exported CSV sheets.
 
 ## Rules
 
-1. The workbook remains the source of truth for schema and constraints.
+1. The workbook remains the source of truth for **operations** sheet columns (trainees, courses, batches, enrollments) and their constraints.
 2. New sheet exports must be generated from the workbook using `npm run workbook:export`.
-3. Database tables and API endpoints must map to these sheet columns.
-4. All UI labels and docs remain English-only.
+3. Database tables and API endpoints must map to these sheet columns where the entity comes from the workbook.
+4. **Supabase-only fields** (for example on `training_sessions` or finance-related tables) may exist without a workbook column; document them in `supabase/schema.sql`, `docs/DASHBOARD.md`, and incremental `supabase/migrations/`.
+5. All UI labels and docs remain English-only.
 
