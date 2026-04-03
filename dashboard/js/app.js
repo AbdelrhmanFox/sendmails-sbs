@@ -19,8 +19,32 @@ const loginError = document.getElementById('loginError');
 const loggedInUserEl = document.getElementById('loggedInUser');
 if (loggedInUserEl && authUsername) loggedInUserEl.textContent = `${authUsername} (${authRole || 'user'})`;
 
+/** Student share links (?session= or ?=group) work without staff login. */
+function hasPublicTrainingJoinQuery() {
+  try {
+    const q = new URLSearchParams(window.location.search);
+    const session = String(q.get('session') || '').trim();
+    const group = String(q.get('group') || '').trim();
+    return Boolean(session || group);
+  } catch (_) {
+    return false;
+  }
+}
+
+function bootPublicTrainingGuest() {
+  document.body.classList.add('public-training-guest');
+  showApp();
+  document.querySelectorAll('.view').forEach((v) => v.classList.remove('active'));
+  document.getElementById('view-training')?.classList.add('active');
+  void initTraining();
+}
+
 async function bootAuth() {
   if (!authToken || !authRole) {
+    if (hasPublicTrainingJoinQuery()) {
+      bootPublicTrainingGuest();
+      return;
+    }
     showLogin();
     return;
   }

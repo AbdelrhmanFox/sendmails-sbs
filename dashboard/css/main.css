@@ -76,6 +76,19 @@ h1, h2, h3, h4, p { margin-top: 0; }
 .small-note { color: var(--brand-muted); font-size: 12px; margin-top: 12px; }
 
 .app { min-height: 100vh; display: grid; grid-template-columns: 270px 1fr; }
+
+/* Public training join (students open ?session= / ?group= without staff login) */
+body.public-training-guest .app {
+  grid-template-columns: 1fr;
+}
+body.public-training-guest .sidebar {
+  display: none !important;
+}
+body.public-training-guest .main {
+  grid-column: 1 / -1;
+  max-width: 100%;
+}
+
 .sidebar {
   border-right: 1px solid color-mix(in oklab, var(--brand-border) 75%, var(--brand-navy));
   background: linear-gradient(
