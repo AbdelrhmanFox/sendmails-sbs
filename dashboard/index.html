@@ -291,6 +291,9 @@
               <button type="button" class="btn btn-secondary chat-whiteboard-toggle hidden" id="btnToggleWhiteboard" aria-expanded="false" aria-controls="whiteboardWrap">Show whiteboard</button>
             </div>
           </div>
+          <div id="trainChatScroll" class="chat-scroll" role="log" aria-live="polite" aria-relevant="additions">
+            <div id="chatMessages" class="chat-messages-inner"></div>
+          </div>
           <div id="whiteboardWrap" class="whiteboard-wrap whiteboard-wrap--collapsed whiteboard-wrap--session-off" aria-hidden="true">
             <div class="whiteboard-expandable">
               <div class="whiteboard-header">
@@ -317,9 +320,6 @@
               </div>
               <p id="whiteboardNote" class="muted whiteboard-note hidden"></p>
             </div>
-          </div>
-          <div id="trainChatScroll" class="chat-scroll" role="log" aria-live="polite" aria-relevant="additions">
-            <div id="chatMessages" class="chat-messages-inner"></div>
           </div>
           <form id="chatForm" class="chat-composer" autocomplete="off">
             <label class="visually-hidden" for="chatInput">Message</label>

@@ -633,15 +633,16 @@ body.participant-join .chat-panel {
 }
 
 .whiteboard-wrap {
-  flex-shrink: 0;
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 .whiteboard-wrap:not(.whiteboard-wrap--collapsed):not(.whiteboard-wrap--session-off) {
-  margin-bottom: 10px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid color-mix(in oklab, var(--brand-border) 40%, transparent);
+  margin-top: 10px;
+  margin-bottom: 6px;
+  padding-top: 10px;
+  border-top: 1px solid color-mix(in oklab, var(--brand-border) 40%, transparent);
 }
 .whiteboard-wrap--session-off {
   display: none;
@@ -755,9 +756,9 @@ body.participant-join .chat-panel {
 .training-whiteboard {
   display: block;
   width: 100%;
-  min-height: 320px;
-  height: min(50vh, 520px);
-  max-height: min(62vh, 640px);
+  min-height: 180px;
+  height: min(28vh, 320px);
+  max-height: min(36vh, 380px);
   border: none;
   border-radius: 0;
   background: transparent;
@@ -771,7 +772,7 @@ body.participant-join .chat-panel {
 }
 
 .chat-scroll {
-  flex: 1 1 280px;
+  flex: 3 1 min(48vh, 520px);
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
@@ -814,11 +815,11 @@ body.participant-join .chat-panel {
   flex-direction: column;
   gap: 8px;
   padding: 12px 10px 14px;
-  min-height: 240px;
+  min-height: 200px;
 }
 
 body.participant-join .chat-scroll {
-  flex: 1 1 min(42vh, 520px);
+  flex: 3 1 min(52vh, 680px);
   min-height: 0;
 }
 
@@ -940,20 +941,20 @@ body.participant-join .chat-scroll {
     min-height: min(78vh, 640px);
   }
   .chat-scroll {
-    flex: 1 1 200px;
+    flex: 3 1 min(40vh, 480px);
     min-height: 0;
   }
   body.participant-join .chat-scroll {
-    flex: 1 1 min(34vh, 420px);
+    flex: 3 1 min(46vh, 560px);
     min-height: 0;
   }
   .chat-messages-inner {
-    min-height: 140px;
+    min-height: 120px;
   }
   .training-whiteboard {
-    min-height: 240px;
-    height: min(42vh, 380px);
-    max-height: min(52vh, 460px);
+    min-height: 160px;
+    height: min(26vh, 280px);
+    max-height: min(34vh, 320px);
   }
   .whiteboard-clear {
     margin-left: 0;
