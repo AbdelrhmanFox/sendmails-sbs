@@ -29,7 +29,7 @@ Role-to-areas mapping is defined in `dashboard/js/app.js` (`ROLE_AREAS`): e.g. `
    Status updates for multiple enrollment business IDs via `operations-data` bulk endpoint (see implementation).
 
 4. **Finance**  
-   `/.netlify/functions/finance-data?resource=kpis|ledger|payment|ar-aging|invoices|companies|audit|chart-revenue-trend|chart-payment-methods` (exact routes depend on method and query). Chart endpoints are GET-only aggregations for the Finance tab (Chart.js 4.x loaded from jsDelivr in `index.html`).  
+   `/.netlify/functions/finance-data?resource=kpis|ledger|payment|ar-aging|invoices|companies|audit|chart-revenue-trend|chart-payment-methods` (exact routes depend on method and query). Chart endpoints are GET-only aggregations for the Finance tab (Chart.js 4.x loaded from jsDelivr in `index.html`). KPIs and charts use **`payments`** (cash ledger) and **`invoices`**; Operations Excel import does **not** create payment rows—use **Record payment** with the enrollment business key (`enrollment_id`) to post cash that appears here.  
    Scheduled snapshot for n8n: `POST finance-data?resource=n8n-report` with header `X-N8n-Secret` matching `N8N_FINANCE_WEBHOOK_SECRET` (see `docs/N8N_FINANCE.md`).
 
 5. **Training — Live sessions**  
