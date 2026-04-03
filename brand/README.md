@@ -19,6 +19,7 @@ This folder holds the **source of truth** for brand colors and marks used by the
 - **`dashboard/assets/stickers/`** — decorative sticker JPGs on login and each main view header (Home, Operations, Campaigns, Training, Admin); images use `alt=""` as decoration only.
 - **`dashboard/css/tokens.css`** — maps `--brand-*` from **`palette.json`**. Plain CSS cannot import JSON; keep them aligned when colors change.
 - **Typography:** the dashboard loads **Montserrat** (see PDF font list) from Google Fonts.
+- **Finance charts:** the Finance tab uses **Chart.js** (CDN); series colors follow `--brand-*` tokens from `tokens.css` for visual consistency with the rest of the UI.
 
 ## Source binaries
 
