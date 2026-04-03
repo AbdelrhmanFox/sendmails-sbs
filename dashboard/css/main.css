@@ -563,24 +563,27 @@ h2::after {
 .stat .k { display: block; color: var(--brand-muted); font-size: 12px; }
 .stat .v { font-size: 18px; font-weight: 700; }
 
-/* Training group chat (conversation-style) */
+/* Training group chat (conversation-style, messages + bottom composer like messengers) */
 .chat-panel {
   display: flex;
   flex-direction: column;
   gap: 0;
   max-height: min(85vh, 720px);
   min-height: 360px;
-  padding-bottom: 14px;
+  padding-bottom: 12px;
 }
 body.participant-join .chat-panel {
   max-height: min(88vh, 780px);
 }
 .chat-panel-head {
   flex-shrink: 0;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid color-mix(in oklab, var(--brand-border) 50%, transparent);
 }
 .chat-panel-head h3 {
-  margin-bottom: 4px;
+  margin-bottom: 2px;
+  font-size: 1.15rem;
 }
 .chat-panel-sub {
   margin: 0;
@@ -588,38 +591,34 @@ body.participant-join .chat-panel {
   line-height: 1.4;
 }
 
-.chat-scroll {
-  flex: 1;
-  min-height: 220px;
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
-  scroll-behavior: smooth;
-  overscroll-behavior: contain;
-  border-radius: var(--brand-radius);
-  border: 1px solid var(--brand-border);
-  background:
-    radial-gradient(800px 400px at 10% 0%, color-mix(in oklab, var(--brand-primary) 12%, transparent), transparent 55%),
-    radial-gradient(600px 320px at 100% 100%, color-mix(in oklab, var(--brand-indigo) 18%, transparent), transparent 50%),
-    var(--brand-surface);
-}
-
-.chat-messages-inner {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 14px 12px 18px;
-  min-height: min(48vh, 320px);
-}
-
 .whiteboard-wrap {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-top: 12px;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid color-mix(in oklab, var(--brand-border) 40%, transparent);
 }
-.whiteboard-wrap.whiteboard--off .training-whiteboard {
+.whiteboard-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 12px;
+}
+.whiteboard-title {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--brand-muted);
+}
+.whiteboard-hint {
+  font-size: 11px;
+  line-height: 1.3;
+}
+.whiteboard-wrap.whiteboard--off .whiteboard-canvas-shell {
   opacity: 0.45;
   pointer-events: none;
 }
@@ -627,33 +626,135 @@ body.participant-join .chat-panel {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px 14px;
+  gap: 8px 12px;
   font-size: 13px;
+}
+.whiteboard-toolbar .whiteboard-tool-select {
+  width: auto;
+  min-width: 7rem;
+  max-width: 9rem;
+  margin-bottom: 0;
+  flex: 0 0 auto;
 }
 .whiteboard-toolbar-label {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   color: var(--brand-muted);
+  margin-bottom: 0;
+}
+.whiteboard-toolbar-label .wb-label-text {
+  font-size: 12px;
+  white-space: nowrap;
+}
+.whiteboard-width-label {
+  flex: 1 1 120px;
+  min-width: 100px;
+}
+.whiteboard-width-label input[type='range'] {
+  width: 100%;
+  min-width: 72px;
+  max-width: 140px;
+  margin-bottom: 0;
+  vertical-align: middle;
+}
+.whiteboard-toolbar input[type='color'] {
+  width: 36px;
+  height: 32px;
+  padding: 2px;
+  margin-bottom: 0;
+  cursor: pointer;
+  border-radius: 8px;
 }
 .whiteboard-toolbar select,
 .whiteboard-toolbar input[type="color"] {
   accent-color: var(--brand-primary);
 }
+.whiteboard-clear {
+  margin-left: auto;
+  margin-bottom: 0;
+  padding: 6px 10px;
+  font-size: 12px;
+  line-height: 1.2;
+  border-radius: 8px;
+  border: 1px solid color-mix(in oklab, var(--brand-danger) 55%, var(--brand-border));
+  background: transparent;
+  color: color-mix(in oklab, var(--brand-danger) 35%, var(--brand-text));
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.whiteboard-clear:hover {
+  background: color-mix(in oklab, var(--brand-danger) 16%, transparent);
+}
+.whiteboard-canvas-shell {
+  overflow: hidden;
+  border-radius: var(--brand-radius);
+  border: 1px solid color-mix(in oklab, var(--brand-border) 70%, transparent);
+  background: var(--brand-surface);
+  line-height: 0;
+}
 .training-whiteboard {
   display: block;
   width: 100%;
-  height: 240px;
-  max-height: min(40vh, 280px);
-  border-radius: var(--brand-radius);
-  border: 1px solid var(--brand-border);
-  background: var(--brand-surface);
+  height: 168px;
+  max-height: 22vh;
+  border: none;
+  border-radius: 0;
+  background: transparent;
   touch-action: none;
   cursor: crosshair;
+  vertical-align: top;
 }
 .whiteboard-note {
   margin: 0;
   font-size: 12px;
+}
+
+.chat-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
+  border-radius: var(--brand-radius);
+  border: 1px solid var(--brand-border);
+  background-color: #0c0f28;
+  background-image:
+    radial-gradient(circle at 20% 30%, color-mix(in oklab, var(--brand-primary) 8%, transparent) 0%, transparent 45%),
+    radial-gradient(circle at 80% 70%, color-mix(in oklab, var(--brand-indigo) 10%, transparent) 0%, transparent 42%),
+    repeating-linear-gradient(
+      -8deg,
+      transparent,
+      transparent 8px,
+      color-mix(in oklab, var(--brand-text) 3%, transparent) 8px,
+      color-mix(in oklab, var(--brand-text) 3%, transparent) 9px
+    );
+}
+
+.chat-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.chat-scroll::-webkit-scrollbar-track {
+  background: color-mix(in oklab, var(--brand-surface) 80%, transparent);
+  border-radius: 6px;
+}
+.chat-scroll::-webkit-scrollbar-thumb {
+  background: color-mix(in oklab, var(--brand-muted) 45%, var(--brand-surface));
+  border-radius: 6px;
+}
+.chat-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--brand-muted) 50%, transparent) transparent;
+}
+
+.chat-messages-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 10px 14px;
+  min-height: 120px;
 }
 
 .chat-line {
@@ -669,9 +770,9 @@ body.participant-join .chat-panel {
 }
 
 .chat-bubble {
-  padding: 8px 12px 6px;
-  border-radius: 18px 18px 18px 6px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+  padding: 9px 14px 7px;
+  border-radius: 16px 16px 16px 6px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 .chat-line--out .chat-bubble {
   background: linear-gradient(
@@ -684,8 +785,9 @@ body.participant-join .chat-panel {
   border: 1px solid color-mix(in oklab, var(--brand-primary) 70%, #000);
 }
 .chat-line--in .chat-bubble {
-  background: color-mix(in oklab, var(--brand-surface-2) 92%, var(--brand-text));
-  border: 1px solid color-mix(in oklab, var(--brand-border) 55%, transparent);
+  background: color-mix(in oklab, var(--brand-surface-2) 78%, var(--brand-text) 8%);
+  border: 1px solid color-mix(in oklab, var(--brand-border) 45%, transparent);
+  color: var(--brand-text);
 }
 
 .chat-bubble-name {
@@ -723,26 +825,45 @@ body.participant-join .chat-panel {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   flex-shrink: 0;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid color-mix(in oklab, var(--brand-border) 45%, transparent);
+  margin-top: 10px;
+  padding: 10px 10px 4px;
+  border-radius: var(--brand-radius);
+  background: color-mix(in oklab, var(--brand-surface-2) 92%, var(--brand-surface));
+  border: 1px solid color-mix(in oklab, var(--brand-border) 55%, transparent);
+  box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.2);
 }
 .chat-composer input[type='text'] {
   flex: 1;
   margin-bottom: 0;
   min-width: 0;
-  border-radius: 22px;
-  padding: 12px 16px;
-  border: 1px solid var(--brand-border);
-  background: var(--brand-surface-2);
+  border-radius: 24px;
+  padding: 11px 18px;
+  border: 1px solid color-mix(in oklab, var(--brand-border) 65%, transparent);
+  background: var(--brand-surface);
 }
 .chat-composer .chat-send {
   flex-shrink: 0;
-  border-radius: 22px;
-  padding-left: 18px;
-  padding-right: 18px;
+  border-radius: 50%;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0;
+  background: linear-gradient(145deg, var(--brand-primary), color-mix(in oklab, var(--brand-primary-2) 55%, var(--brand-primary)));
+  box-shadow: 0 2px 8px color-mix(in oklab, var(--brand-primary) 35%, transparent);
+}
+.chat-composer .chat-send::after {
+  content: '';
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 7px 0 7px 12px;
+  border-color: transparent transparent transparent #fff;
+  margin-left: 3px;
 }
 
 @media (max-width: 520px) {
@@ -751,7 +872,20 @@ body.participant-join .chat-panel {
     max-height: min(90vh, 100%);
   }
   .chat-messages-inner {
-    min-height: 200px;
+    min-height: 100px;
+  }
+  .training-whiteboard {
+    height: 140px;
+    max-height: 28vh;
+  }
+  .whiteboard-clear {
+    margin-left: 0;
+    width: 100%;
+    text-align: center;
+    order: 10;
+  }
+  .whiteboard-toolbar {
+    gap: 8px;
   }
   .chat-line {
     max-width: 94%;
