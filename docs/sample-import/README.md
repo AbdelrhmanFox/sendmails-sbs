@@ -1,6 +1,6 @@
 # Operations import: Excel column reference
 
-**Sample workbook:** `SBS_operations_sample.xlsx` — generate with `npm run sample-import:xlsx` (writes `docs/sample-import/` and `dashboard/assets/` for the in-app **Download sample .xlsx** button).
+**Sample workbook:** `SBS_operations_sample.xlsx` — generate with `npm run sample-import:xlsx` (writes `docs/sample-import/` and `dashboard/assets/` for the in-app **Download sample .xlsx** button). The built-in rows are **realistic cross-linked examples** (four trainees, three courses, three batches, five enrollments). For a **full import on an empty database**, import sheets in order: **trainees → courses → batches → enrollments** (same order as tabs in the file).
 
 Use **`.xlsx`** files where **row 1** is the header row. Column names should match the workbook export (same names as `docs/excel-export/*.csv`) or **snake_case** equivalents (e.g. `trainee_id`, `Trainee_ID`).
 
