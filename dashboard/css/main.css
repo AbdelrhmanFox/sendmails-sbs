@@ -586,6 +586,34 @@ h2::after {
 .stat .v { font-size: 18px; font-weight: 700; }
 
 /* Training group chat (conversation-style, messages + bottom composer like messengers) */
+.chat-session-ended-banner {
+  flex-shrink: 0;
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border-radius: var(--brand-radius-dense);
+  border: 1px solid color-mix(in oklab, var(--brand-danger) 45%, var(--brand-border));
+  background: color-mix(in oklab, var(--brand-danger) 12%, var(--brand-surface));
+  color: var(--brand-text);
+  font-size: 14px;
+  line-height: 1.45;
+}
+.chat-session-ended-banner p {
+  margin: 0;
+}
+.chat-session-ended-banner.hidden {
+  display: none !important;
+}
+.chat-panel.chat-panel--session-ended .chat-panel-head,
+.chat-panel.chat-panel--session-ended .chat-panel-mobile-tabs,
+.chat-panel.chat-panel--session-ended .chat-panel-body {
+  opacity: 0.55;
+  pointer-events: none;
+}
+.chat-panel.chat-panel--session-ended .chat-session-ended-banner {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 .chat-panel {
   display: flex;
   flex-direction: column;

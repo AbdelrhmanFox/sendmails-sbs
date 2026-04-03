@@ -186,7 +186,25 @@ const trainingState = {
   whiteboardAllowed: false,
   whiteboardSubscribed: false,
   voiceRoomUrl: null,
+  joinToken: null,
+  sessionEnded: false,
 };
+
+let trainingMessagesIntervalId = null;
+let trainingSessionAliveIntervalId = null;
+let trainingSessionAliveMisses = 0;
+
+function clearTrainingParticipantPolls() {
+  if (trainingMessagesIntervalId) {
+    clearInterval(trainingMessagesIntervalId);
+    trainingMessagesIntervalId = null;
+  }
+  if (trainingSessionAliveIntervalId) {
+    clearInterval(trainingSessionAliveIntervalId);
+    trainingSessionAliveIntervalId = null;
+  }
+  trainingSessionAliveMisses = 0;
+}
 
 /** Jitsi Meet (and typical jitsi hostnames) can load in an iframe; Meet/Zoom/etc. cannot. */
 function jitsiVoiceEmbedSrc(roomUrl, displayName) {
@@ -203,6 +221,7 @@ function jitsiVoiceEmbedSrc(roomUrl, displayName) {
     // Audio-only layout, skip prejoin, use chat display name (avatar "stickers" = Jitsi initials when video is off).
     const hashParts = [
       `userInfo.displayName=${encodeURIComponent(name)}`,
+      'config.minParticipants=1',
       'config.prejoinConfig.enabled=false',
       'config.startAudioOnly=true',
       'config.startWithVideoMuted=true',
@@ -790,6 +809,24 @@ async function attachWhiteboardRealtime() {
   }
 }
 
+async function teardownTrainingChatRealtime() {
+  const ch = trainingState.channel;
+  trainingState.channel = null;
+  if (!ch) return;
+  const client = trainingState.supabase;
+  if (client) {
+    try {
+      await client.removeChannel(ch);
+    } catch (_) {
+      try {
+        await ch.unsubscribe();
+      } catch (__) {
+        /* ignore */
+      }
+    }
+  }
+}
+
 async function initRealtime() {
   try {
     const cfg = await jsonFetch('/.netlify/functions/public-config');
@@ -803,6 +840,65 @@ async function initRealtime() {
     await trainingState.channel.subscribe();
   } catch (_) {
     // keep polling fallback only
+  }
+}
+
+async function verifyTrainingSessionAlive() {
+  const token = trainingState.joinToken;
+  if (!token || trainingState.sessionEnded || !trainingState.groupId) return;
+  try {
+    await jsonFetch(`/.netlify/functions/training-join?token=${encodeURIComponent(token)}`);
+    trainingSessionAliveMisses = 0;
+  } catch (_) {
+    trainingSessionAliveMisses += 1;
+    if (trainingSessionAliveMisses >= 2) {
+      trainingSessionAliveMisses = 0;
+      await handleTrainingSessionEnded();
+    }
+  }
+}
+
+async function handleTrainingSessionEnded() {
+  if (trainingState.sessionEnded) return;
+  trainingState.sessionEnded = true;
+  clearTrainingParticipantPolls();
+  trainingState.joinToken = null;
+  trainingState.groupId = null;
+  trainingState.participantId = null;
+  trainingState.senderName = null;
+  trainingState.voiceRoomUrl = null;
+  trainingState.whiteboardAllowed = false;
+  trainingState.whiteboardSubscribed = false;
+
+  await teardownTrainingChatRealtime();
+  await teardownWhiteboardUi();
+
+  const iframe = document.getElementById('chatVoiceEmbed');
+  if (iframe) {
+    iframe.removeAttribute('src');
+    iframe.removeAttribute('data-src');
+  }
+  document.getElementById('chatVoiceEmbedWrap')?.classList.add('hidden');
+  document.getElementById('chatVoiceHint')?.classList.add('hidden');
+
+  const chatPanel = document.getElementById('chatPanel');
+  chatPanel?.classList.add('chat-panel--session-ended');
+  document.getElementById('chatSessionEndedBanner')?.classList.remove('hidden');
+
+  const chatForm = document.getElementById('chatForm');
+  if (chatForm) {
+    chatForm.querySelectorAll('input, button').forEach((el) => {
+      el.disabled = true;
+    });
+  }
+
+  updateVoiceRoomUi();
+
+  const base = `${window.location.origin}${window.location.pathname}`;
+  try {
+    history.replaceState({}, '', base);
+  } catch (_) {
+    /* ignore */
   }
 }
 
@@ -904,7 +1000,11 @@ async function joinByTokenFlow(token) {
     applyWhiteboardPolicyToChatUi();
     loadRecentMessages();
     initRealtime();
-    setInterval(loadRecentMessages, 10000);
+    clearTrainingParticipantPolls();
+    trainingMessagesIntervalId = setInterval(loadRecentMessages, 10000);
+    trainingSessionAliveIntervalId = setInterval(() => {
+      void verifyTrainingSessionAlive();
+    }, 15000);
   };
 }
 
