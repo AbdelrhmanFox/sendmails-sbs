@@ -189,7 +189,7 @@ let whiteboardChannel = null;
 let boardDrawing = false;
 let boardLast = null;
 let boardThrottleUntil = 0;
-const BOARD_THROTTLE_MS = 24;
+const BOARD_THROTTLE_MS = 0;
 const WHITE_EVENT = 'white';
 
 function scrollTrainingChatToBottom() {
@@ -292,11 +292,10 @@ function drawBoardSegment(x0, y0, x1, y1, color, width, skipBroadcast) {
     const now = Date.now();
     if (now >= boardThrottleUntil) {
       boardThrottleUntil = now + BOARD_THROTTLE_MS;
-      whiteboardChannel.send({
-        type: 'broadcast',
-        event: WHITE_EVENT,
-        payload: { type: 'line', x0, y0, x1, y1, color: color || '#00a99d', width: width || 2 },
-      });
+      const payload = { type: 'line', x0, y0, x1, y1, color: color || '#00a99d', width: width || 2 };
+      void whiteboardChannel
+        .send({ type: 'broadcast', event: WHITE_EVENT, payload })
+        .catch(() => {});
     }
   }
 }
@@ -310,7 +309,9 @@ function clearBoardLocal(broadcastToo) {
   ctx.restore();
   resizeBoardToDisplay();
   if (broadcastToo && whiteboardChannel) {
-    whiteboardChannel.send({ type: 'broadcast', event: WHITE_EVENT, payload: { type: 'clear' } });
+    void whiteboardChannel
+      .send({ type: 'broadcast', event: WHITE_EVENT, payload: { type: 'clear' } })
+      .catch(() => {});
   }
 }
 
@@ -325,8 +326,7 @@ function applyRemoteBoardPayload(payload) {
   }
 }
 
-function teardownWhiteboardUi() {
-  whiteboardChannel = null;
+function teardownWhiteboardCanvasOnly() {
   boardDrawing = false;
   boardLast = null;
   const { canvas } = getBoardCanvasAndCtx();
@@ -335,8 +335,25 @@ function teardownWhiteboardUi() {
   }
 }
 
+async function teardownWhiteboardUi() {
+  const ch = whiteboardChannel;
+  whiteboardChannel = null;
+  if (ch && trainingState.supabase) {
+    try {
+      await trainingState.supabase.removeChannel(ch);
+    } catch (_) {
+      try {
+        await ch.unsubscribe();
+      } catch (_) {
+        /* ignore */
+      }
+    }
+  }
+  teardownWhiteboardCanvasOnly();
+}
+
 function initWhiteboardUi() {
-  teardownWhiteboardUi();
+  teardownWhiteboardCanvasOnly();
   const canvas = document.getElementById('trainingWhiteboard');
   if (!canvas) return;
   resizeBoardToDisplay();
@@ -395,28 +412,51 @@ function initWhiteboardUi() {
 
 async function attachWhiteboardRealtime() {
   setWhiteboardDisabled('');
-  teardownWhiteboardUi();
+  await teardownWhiteboardUi();
   if (!trainingState.groupId) return;
   const panel = document.getElementById('chatPanel');
   if (!panel || panel.classList.contains('hidden')) return;
 
+  let ch = null;
   try {
     const cfg = await jsonFetch('/.netlify/functions/public-config');
     if (!cfg.realtimeEnabled || !window.supabase || !trainingState.supabase) {
       setWhiteboardDisabled('Shared board unavailable (realtime not configured).');
       return;
     }
-    const ch = trainingState.supabase.channel(`group-${trainingState.groupId}-whiteboard`, {
+    const topic = `whiteboard:${String(trainingState.groupId)}`;
+    ch = trainingState.supabase.channel(topic, {
       config: { broadcast: { self: false } },
     });
     ch.on('broadcast', { event: WHITE_EVENT }, (msg) => {
-      const pl = msg && (msg.payload != null ? msg.payload : msg);
+      const raw = msg && typeof msg === 'object' ? msg : {};
+      const pl = raw.payload !== undefined ? raw.payload : raw;
       applyRemoteBoardPayload(pl);
     });
-    await ch.subscribe();
-    whiteboardChannel = ch;
+    await new Promise((resolve, reject) => {
+      const ms = 15000;
+      const t = setTimeout(() => reject(new Error('TIMED_OUT')), ms);
+      ch.subscribe((status, err) => {
+        if (status === 'SUBSCRIBED') {
+          clearTimeout(t);
+          resolve();
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          clearTimeout(t);
+          reject(err || new Error(status));
+        }
+      });
+    });
     initWhiteboardUi();
+    whiteboardChannel = ch;
+    ch = null;
   } catch (_) {
+    if (ch && trainingState.supabase) {
+      try {
+        await trainingState.supabase.removeChannel(ch);
+      } catch (__) {
+        /* ignore */
+      }
+    }
     setWhiteboardDisabled('Shared board unavailable.');
   }
 }
