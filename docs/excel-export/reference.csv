@@ -23,7 +23,7 @@ Enrollment_Status,Registered,,,
 ,Cancelled,,,
 Payment_Status,Paid,,,
 ,Pending,,,
-,Free,,,
+,Waived,,,
 Yes_No,Yes,,,
 ,No,,,
 Cities,Cairo,,,
@@ -32,9 +32,9 @@ Cities,Cairo,,,
 ,Other,,,
 Data Dictionary (Column Reference),,,,
 Table,Column,Meaning,Allowed Values / Rule,Required?
-Trainees,Trainee_ID,Unique trainee id (VBA),"TR-00001, TR-00002...",Yes
-Courses,Course_ID,Unique course id (VBA),"CR-00001, CR-00002...",Yes
-Batches,Batch_ID,Unique batch id (VBA),"BA-00001, BA-00002...",Yes
-Enrollments,Enrollment_ID,Unique enrollment id (VBA),"EN-00001, EN-00002...",Yes
+Trainees,Trainee_ID,Unique trainee id (server),"SBS-TR-000001",Yes
+Courses,Course_ID,Unique course id (server),"SBS-CO-000001",Yes
+Batches,Batch_ID,Unique batch id (server),"SBS-BA-SBS-CO-000001-01",Yes
+Enrollments,Enrollment_ID,Unique enrollment id (server),"SBS-EN-000001",Yes
 Enrollments,Trainee Name,Select by name,Dropdown from Lists,Yes
 Enrollments,Batch Name,Select by name,Dropdown from Lists,Yes

@@ -1,7 +1,7 @@
 import { areasForRole } from './shared.js';
 import { loadUsers, loadFinanceAudit } from './admin.js';
 import { refreshFinanceAll } from './finance.js';
-import { loadPipeline, loadCapacity, loadQuality } from './operations.js';
+import { loadPipeline, loadCapacity, loadQuality, onOperationsViewChange } from './operations.js';
 
 const loginScreen = document.getElementById('login-screen');
 const appEl = document.getElementById('app');
@@ -28,6 +28,27 @@ export function showView(viewId) {
   if (viewId === 'operations-pipeline') loadPipeline();
   if (viewId === 'operations-capacity') loadCapacity();
   if (viewId === 'operations-quality') loadQuality();
+  onOperationsViewChange(viewId);
+}
+
+/** Switch visible view and sync area tab + subnav when applicable. */
+export function navigateToView(viewId) {
+  const subItem = document.querySelector(`.subnav-item[data-view="${viewId}"]`);
+  if (subItem) {
+    const sub = subItem.closest('.subnav');
+    const area = sub && sub.getAttribute('data-for-area');
+    if (area) {
+      document.querySelectorAll('.area-tab').forEach((t) => {
+        t.classList.toggle('active', t.getAttribute('data-area') === area);
+      });
+      document.querySelectorAll('.subnav').forEach((s) => {
+        s.classList.toggle('hidden', s.getAttribute('data-for-area') !== area);
+      });
+      sub.querySelectorAll('.subnav-item').forEach((b) => b.classList.remove('active'));
+      subItem.classList.add('active');
+    }
+  }
+  showView(viewId);
 }
 
 export function applyRoleVisibility() {
@@ -107,4 +128,9 @@ export function initShell() {
   const firstSub = document.querySelector(`.subnav[data-for-area="${firstArea}"] .subnav-item`);
   const firstView = firstSub ? firstSub.getAttribute('data-view') : 'operations-home';
   activateArea(firstArea, firstView);
+
+  document.addEventListener('sbs:goto-view', (e) => {
+    const id = e.detail && e.detail.viewId;
+    if (typeof id === 'string') navigateToView(id);
+  });
 }

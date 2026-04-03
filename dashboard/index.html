@@ -51,7 +51,11 @@
       <div id="subnavOperations" class="subnav" data-for-area="operations">
         <span class="subnav-label">In this area</span>
         <button type="button" class="subnav-item active" data-view="operations-home">Overview</button>
-        <button type="button" class="subnav-item" data-view="operations-data">Operations Data</button>
+        <button type="button" class="subnav-item" data-view="operations-trainees">Trainees</button>
+        <button type="button" class="subnav-item" data-view="operations-courses">Courses</button>
+        <button type="button" class="subnav-item" data-view="operations-batches">Batches</button>
+        <button type="button" class="subnav-item" data-view="operations-enrollments">Enrollments</button>
+        <button type="button" class="subnav-item" data-view="operations-bulk">Import / Bulk</button>
         <button type="button" class="subnav-item" data-view="operations-pipeline">Pipeline</button>
         <button type="button" class="subnav-item" data-view="operations-capacity">Capacity</button>
         <button type="button" class="subnav-item" data-view="operations-quality">Data quality</button>
@@ -80,6 +84,20 @@
     </aside>
 
     <main class="main">
+      <div id="operationsGlobalBar" class="operations-global-bar hidden" aria-hidden="true">
+        <div class="operations-global-bar-inner card card--compact">
+          <label class="visually-hidden" for="opsGlobalSearchInput">Search trainees</label>
+          <input
+            type="search"
+            id="opsGlobalSearchInput"
+            class="ops-global-search-input"
+            placeholder="Search trainees by name, phone, email, or ID…"
+            autocomplete="off"
+          />
+          <div id="opsGlobalSearchResults" class="ops-search-results hidden" role="listbox"></div>
+        </div>
+      </div>
+
       <section id="view-operations-home" class="view active">
         <div class="view-hero">
           <div class="view-hero-text">
@@ -91,87 +109,335 @@
           </div>
         </div>
         <div class="grid-three">
-          <article class="card"><h3>Operations Data</h3><p>Create and update enrollment records from your workbook-driven database model.</p></article>
+          <article class="card"><h3>Trainees &amp; enrollments</h3><p>Use <strong>Trainees</strong> and <strong>Enrollments</strong> for day-to-day data entry with server-generated SBS IDs.</p></article>
           <article class="card"><h3>Pipeline &amp; capacity</h3><p>Review enrollment status distribution and batch utilization.</p></article>
-          <article class="card"><h3>Data quality</h3><p>Spot orphan foreign keys and duplicate enrollment identifiers.</p></article>
+          <article class="card"><h3>Import / Bulk</h3><p>Excel import and bulk status updates live under <strong>Import / Bulk</strong>.</p></article>
         </div>
       </section>
 
-      <section id="view-operations-data" class="view">
+      <section id="view-operations-trainees" class="view">
         <div class="view-hero">
           <div class="view-hero-text">
             <div class="view-header">
-              <h2>Operations Data</h2>
-              <button class="btn btn-secondary" id="btnRefreshEnrollments">Refresh</button>
+              <h2>Trainees</h2>
+              <button type="button" class="btn btn-primary" id="btnNewTrainee">+ New Trainee</button>
             </div>
-            <p class="subtitle">Workbook-driven entities (trainees, courses, batches, enrollments).</p>
-          </div>
-          <div class="view-stickers" aria-hidden="true">
-            <img src="assets/stickers/sticker-1.jpg" alt="" class="view-sticker" />
+            <p class="subtitle">Search, filter, and open a trainee profile. IDs are assigned on save (SBS-TR-######).</p>
           </div>
         </div>
-        <form id="operationsEntityForm" class="card row">
-          <label for="entitySelect">Entity</label>
-          <select id="entitySelect">
+        <div class="card ops-list-toolbar">
+          <div class="ops-toolbar-row">
+            <input type="search" id="traineesListQ" class="ops-filter-search" placeholder="Search list…" autocomplete="off" />
+            <select id="traineesFilterType" class="ops-filter-select" aria-label="Filter by type">
+              <option value="">All types</option>
+            </select>
+            <select id="traineesFilterCity" class="ops-filter-select" aria-label="Filter by city">
+              <option value="">All cities</option>
+            </select>
+            <select id="traineesFilterStatus" class="ops-filter-select" aria-label="Filter by status">
+              <option value="">All statuses</option>
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+            <select id="traineesSort" class="ops-filter-select" aria-label="Sort by">
+              <option value="created_at">Sort: Newest</option>
+              <option value="full_name">Sort: Name</option>
+              <option value="trainee_id">Sort: ID</option>
+            </select>
+            <button type="button" class="btn btn-secondary" id="btnTraineesRefresh">Refresh</button>
+          </div>
+        </div>
+        <div class="ops-dual-layout">
+          <div class="table-wrap ops-table-desktop">
+            <table class="ops-data-table" id="traineesTable">
+              <thead>
+                <tr>
+                  <th><input type="checkbox" id="traineesSelectAll" title="Select all" /></th>
+                  <th>Name</th>
+                  <th>Phone</th>
+                  <th>Email</th>
+                  <th>Type</th>
+                  <th>City</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="traineesTableBody"></tbody>
+            </table>
+          </div>
+          <div class="ops-cards-mobile" id="traineesCards"></div>
+        </div>
+        <div class="card ops-pagination">
+          <span id="traineesPageInfo" class="muted"></span>
+          <div class="ops-pagination-btns">
+            <button type="button" class="btn btn-secondary" id="btnTraineesPrev">Previous</button>
+            <button type="button" class="btn btn-secondary" id="btnTraineesNext">Next</button>
+          </div>
+        </div>
+        <div id="traineeFormCard" class="card hidden">
+          <h3 id="traineeFormTitle">New trainee</h3>
+          <form id="traineeForm" class="form-grid">
+            <input type="hidden" id="traineeFormInternalId" />
+            <div class="full">
+              <label for="tf_full_name">Full name <span class="req">*</span></label>
+              <input id="tf_full_name" required />
+            </div>
+            <div>
+              <label for="tf_phone">Phone <span class="req">*</span></label>
+              <input id="tf_phone" type="tel" inputmode="tel" required placeholder="e.g. 01012345678" />
+              <p class="field-hint muted">Required. Used for lookup and contact.</p>
+            </div>
+            <div>
+              <label for="tf_email">Email <span class="req">*</span></label>
+              <input id="tf_email" type="email" required placeholder="name@example.com" />
+            </div>
+            <div>
+              <label for="tf_trainee_type">Type</label>
+              <select id="tf_trainee_type"></select>
+            </div>
+            <div>
+              <label for="tf_city">City</label>
+              <select id="tf_city"></select>
+            </div>
+            <div class="full" id="traineeAdvancedWrap">
+              <button type="button" class="btn btn-secondary btn-text" id="btnTraineeAdvancedToggle">Show advanced options</button>
+              <div id="traineeAdvancedFields" class="hidden form-grid full">
+                <div>
+                  <label for="tf_company_name">Company name</label>
+                  <input id="tf_company_name" />
+                </div>
+                <div>
+                  <label for="tf_job_title">Job title</label>
+                  <input id="tf_job_title" />
+                </div>
+                <div>
+                  <label for="tf_university">University</label>
+                  <input id="tf_university" />
+                </div>
+                <div>
+                  <label for="tf_specialty">Specialty</label>
+                  <input id="tf_specialty" />
+                </div>
+                <div>
+                  <label for="tf_company_id">Company ID (UUID)</label>
+                  <input id="tf_company_id" />
+                </div>
+                <div>
+                  <label for="tf_created_date">Created date</label>
+                  <input id="tf_created_date" type="date" />
+                </div>
+                <div>
+                  <label for="tf_status">Status</label>
+                  <select id="tf_status"><option value="Active">Active</option><option value="Inactive">Inactive</option></select>
+                </div>
+                <div class="full">
+                  <label for="tf_notes">Notes</label>
+                  <textarea id="tf_notes" rows="3"></textarea>
+                </div>
+              </div>
+            </div>
+            <div class="full">
+              <label for="tf_trainee_id_ro" class="muted">Trainee ID (read-only after save)</label>
+              <input id="tf_trainee_id_ro" readonly class="input-readonly" placeholder="Assigned on save" />
+            </div>
+            <div class="full form-actions">
+              <button type="submit" class="btn btn-primary" id="btnTraineeSave">Save trainee</button>
+              <button type="button" class="btn btn-secondary" id="btnTraineeFormCancel">Cancel</button>
+            </div>
+            <p id="traineeFormMsg" class="inline-note full"></p>
+          </form>
+        </div>
+      </section>
+
+      <section id="view-trainee-profile" class="view">
+        <div class="view-hero">
+          <button type="button" class="btn btn-secondary ops-back" id="btnProfileBack">← Trainees</button>
+          <div id="traineeProfileHeader" class="trainee-profile-header card"></div>
+        </div>
+        <div class="profile-tabs">
+          <button type="button" class="profile-tab active" data-tab="overview">Overview</button>
+          <button type="button" class="profile-tab" data-tab="enrollments">Enrollments</button>
+          <button type="button" class="profile-tab" data-tab="notes">Notes</button>
+        </div>
+        <div id="profileTabOverview" class="profile-tab-panel card"></div>
+        <div id="profileTabEnrollments" class="profile-tab-panel card hidden"></div>
+        <div id="profileTabNotes" class="profile-tab-panel card hidden"></div>
+      </section>
+
+      <section id="view-operations-courses" class="view">
+        <div class="view-hero"><div class="view-hero-text"><div class="view-header"><h2>Courses</h2><button type="button" class="btn btn-primary" id="btnNewCourse">+ New course</button></div><p class="subtitle">Course IDs are generated as SBS-CO-######.</p></div></div>
+        <div class="card ops-list-toolbar">
+          <input type="search" id="coursesListQ" class="ops-filter-search" placeholder="Search…" />
+          <button type="button" class="btn btn-secondary" id="btnCoursesRefresh">Refresh</button>
+        </div>
+        <div class="table-wrap"><table class="ops-data-table"><thead>
+          <tr><th>Course ID</th><th>Name</th><th>Category</th><th>Delivery</th><th>Price</th><th>Status</th><th></th></tr>
+        </thead><tbody id="coursesTableBody"></tbody></table></div>
+        <div class="card ops-pagination"><span id="coursesPageInfo" class="muted"></span><button type="button" class="btn btn-secondary" id="btnCoursesPrev">Prev</button> <button type="button" class="btn btn-secondary" id="btnCoursesNext">Next</button></div>
+        <div id="courseFormCard" class="card hidden">
+          <h3 id="courseFormTitle">New course</h3>
+          <form id="courseForm" class="form-grid">
+            <input type="hidden" id="cf_internal_id" />
+            <div class="full"><label for="cf_course_name">Course name <span class="req">*</span></label><input id="cf_course_name" required /></div>
+            <div><label for="cf_category">Category</label><select id="cf_category"></select></div>
+            <div><label for="cf_target_audience">Target audience</label><select id="cf_target_audience"></select></div>
+            <div><label for="cf_duration_hours">Duration (hours)</label><input id="cf_duration_hours" type="number" step="0.01" /></div>
+            <div><label for="cf_delivery_type">Delivery</label><select id="cf_delivery_type"></select></div>
+            <div><label for="cf_price">Price</label><input id="cf_price" type="number" step="0.01" /></div>
+            <div class="full"><label for="cf_description">Description</label><textarea id="cf_description" rows="2"></textarea></div>
+            <div><label for="cf_status">Status</label><select id="cf_status"><option>Active</option><option>Archived</option></select></div>
+            <div class="full"><label class="muted">Course ID</label><input id="cf_course_id_ro" readonly class="input-readonly" /></div>
+            <div class="full form-actions"><button type="submit" class="btn btn-primary">Save</button><button type="button" class="btn btn-secondary" id="btnCourseCancel">Cancel</button></div>
+            <p id="courseFormMsg" class="inline-note full"></p>
+          </form>
+        </div>
+      </section>
+
+      <section id="view-operations-batches" class="view">
+        <div class="view-hero"><div class="view-hero-text"><div class="view-header"><h2>Batches</h2><button type="button" class="btn btn-primary" id="btnNewBatch">+ New batch</button></div><p class="subtitle">Link each batch to a course. Batch IDs use form SBS-BA- plus course ID plus a sequence (e.g. SBS-BA-SBS-CO-000001-01).</p></div></div>
+        <div class="card ops-list-toolbar">
+          <input type="search" id="batchesListQ" class="ops-filter-search" placeholder="Search…" />
+          <label class="visually-hidden" for="batchesFilterCourse">Course</label>
+          <select id="batchesFilterCourse" class="ops-filter-select"><option value="">All courses</option></select>
+          <button type="button" class="btn btn-secondary" id="btnBatchesRefresh">Refresh</button>
+        </div>
+        <div class="table-wrap"><table class="ops-data-table"><thead>
+          <tr><th>Batch ID</th><th>Course</th><th>Name</th><th>Dates</th><th>Trainer</th><th>Cap</th><th>Enrolled</th><th></th></tr>
+        </thead><tbody id="batchesTableBody"></tbody></table></div>
+        <div class="card ops-pagination"><span id="batchesPageInfo" class="muted"></span><button type="button" class="btn btn-secondary" id="btnBatchesPrev">Prev</button> <button type="button" class="btn btn-secondary" id="btnBatchesNext">Next</button></div>
+        <div id="batchFormCard" class="card hidden">
+          <h3 id="batchFormTitle">New batch</h3>
+          <form id="batchForm" class="form-grid">
+            <input type="hidden" id="bf_internal_id" />
+            <div class="full">
+              <label for="bf_course_pick">Course <span class="req">*</span></label>
+              <input id="bf_course_pick" list="datalist_batch_course_pick" required placeholder="Search course name or ID" autocomplete="off" />
+              <datalist id="datalist_batch_course_pick"></datalist>
+              <input type="hidden" id="bf_course_id" />
+            </div>
+            <div class="full"><label for="bf_batch_name">Batch name</label><input id="bf_batch_name" /></div>
+            <div><label for="bf_trainer">Trainer</label><input id="bf_trainer" /></div>
+            <div><label for="bf_location">Location</label><input id="bf_location" /></div>
+            <div><label for="bf_capacity">Capacity</label><input id="bf_capacity" type="number" min="0" /></div>
+            <div><label for="bf_start_date">Start</label><input id="bf_start_date" type="date" /></div>
+            <div><label for="bf_end_date">End</label><input id="bf_end_date" type="date" /></div>
+            <div class="full"><label class="muted">Batch ID</label><input id="bf_batch_id_ro" readonly class="input-readonly" /></div>
+            <div class="full form-actions"><button type="submit" class="btn btn-primary">Save</button><button type="button" class="btn btn-secondary" id="btnBatchCancel">Cancel</button></div>
+            <p id="batchFormMsg" class="inline-note full"></p>
+          </form>
+        </div>
+      </section>
+
+      <section id="view-operations-enrollments" class="view">
+        <div class="view-hero"><div class="view-hero-text"><div class="view-header"><h2>Enrollments</h2><button type="button" class="btn btn-primary" id="btnStartEnrollmentWizard">+ New enrollment</button></div><p class="subtitle">Wizard picks trainee, course, and batch. Enrollment IDs: SBS-EN-######.</p></div></div>
+        <div id="enrollmentWizardCard" class="card hidden">
+          <h3>New enrollment</h3>
+          <div class="wizard-steps" id="wizardStepsIndicator"><span class="wizard-step active" data-step="1">1. Trainee</span><span class="wizard-step" data-step="2">2. Course &amp; batch</span><span class="wizard-step" data-step="3">3. Details</span></div>
+          <div id="wizStep1" class="wizard-panel">
+            <label for="wiz_trainee_search">Search trainee</label>
+            <input id="wiz_trainee_search" placeholder="Name, phone, email, or ID (min 2 characters)" autocomplete="off" />
+            <div id="wiz_trainee_results" class="ops-typeahead-results"></div>
+            <p id="wiz_trainee_selected" class="ops-selected-tag muted"></p>
+            <button type="button" class="btn btn-secondary" id="btnWizNext1" disabled>Next</button>
+          </div>
+          <div id="wizStep2" class="wizard-panel hidden">
+            <label for="wiz_course_search">Course</label>
+            <input id="wiz_course_search" placeholder="Search course" autocomplete="off" />
+            <div id="wiz_course_results" class="ops-typeahead-results"></div>
+            <p id="wiz_course_selected" class="ops-selected-tag muted"></p>
+            <div id="wiz_batch_cards" class="batch-picker-cards"></div>
+            <div class="wizard-nav"><button type="button" class="btn btn-secondary" id="btnWizBack2">Back</button><button type="button" class="btn btn-secondary" id="btnWizNext2" disabled>Next</button></div>
+          </div>
+          <div id="wizStep3" class="wizard-panel hidden">
+            <div class="form-grid">
+              <div><label for="wiz_enrollment_status">Enrollment status</label><select id="wiz_enrollment_status"></select></div>
+              <div><label for="wiz_payment_status">Payment status</label><select id="wiz_payment_status"></select></div>
+              <div id="wiz_amount_wrap"><label for="wiz_amount_paid">Amount paid (EGP)</label><input id="wiz_amount_paid" type="number" step="0.01" min="0" /></div>
+              <div><label for="wiz_enroll_date">Enroll date</label><input id="wiz_enroll_date" type="date" /></div>
+              <div class="full"><label for="wiz_notes">Notes</label><textarea id="wiz_notes" rows="2"></textarea></div>
+            </div>
+            <div id="wiz_summary" class="card card--inner muted"></div>
+            <div class="wizard-nav"><button type="button" class="btn btn-secondary" id="btnWizBack3">Back</button><button type="button" class="btn btn-primary" id="btnWizSave">Save enrollment</button><button type="button" class="btn btn-secondary" id="btnWizAnother">Enroll another in this batch</button></div>
+            <p id="wizMsg" class="inline-note"></p>
+          </div>
+          <button type="button" class="btn btn-secondary" id="btnWizCancel">Close wizard</button>
+        </div>
+        <div class="card ops-list-toolbar">
+          <input type="search" id="enrollmentsListQ" class="ops-filter-search" placeholder="Search…" />
+          <select id="enrollmentsFilterStatus" class="ops-filter-select"><option value="">All enrollment statuses</option></select>
+          <select id="enrollmentsFilterPay" class="ops-filter-select"><option value="">All payment statuses</option></select>
+          <button type="button" class="btn btn-secondary" id="btnEnrollmentsRefresh">Refresh</button>
+        </div>
+        <div class="table-wrap"><table class="ops-data-table"><thead>
+          <tr><th><input type="checkbox" id="enrollSelectAll" /></th><th>ID</th><th>Trainee</th><th>Course</th><th>Batch</th><th>Enr.</th><th>Pay</th><th>Amount</th><th></th></tr>
+        </thead><tbody id="enrollmentsTableBody"></tbody></table></div>
+        <div class="card ops-bulk-bar hidden" id="enrollmentsBulkBar">
+          <span id="enrollmentsBulkCount" class="muted"></span>
+          <select id="enrollmentsBulkEnrollmentStatus" class="ops-filter-select"><option value="">Set enrollment status…</option></select>
+          <select id="enrollmentsBulkPaymentStatus" class="ops-filter-select"><option value="">Set payment status…</option></select>
+          <button type="button" class="btn btn-primary" id="btnEnrollmentsBulkApply">Apply</button>
+        </div>
+        <div class="card ops-pagination"><span id="enrollmentsPageInfo" class="muted"></span><button type="button" class="btn btn-secondary" id="btnEnrollmentsPrev">Prev</button> <button type="button" class="btn btn-secondary" id="btnEnrollmentsNext">Next</button></div>
+        <div id="paymentEditCard" class="card hidden">
+          <h3>Update payment</h3>
+          <input type="hidden" id="pe_enrollment_internal_id" />
+          <p class="muted" id="pe_enrollment_label"></p>
+          <div class="form-grid">
+            <div><label for="pe_payment_status">Payment status</label><select id="pe_payment_status"></select></div>
+            <div><label for="pe_amount_paid">Amount paid</label><input id="pe_amount_paid" type="number" step="0.01" /></div>
+            <div class="full"><label for="pe_notes">Notes</label><input id="pe_notes" /></div>
+          </div>
+          <button type="button" class="btn btn-primary" id="btnPaymentSave">Save</button>
+          <button type="button" class="btn btn-secondary" id="btnPaymentCancel">Cancel</button>
+          <p id="peMsg" class="inline-note"></p>
+        </div>
+      </section>
+
+      <section id="view-operations-bulk" class="view">
+        <div class="view-hero">
+          <h2>Import / Bulk</h2>
+          <p class="subtitle">Excel import and bulk enrollment updates.</p>
+        </div>
+        <form id="bulkEntitySelectForm" class="card row">
+          <label for="bulkEntitySelect">Entity</label>
+          <select id="bulkEntitySelect">
             <option value="trainees">Trainees</option>
             <option value="courses">Courses</option>
             <option value="batches">Batches</option>
             <option value="enrollments" selected>Enrollments</option>
           </select>
-          <button class="btn btn-secondary" type="button" id="btnLoadEntity">Load</button>
         </form>
-
         <div class="card operations-import">
           <h3>Import from Excel</h3>
-          <p class="muted import-hint">
-            Upload a <strong>.xlsx</strong> file whose first row contains column headers. The importer uses the sheet that matches the selected entity (e.g. <code>trainees</code>) or the first sheet. Use the same column names as the workbook export; see <code>docs/sample-import/README.md</code>. Download the sample workbook below (kept in sync via <code>npm run sample-import:xlsx</code>).
-          </p>
+          <p class="muted import-hint">Upload <strong>.xlsx</strong> with headers matching the workbook export. Missing business IDs are generated server-side where applicable.</p>
           <div class="row import-row">
-            <a
-              href="assets/SBS_operations_sample.xlsx"
-              download="SBS_operations_sample.xlsx"
-              class="btn btn-secondary"
-              id="btnDownloadSampleXlsx"
-            >Download sample .xlsx</a>
-            <input
-              type="file"
-              id="excelImportFile"
-              accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-              class="input-file"
-            />
+            <a href="assets/SBS_operations_sample.xlsx" download="SBS_operations_sample.xlsx" class="btn btn-secondary" id="btnDownloadSampleXlsx">Download sample .xlsx</a>
+            <input type="file" id="excelImportFile" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="input-file" />
           </div>
-        </div>
-
-        <form id="entityRecordForm" class="card form-grid">
-          <input type="hidden" id="recordInternalId" />
-          <div id="dynamicFields" class="full"></div>
-          <div class="full form-actions">
-            <button class="btn btn-primary" type="submit" id="btnSaveRecord">Save Record</button>
-            <button class="btn btn-secondary" type="button" id="btnResetRecord">Clear</button>
-          </div>
-          <p id="entityMsg" class="inline-note full"></p>
-        </form>
-        <div class="card">
-          <h3 id="entityTableTitle">Enrollment Records</h3>
-          <div class="table-wrap">
-            <table id="entityTable">
-              <thead><tr id="entityHeadRow"></tr></thead>
-              <tbody id="entityBody"></tbody>
-            </table>
-          </div>
+          <p id="bulkImportMsg" class="inline-note"></p>
         </div>
         <div class="card" id="bulkEnrollmentCard">
-          <h3>Bulk update enrollment status</h3>
-          <p class="muted">One enrollment business ID per line (must match <code>enrollment_id</code> text).</p>
-          <textarea id="bulkEnrollmentIds" rows="5" class="bulk-textarea" placeholder="EN-001&#10;EN-002"></textarea>
-          <label for="bulkEnrollmentStatus">New status</label>
+          <h3>Bulk update enrollments</h3>
+          <p class="muted">One <code>enrollment_id</code> per line (SBS-EN-######).</p>
+          <textarea id="bulkEnrollmentIds" rows="6" class="bulk-textarea" placeholder="SBS-EN-000001"></textarea>
+          <label for="bulkEnrollmentStatus">Enrollment status (optional)</label>
           <select id="bulkEnrollmentStatus">
+            <option value="">— No change —</option>
             <option value="Registered">Registered</option>
             <option value="Attended">Attended</option>
             <option value="Cancelled">Cancelled</option>
             <option value="Completed">Completed</option>
           </select>
-          <button type="button" class="btn btn-primary" id="btnBulkEnrollment">Apply to listed IDs</button>
+          <label for="bulkPaymentStatus">Payment status (optional)</label>
+          <select id="bulkPaymentStatus">
+            <option value="">— No change —</option>
+            <option value="Pending">Pending</option>
+            <option value="Paid">Paid</option>
+            <option value="Waived">Waived</option>
+          </select>
+          <label for="bulkAmountPaid">Amount paid (when setting Paid)</label>
+          <input id="bulkAmountPaid" type="number" step="0.01" placeholder="Leave empty if not updating payment" />
+          <button type="button" class="btn btn-primary" id="btnBulkEnrollment">Apply bulk update</button>
           <p id="bulkEnrollmentMsg" class="inline-note"></p>
         </div>
       </section>

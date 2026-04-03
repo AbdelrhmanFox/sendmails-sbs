@@ -21,8 +21,8 @@ create table if not exists trainees (
   id uuid primary key default gen_random_uuid(),
   trainee_id text unique not null,
   full_name text,
-  email text,
-  phone text,
+  email text not null,
+  phone text not null,
   trainee_type text,
   company_name text,
   job_title text,
@@ -318,3 +318,52 @@ grant usage on schema public to anon, authenticated;
 grant select, insert on training_groups to anon, authenticated;
 grant select, insert on training_participants to anon, authenticated;
 grant select, insert on training_messages to anon, authenticated;
+
+-- Operations: human-readable business IDs (SBS-TR/CO/EN/BA). Safe to re-run (IF NOT EXISTS / OR REPLACE).
+create sequence if not exists public.trainees_seq;
+create sequence if not exists public.courses_seq;
+create sequence if not exists public.enrollments_seq;
+
+create table if not exists public.batch_counters (
+  course_id text primary key,
+  last_nn int not null default 0
+);
+
+create or replace function public.next_trainee_id() returns text
+language sql
+set search_path = public
+as $$
+  select 'SBS-TR-' || lpad(nextval('public.trainees_seq')::text, 6, '0');
+$$;
+
+create or replace function public.next_course_id() returns text
+language sql
+set search_path = public
+as $$
+  select 'SBS-CO-' || lpad(nextval('public.courses_seq')::text, 6, '0');
+$$;
+
+create or replace function public.next_enrollment_id() returns text
+language sql
+set search_path = public
+as $$
+  select 'SBS-EN-' || lpad(nextval('public.enrollments_seq')::text, 6, '0');
+$$;
+
+create or replace function public.next_batch_id(p_course_id text) returns text
+language plpgsql
+set search_path = public
+as $$
+declare
+  nn int;
+  cid text := trim(p_course_id);
+begin
+  if cid = '' then
+    raise exception 'course_id required for batch id';
+  end if;
+  insert into public.batch_counters(course_id, last_nn) values (cid, 1)
+    on conflict (course_id) do update set last_nn = public.batch_counters.last_nn + 1
+    returning last_nn into nn;
+  return 'SBS-BA-' || cid || '-' || lpad(nn::text, 2, '0');
+end;
+$$;

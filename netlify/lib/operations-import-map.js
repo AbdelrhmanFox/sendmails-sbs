@@ -88,6 +88,10 @@ function coerceRow(entity, raw) {
     if (!field && canonical.has(nk)) field = nk;
     if (field) out[field] = v;
   }
+  if (entity === 'enrollments' && out.payment_status != null) {
+    const ps = String(out.payment_status).trim().toLowerCase();
+    if (ps === 'free') out.payment_status = 'Waived';
+  }
   return out;
 }
 
