@@ -188,6 +188,8 @@ const trainingState = {
   voiceRoomUrl: null,
   joinToken: null,
   sessionEnded: false,
+  /** True after chat Realtime channel subscribes successfully (voice uses same client). */
+  realtimeReady: false,
 };
 
 let trainingMessagesIntervalId = null;
@@ -206,82 +208,31 @@ function clearTrainingParticipantPolls() {
   trainingSessionAliveMisses = 0;
 }
 
-/* ── Voice channel: Jitsi External API + custom sticker UI ────────────── */
+/* ── Voice: in-page WebRTC (mesh) + Supabase Realtime presence & broadcast ─ */
 
-let jitsiVoiceApi = null;
+const STUN_SERVERS = [{ urls: 'stun:stun.l.google.com:19302' }];
+const VOICE_EVENT = 'voice';
+
+let voiceChannel = null;
 let voiceJoined = false;
 let voiceMuted = false;
-/** Public meet.jit.si blocks the Embedded API for anonymous users (membersOnly / lobby). We open a tab instead. */
-let voiceMeetJitSiTabMode = false;
-const voicePeers = new Map(); // id → { name, muted, self, side }
-
-const MEET_JIT_SI_HOST = 'meet.jit.si';
-
-function voiceIsJitsiUrl(url) {
-  try {
-    const h = new URL(String(url).trim()).hostname.toLowerCase();
-    return h === 'meet.jit.si' || h.endsWith('.jit.si') || h.includes('jitsi');
-  } catch (_) {
-    return false;
-  }
-}
-
-function isPublicMeetJitSiHost(hostname) {
-  return String(hostname || '').toLowerCase() === MEET_JIT_SI_HOST;
-}
-
-/** Tab URL with hash flags (name, audio-only hints). Does not fix meet.jit.si policy; self-hosted works in-app. */
-function jitsiVoiceUrlWithClientConfig(roomUrl, displayName) {
-  try {
-    const u = new URL(String(roomUrl).trim());
-    if (u.protocol !== 'http:' && u.protocol !== 'https:') return String(roomUrl);
-    const path = u.pathname.replace(/\/+$/, '');
-    if (!path || path === '/') return String(roomUrl);
-    const base = `${u.origin}${path}`;
-    const name = String(displayName || '').trim().slice(0, 100) || 'Guest';
-    const hashParts = [
-      `userInfo.displayName=${encodeURIComponent(name)}`,
-      'config.minParticipants=1',
-      'config.prejoinConfig.enabled=false',
-      'config.startAudioOnly=true',
-      'config.startWithVideoMuted=true',
-      'config.startWithAudioMuted=false',
-      'config.readOnlyName=true',
-      'config.lobby.autoKnock=true',
-      'config.autoKnockLobby=true',
-    ];
-    return `${base}#${hashParts.join('&')}`;
-  } catch (_) {
-    return String(roomUrl || '');
-  }
-}
-
-function effectiveVoiceLinkForShare() {
-  const url = trainingState.voiceRoomUrl;
-  if (!url) return '';
-  try {
-    const h = new URL(String(url).trim()).hostname;
-    if (voiceIsJitsiUrl(url) && isPublicMeetJitSiHost(h)) {
-      return jitsiVoiceUrlWithClientConfig(url, trainingState.senderName || 'Guest');
-    }
-  } catch (_) {
-    /* ignore */
-  }
-  return String(url);
-}
+let voiceMyStickerIdx = 1;
+let localStream = null;
+const voicePeers = new Map(); // participantId → { name, muted, self, side, stickerIdx }
+const rtcPeers = new Map(); // remote participantId → RTCPeerConnection
+const remoteAudios = new Map(); // participantId → HTMLAudioElement
+const pendingIceCandidates = new Map(); // remoteId → RTCIceCandidateInit[]
 
 function vsEsc(s) {
   return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-function vsInitials(name) {
-  return String(name || 'U').trim().split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
-}
-
 function nextVoiceSide() {
-  let r = 0, l = 0;
+  let r = 0;
+  let l = 0;
   for (const p of voicePeers.values()) {
-    if (p.side === 'right') r++; else l++;
+    if (p.side === 'right') r++;
+    else l++;
   }
   return r <= l ? 'right' : 'left';
 }
@@ -297,8 +248,11 @@ function renderVoiceStickers() {
     const wrap = document.createElement('div');
     wrap.className = `voice-sticker${peer.self ? ' voice-sticker--self' : ''}`;
     wrap.id = `vs-${CSS.escape(id)}`;
+    const idx = Math.max(1, Math.min(3, Number(peer.stickerIdx) || 1));
     wrap.innerHTML = `
-      <div class="voice-sticker-circle">${vsEsc(vsInitials(peer.name))}</div>
+      <div class="voice-sticker-circle">
+        <img class="voice-sticker-img" src="assets/stickers/sticker-${idx}.jpg" alt="" width="54" height="54" />
+      </div>
       <span class="voice-sticker-name">${vsEsc(peer.name)}</span>
       <span class="voice-sticker-mute-icon${peer.muted ? '' : ' hidden'}" title="Muted">🔇</span>
     `;
@@ -306,73 +260,320 @@ function renderVoiceStickers() {
   }
 }
 
-function addVoicePeer(id, name, isSelf) {
-  if (!voicePeers.has(id)) {
-    voicePeers.set(id, { name: String(name || 'User'), muted: false, self: Boolean(isSelf), side: nextVoiceSide() });
+function addVoicePeer(id, name, isSelf, stickerIdx = 1, muted = false) {
+  const pid = String(id);
+  const idx = Math.max(1, Math.min(3, Number(stickerIdx) || 1));
+  const existing = voicePeers.get(pid);
+  if (existing) {
+    existing.name = String(name || existing.name);
+    existing.muted = Boolean(muted);
+    existing.stickerIdx = idx;
     renderVoiceStickers();
+    return;
   }
+  voicePeers.set(pid, {
+    name: String(name || 'User'),
+    muted: Boolean(muted),
+    self: Boolean(isSelf),
+    side: nextVoiceSide(),
+    stickerIdx: idx,
+  });
+  renderVoiceStickers();
 }
 
 function removeVoicePeer(id) {
-  if (voicePeers.has(id)) {
-    voicePeers.delete(id);
+  const pid = String(id);
+  if (voicePeers.has(pid)) {
+    voicePeers.delete(pid);
     renderVoiceStickers();
   }
 }
 
 function setVoicePeerMuted(id, muted) {
-  const peer = voicePeers.get(id);
-  if (peer) { peer.muted = muted; renderVoiceStickers(); }
+  const peer = voicePeers.get(String(id));
+  if (peer) {
+    peer.muted = Boolean(muted);
+    renderVoiceStickers();
+  }
+}
+
+function voiceBroadcastSig(payload) {
+  if (!voiceChannel) return;
+  void voiceChannel.send({ type: 'broadcast', event: VOICE_EVENT, payload }).catch(() => {});
+}
+
+function playRemoteAudio(remoteId, stream) {
+  let el = remoteAudios.get(remoteId);
+  if (!el) {
+    el = document.createElement('audio');
+    el.autoplay = true;
+    el.setAttribute('playsinline', '');
+    el.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(el);
+    remoteAudios.set(remoteId, el);
+  }
+  el.srcObject = stream;
+  void el.play().catch(() => {});
+}
+
+function closeRtcPeer(remoteId) {
+  const id = String(remoteId);
+  const pc = rtcPeers.get(id);
+  if (pc) {
+    try {
+      pc.close();
+    } catch (_) {
+      /* ignore */
+    }
+    rtcPeers.delete(id);
+  }
+  const el = remoteAudios.get(id);
+  if (el) {
+    try {
+      el.srcObject = null;
+      el.remove();
+    } catch (_) {
+      /* ignore */
+    }
+    remoteAudios.delete(id);
+  }
+  pendingIceCandidates.delete(id);
+}
+
+async function flushPendingIce(remoteId) {
+  const id = String(remoteId);
+  const pc = rtcPeers.get(id);
+  const pending = pendingIceCandidates.get(id);
+  if (!pc || !pending || !pending.length) return;
+  for (const c of pending) {
+    try {
+      await pc.addIceCandidate(new RTCIceCandidate(c));
+    } catch (_) {
+      /* ignore */
+    }
+  }
+  pendingIceCandidates.delete(id);
+}
+
+async function addIceFromRemote(remoteId, candidateInit) {
+  const id = String(remoteId);
+  const pc = rtcPeers.get(id);
+  if (!candidateInit) return;
+  if (!pc) return;
+  if (!pc.remoteDescription) {
+    let arr = pendingIceCandidates.get(id);
+    if (!arr) {
+      arr = [];
+      pendingIceCandidates.set(id, arr);
+    }
+    arr.push(candidateInit);
+    return;
+  }
+  try {
+    await pc.addIceCandidate(new RTCIceCandidate(candidateInit));
+  } catch (_) {
+    /* ignore */
+  }
+}
+
+function attachRtcHandlers(pc, remoteId) {
+  const rid = String(remoteId);
+  const myPid = String(trainingState.participantId);
+  pc.onicecandidate = (e) => {
+    if (e.candidate) {
+      voiceBroadcastSig({ t: 'ice', from: myPid, to: rid, c: e.candidate.toJSON() });
+    }
+  };
+  pc.ontrack = (e) => {
+    const [stream] = e.streams;
+    if (stream) playRemoteAudio(rid, stream);
+  };
+}
+
+async function createOfferToPeer(remoteId) {
+  const rid = String(remoteId);
+  const myPid = String(trainingState.participantId);
+  if (rid === myPid || rtcPeers.has(rid) || !localStream || !voiceChannel) return;
+  const pc = new RTCPeerConnection({ iceServers: STUN_SERVERS });
+  rtcPeers.set(rid, pc);
+  localStream.getTracks().forEach((t) => pc.addTrack(t, localStream));
+  attachRtcHandlers(pc, rid);
+  try {
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    voiceBroadcastSig({ t: 'offer', from: myPid, to: rid, sdp: offer.sdp });
+  } catch (e) {
+    console.warn('WebRTC offer failed:', e);
+    closeRtcPeer(rid);
+  }
+}
+
+async function handleRemoteOffer(fromPid, sdp) {
+  const rid = String(fromPid);
+  const myPid = String(trainingState.participantId);
+  if (!localStream || !voiceChannel || rid === myPid || !sdp) return;
+  let pc = rtcPeers.get(rid);
+  if (!pc) {
+    pc = new RTCPeerConnection({ iceServers: STUN_SERVERS });
+    rtcPeers.set(rid, pc);
+    localStream.getTracks().forEach((t) => pc.addTrack(t, localStream));
+    attachRtcHandlers(pc, rid);
+  }
+  try {
+    await pc.setRemoteDescription({ type: 'offer', sdp });
+    await flushPendingIce(rid);
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+    voiceBroadcastSig({ t: 'answer', from: myPid, to: rid, sdp: answer.sdp });
+  } catch (e) {
+    console.warn('WebRTC answer failed:', e);
+    closeRtcPeer(rid);
+  }
+}
+
+async function handleRemoteAnswer(fromPid, sdp) {
+  const rid = String(fromPid);
+  const pc = rtcPeers.get(rid);
+  if (!pc || !sdp) return;
+  try {
+    await pc.setRemoteDescription({ type: 'answer', sdp });
+    await flushPendingIce(rid);
+  } catch (e) {
+    console.warn('WebRTC setRemoteDescription (answer) failed:', e);
+    closeRtcPeer(rid);
+  }
+}
+
+async function handleVoicePayload(raw) {
+  const p = raw && typeof raw === 'object' ? raw : {};
+  const myPid = String(trainingState.participantId || '');
+  const t = p.t;
+  const from = String(p.from || '');
+  const to = String(p.to || '');
+  if (!myPid || to !== myPid) return;
+  if (t === 'offer') await handleRemoteOffer(from, p.sdp);
+  else if (t === 'answer') await handleRemoteAnswer(from, p.sdp);
+  else if (t === 'ice') await addIceFromRemote(from, p.c);
+}
+
+function presenceMetaFrom(key, metas) {
+  const meta = Array.isArray(metas) && metas[0] ? metas[0] : null;
+  if (!meta || typeof meta !== 'object') return null;
+  const pid = String(meta.participantId || key);
+  return {
+    participantId: pid,
+    name: String(meta.name || 'User'),
+    stickerIdx: Number(meta.stickerIdx) || 1,
+    muted: Boolean(meta.muted),
+  };
+}
+
+function ingestPresenceState() {
+  if (!voiceChannel) return;
+  const state = voiceChannel.presenceState();
+  for (const key of Object.keys(state)) {
+    const row = presenceMetaFrom(key, state[key]);
+    if (!row) continue;
+    const isSelf = row.participantId === String(trainingState.participantId);
+    addVoicePeer(row.participantId, row.name, isSelf, row.stickerIdx, row.muted);
+  }
+}
+
+function connectAllRemotePeers() {
+  if (!voiceChannel || !localStream) return;
+  const myPid = String(trainingState.participantId);
+  const state = voiceChannel.presenceState();
+  for (const key of Object.keys(state)) {
+    const row = presenceMetaFrom(key, state[key]);
+    if (!row || row.participantId === myPid) continue;
+    if (myPid < row.participantId) {
+      void createOfferToPeer(row.participantId);
+    }
+  }
+}
+
+function handleVoicePresenceLeave(key) {
+  const pid = String(key);
+  removeVoicePeer(pid);
+  closeRtcPeer(pid);
+}
+
+async function initVoiceRealtimeChannel() {
+  if (!trainingState.supabase || !trainingState.groupId || !trainingState.participantId) return;
+  const topic = `voice:${String(trainingState.groupId)}`;
+  const myKey = String(trainingState.participantId);
+  const ch = trainingState.supabase.channel(topic, {
+    config: {
+      broadcast: { self: false },
+      presence: { key: myKey },
+    },
+  });
+  voiceChannel = ch;
+
+  ch.on('broadcast', { event: VOICE_EVENT }, (msg) => {
+    const raw = msg && typeof msg === 'object' ? msg : {};
+    const pl = raw.payload !== undefined ? raw.payload : raw;
+    void handleVoicePayload(pl);
+  });
+
+  ch.on('presence', { event: 'sync' }, () => {
+    ingestPresenceState();
+    connectAllRemotePeers();
+  });
+  ch.on('presence', { event: 'join' }, () => {
+    ingestPresenceState();
+    connectAllRemotePeers();
+  });
+  ch.on('presence', { event: 'leave' }, ({ key }) => {
+    handleVoicePresenceLeave(key);
+  });
+
+  await new Promise((resolve, reject) => {
+    const ms = 20000;
+    const t = setTimeout(() => reject(new Error('TIMED_OUT')), ms);
+    ch.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        clearTimeout(t);
+        resolve();
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+        clearTimeout(t);
+        reject(new Error(status));
+      }
+    });
+  });
+
+  const preCount = Object.keys(ch.presenceState()).length;
+  voiceMyStickerIdx = (preCount % 3) + 1;
+
+  await ch.track({
+    participantId: myKey,
+    name: trainingState.senderName || 'Guest',
+    stickerIdx: voiceMyStickerIdx,
+    muted: voiceMuted,
+  });
+
+  ingestPresenceState();
+  connectAllRemotePeers();
 }
 
 function updateVoiceControlsUi() {
-  const url = trainingState.voiceRoomUrl;
   const controls = document.getElementById('chatVoiceControls');
   const joinBtn = document.getElementById('btnJoinVoice');
   const leaveBtn = document.getElementById('btnLeaveVoice');
   const muteBtn = document.getElementById('btnToggleMute');
-  const linkEl = document.getElementById('chatVoiceRoomLink');
-  const copyBtn = document.getElementById('btnCopyVoiceLink');
-  const mutedSpan = document.getElementById('chatVoiceMuted');
-  const meetWarn = document.getElementById('chatVoiceMeetJitSiWarn');
   if (!controls) return;
-  if (!url) {
-    meetWarn?.classList.add('hidden');
-    controls.classList.remove('hidden');
-    joinBtn?.classList.add('hidden');
-    leaveBtn?.classList.add('hidden');
-    muteBtn?.classList.add('hidden');
-    linkEl?.classList.add('hidden');
-    copyBtn?.classList.add('hidden');
-    mutedSpan?.classList.remove('hidden');
-    return;
-  }
-  controls.classList.remove('hidden');
-  mutedSpan?.classList.add('hidden');
-  let isPublicMj = false;
-  try {
-    isPublicMj = voiceIsJitsiUrl(url) && isPublicMeetJitSiHost(new URL(url).hostname);
-  } catch (_) {
-    isPublicMj = false;
-  }
-  meetWarn?.classList.toggle('hidden', !isPublicMj);
-  if (linkEl) {
-    linkEl.href = isPublicMj ? jitsiVoiceUrlWithClientConfig(url, trainingState.senderName || 'Guest') : url;
-    linkEl.classList.remove('hidden');
-  }
-  copyBtn?.classList.remove('hidden');
+  const showVoice = Boolean(trainingState.realtimeReady && trainingState.groupId && !trainingState.sessionEnded);
+  controls.classList.toggle('hidden', !showVoice);
+  if (!showVoice) return;
+
   if (voiceJoined) {
     joinBtn?.classList.add('hidden');
     leaveBtn?.classList.remove('hidden');
-    if (voiceMeetJitSiTabMode) {
-      muteBtn?.classList.add('hidden');
-    } else {
-      muteBtn?.classList.remove('hidden');
-      if (muteBtn) {
-        muteBtn.textContent = voiceMuted ? '🔇 Unmute' : '🎤 Mute';
-        muteBtn.setAttribute('data-muted', String(voiceMuted));
-        muteBtn.setAttribute('aria-pressed', String(voiceMuted));
-      }
+    muteBtn?.classList.remove('hidden');
+    if (muteBtn) {
+      muteBtn.textContent = voiceMuted ? '🔇 Unmute' : '🎤 Mute';
+      muteBtn.setAttribute('data-muted', String(voiceMuted));
+      muteBtn.setAttribute('aria-pressed', String(voiceMuted));
     }
   } else {
     joinBtn?.classList.remove('hidden');
@@ -382,157 +583,110 @@ function updateVoiceControlsUi() {
 }
 
 /** Alias kept for all existing callers in this file. */
-function updateVoiceRoomUi() { updateVoiceControlsUi(); }
-
-function loadJitsiScript(host) {
-  return new Promise((resolve, reject) => {
-    if (document.getElementById('jitsi-ext-api')) { resolve(); return; }
-    const s = document.createElement('script');
-    s.id = 'jitsi-ext-api';
-    s.src = `https://${host}/external_api.js`;
-    s.onload = resolve;
-    s.onerror = () => reject(new Error(`Could not load Jitsi API from ${host}`));
-    document.head.appendChild(s);
-  });
-}
-
-async function startJitsiVoice(roomUrl, displayName) {
-  const container = document.getElementById('jitsiVoiceHost');
-  if (!container || jitsiVoiceApi) return;
-  try {
-    const u = new URL(String(roomUrl).trim());
-    const host = u.hostname;
-    const roomName = u.pathname.replace(/^\/+|\/+$/g, '');
-    if (!roomName) return;
-    await loadJitsiScript(host);
-    if (!window.JitsiMeetExternalAPI) return;
-    const dn = String(displayName || 'Guest').trim() || 'Guest';
-    jitsiVoiceApi = new window.JitsiMeetExternalAPI(host, {
-      roomName,
-      parentNode: container,
-      userInfo: { displayName: dn },
-      width: '100%',
-      height: '100%',
-      configOverwrite: {
-        startAudioOnly: true,
-        startWithVideoMuted: true,
-        startWithAudioMuted: false,
-        prejoinConfig: { enabled: false },
-        minParticipants: 1,
-        readOnlyName: true,
-        requireDisplayName: false,
-        // Skip lobby friction: auto-knock + try to clear lobby once in the room
-        lobby: { autoKnock: true },
-        autoKnockLobby: true,
-        securityUi: { hideLobbyButton: true },
-        visitors: { showJoinMeetingDialog: false },
-        preferVisitor: false,
-      },
-      interfaceConfigOverwrite: {
-        TOOLBAR_BUTTONS: [],
-        SHOW_JITSI_WATERMARK: false,
-        SHOW_WATERMARK_FOR_GUESTS: false,
-        HIDE_INVITE_MORE_HEADER: true,
-      },
-    });
-
-    function tryDisableLobbyAndName() {
-      try {
-        jitsiVoiceApi.executeCommand('displayName', dn);
-        jitsiVoiceApi.executeCommand('toggleLobby', false);
-      } catch (_) {
-        /* ignore */
-      }
-    }
-
-    // Run ASAP and again once the conference is up (moderator can turn lobby off).
-    requestAnimationFrame(() => requestAnimationFrame(tryDisableLobbyAndName));
-
-    jitsiVoiceApi.addEventListener('videoConferenceJoined', ({ displayName: n }) => {
-      tryDisableLobbyAndName();
-      addVoicePeer('_self', n || dn, true);
-    });
-    jitsiVoiceApi.addEventListener('participantRoleChanged', (ev) => {
-      if (ev && ev.role === 'moderator') tryDisableLobbyAndName();
-    });
-    jitsiVoiceApi.addEventListener('videoConferenceLeft', () => removeVoicePeer('_self'));
-    jitsiVoiceApi.addEventListener('participantJoined', ({ id, displayName: n }) => addVoicePeer(id, n || 'User', false));
-    jitsiVoiceApi.addEventListener('participantLeft', ({ id }) => removeVoicePeer(id));
-    jitsiVoiceApi.addEventListener('audioMuteStatusChanged', ({ muted }) => {
-      voiceMuted = muted;
-      setVoicePeerMuted('_self', muted);
-      updateVoiceControlsUi();
-    });
-  } catch (e) {
-    console.warn('Jitsi External API init failed:', e);
-  }
-}
-
-function stopJitsiVoice() {
-  if (jitsiVoiceApi) {
-    try { jitsiVoiceApi.dispose(); } catch (_) {}
-    jitsiVoiceApi = null;
-  }
-  const container = document.getElementById('jitsiVoiceHost');
-  if (container) container.innerHTML = '';
+function updateVoiceRoomUi() {
+  updateVoiceControlsUi();
 }
 
 async function joinVoiceChannel() {
-  if (voiceJoined || !trainingState.voiceRoomUrl) return;
-  voiceJoined = true;
-  voiceMuted = false;
-  voiceMeetJitSiTabMode = false;
-
-  if (voiceIsJitsiUrl(trainingState.voiceRoomUrl)) {
-    let host = '';
+  if (voiceJoined) return;
+  if (!trainingState.realtimeReady || !trainingState.supabase || !trainingState.groupId || !trainingState.participantId) {
+    const msgEl = document.getElementById('chatVoiceCopyMsg');
+    if (msgEl) msgEl.textContent = 'Voice needs live realtime chat. Try again after the session loads, or refresh.';
+    return;
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    localStream = stream;
+    voiceMuted = false;
+    const track0 = localStream.getAudioTracks()[0];
+    if (track0) track0.enabled = true;
+    voiceJoined = true;
+    updateVoiceControlsUi();
     try {
-      host = new URL(String(trainingState.voiceRoomUrl).trim()).hostname;
-    } catch (_) {
-      host = '';
-    }
-    if (isPublicMeetJitSiHost(host)) {
-      voiceMeetJitSiTabMode = true;
-      const tabUrl = jitsiVoiceUrlWithClientConfig(trainingState.voiceRoomUrl, trainingState.senderName || 'Guest');
-      window.open(tabUrl, '_blank', 'noopener,noreferrer');
-      addVoicePeer('_self', trainingState.senderName || 'Guest', true);
+      await initVoiceRealtimeChannel();
+    } catch (err) {
+      console.warn('initVoiceRealtimeChannel:', err);
       const msgEl = document.getElementById('chatVoiceCopyMsg');
-      if (msgEl) {
-        msgEl.textContent =
-          'Voice opened in a new browser tab. meet.jit.si may still require login or moderator approval — use self-hosted Jitsi (JITSI_MEET_BASE) for open training rooms.';
-        window.setTimeout(() => {
-          if (msgEl && msgEl.textContent.startsWith('Voice opened')) msgEl.textContent = '';
-        }, 14000);
-      }
-      updateVoiceControlsUi();
-      return;
+      if (msgEl) msgEl.textContent = 'Could not connect to the voice channel. Try again or leave and rejoin.';
+      await leaveVoiceChannel();
     }
-    await startJitsiVoice(trainingState.voiceRoomUrl, trainingState.senderName || 'Guest');
-  } else {
-    addVoicePeer('_self', trainingState.senderName || 'Guest', true);
+  } catch (e) {
+    console.warn('joinVoiceChannel:', e);
+    localStream = null;
+    voiceJoined = false;
+    const msgEl = document.getElementById('chatVoiceCopyMsg');
+    if (msgEl) {
+      msgEl.textContent =
+        e && e.name === 'NotAllowedError'
+          ? 'Microphone permission denied.'
+          : e && e.message
+            ? String(e.message)
+            : 'Could not access microphone.';
+    }
   }
   updateVoiceControlsUi();
 }
 
-function leaveVoiceChannel() {
-  if (!voiceJoined) return;
+async function leaveVoiceChannel() {
+  if (!voiceJoined && !voiceChannel && !localStream) return;
   voiceJoined = false;
   voiceMuted = false;
-  voiceMeetJitSiTabMode = false;
-  stopJitsiVoice();
   voicePeers.clear();
   renderVoiceStickers();
+  [...rtcPeers.keys()].forEach((id) => {
+    closeRtcPeer(id);
+  });
+  rtcPeers.clear();
+  pendingIceCandidates.clear();
+  if (localStream) {
+    localStream.getTracks().forEach((t) => {
+      try {
+        t.stop();
+      } catch (_) {
+        /* ignore */
+      }
+    });
+    localStream = null;
+  }
+  voiceMyStickerIdx = 1;
+  const ch = voiceChannel;
+  voiceChannel = null;
+  if (ch && trainingState.supabase) {
+    try {
+      await ch.untrack();
+    } catch (_) {
+      /* ignore */
+    }
+    try {
+      await trainingState.supabase.removeChannel(ch);
+    } catch (_) {
+      try {
+        await ch.unsubscribe();
+      } catch (__) {
+        /* ignore */
+      }
+    }
+  }
   updateVoiceControlsUi();
 }
 
 function toggleVoiceMute() {
-  if (!voiceJoined || voiceMeetJitSiTabMode) return;
-  if (jitsiVoiceApi) {
-    jitsiVoiceApi.executeCommand('toggleAudio');
-  } else {
-    voiceMuted = !voiceMuted;
-    setVoicePeerMuted('_self', voiceMuted);
-    updateVoiceControlsUi();
+  if (!voiceJoined || !localStream) return;
+  const track = localStream.getAudioTracks()[0];
+  if (!track) return;
+  track.enabled = !track.enabled;
+  voiceMuted = !track.enabled;
+  const myPid = String(trainingState.participantId);
+  setVoicePeerMuted(myPid, voiceMuted);
+  if (voiceChannel) {
+    void voiceChannel.track({
+      participantId: myPid,
+      name: trainingState.senderName || 'Guest',
+      stickerIdx: voiceMyStickerIdx,
+      muted: voiceMuted,
+    });
   }
+  updateVoiceControlsUi();
 }
 
 function setTrainingChatMobileTab(which) {
@@ -1075,6 +1229,7 @@ async function teardownTrainingChatRealtime() {
 }
 
 async function initRealtime() {
+  trainingState.realtimeReady = false;
   try {
     const cfg = await jsonFetch('/.netlify/functions/public-config');
     if (!cfg.realtimeEnabled || !window.supabase) return;
@@ -1085,6 +1240,7 @@ async function initRealtime() {
         appendChatMessage(payload.new);
       });
     await trainingState.channel.subscribe();
+    trainingState.realtimeReady = true;
   } catch (_) {
     // keep polling fallback only
   }
@@ -1116,11 +1272,12 @@ async function handleTrainingSessionEnded() {
   trainingState.voiceRoomUrl = null;
   trainingState.whiteboardAllowed = false;
   trainingState.whiteboardSubscribed = false;
+  trainingState.realtimeReady = false;
 
   await teardownTrainingChatRealtime();
   await teardownWhiteboardUi();
 
-  leaveVoiceChannel();
+  await leaveVoiceChannel();
 
   const chatPanel = document.getElementById('chatPanel');
   chatPanel?.classList.add('chat-panel--session-ended');
@@ -1173,9 +1330,8 @@ async function showSessionGroupPickerFlow(sessionId) {
 
   try {
     const data = await jsonFetch(`/.netlify/functions/public-training-session?sessionId=${encodeURIComponent(sessionId)}`);
-    const subHint = data.voiceRoomUrl
-      ? 'Choose a group below. Then enter your display name once — chat, board, and voice open in the same page when the room uses Jitsi.'
-      : 'Choose a group below. Then enter your display name to open the session.';
+    const subHint =
+      'Choose a group below. Then enter your display name to open chat, the optional shared board, and in-page voice (when live realtime is enabled).';
     setTrainingParticipantHero(data.title || 'Live session', subHint);
     if (picker) picker.classList.remove('hidden');
     if (buttonsEl) {
@@ -1210,10 +1366,9 @@ async function joinByTokenFlow(token) {
   const panel = document.getElementById('joinPanel');
   const joinData = await jsonFetch(`/.netlify/functions/training-join?token=${encodeURIComponent(token)}`);
   trainingState.whiteboardAllowed = joinData.whiteboardEnabled !== false;
-  trainingState.voiceRoomUrl = joinData.voiceRoomUrl || null;
   setTrainingParticipantHero(
     joinData.sessionTitle || 'Live session',
-    `Group ${joinData.groupNumber}. Enter your display name below — then chat, board, and voice stay on this page${joinData.voiceRoomUrl ? ' (Jitsi rooms load inline).' : '.'}`,
+    `Group ${joinData.groupNumber}. Enter your display name below — then chat, the optional shared board, and voice (Join voice in the header when realtime is available) stay on this page.`,
   );
   if (panel) panel.classList.remove('hidden');
   document.getElementById('chatPanel').classList.add('hidden');
@@ -1231,7 +1386,6 @@ async function joinByTokenFlow(token) {
     trainingState.participantId = joined.participant.id;
     trainingState.senderName = joined.participant.display_name;
     trainingState.whiteboardAllowed = joined.whiteboardEnabled !== false;
-    trainingState.voiceRoomUrl = joined.voiceRoomUrl || joinData.voiceRoomUrl || null;
     panel.classList.add('hidden');
     document.getElementById('chatPanel').classList.remove('hidden');
     const sub = document.getElementById('chatPanelSub');
@@ -1240,7 +1394,8 @@ async function joinByTokenFlow(token) {
     }
     applyWhiteboardPolicyToChatUi();
     loadRecentMessages();
-    initRealtime();
+    await initRealtime();
+    updateVoiceRoomUi();
     clearTrainingParticipantPolls();
     trainingMessagesIntervalId = setInterval(loadRecentMessages, 10000);
     trainingSessionAliveIntervalId = setInterval(() => {
@@ -1350,8 +1505,6 @@ export async function initTraining() {
     const links = document.getElementById('trainingLinks');
     try {
       const wbEl = document.getElementById('trainingWhiteboardEnabled');
-      const voiceEl = document.getElementById('trainingVoiceRoomUrl');
-      const voiceRoomUrlRaw = voiceEl ? String(voiceEl.value || '').trim() : '';
       const data = await jsonFetch('/.netlify/functions/training-sessions', {
         method: 'POST',
         headers: getAuthHeaders(),
@@ -1359,14 +1512,12 @@ export async function initTraining() {
           title,
           groupsCount,
           whiteboardEnabled: wbEl ? wbEl.checked : true,
-          voiceRoomUrl: voiceRoomUrlRaw || undefined,
         }),
       });
       const base = `${window.location.origin}${window.location.pathname}`;
       const sorted = (data.groups || []).slice().sort((a, b) => a.group_number - b.group_number);
       const session = data.session;
       const href = session && session.id ? `${base}?session=${session.id}` : base;
-      const voiceHref = session && session.voice_room_url ? String(session.voice_room_url) : '';
       const escV = (v) =>
         String(v)
           .replace(/&/g, '&amp;')
@@ -1376,16 +1527,9 @@ export async function initTraining() {
         session && session.id
           ? `<h4>Share link for students</h4><p class="share-link-wrap"><a href="${escV(href)}" target="_blank" rel="noopener">${escV(href)}</a></p>${
               sorted.length > 1 ? `<p class="muted small-margin">Students choose their group after opening this link.</p>` : ''
-            }${
-              voiceHref
-                ? `<h4>Voice room</h4><p class="share-link-wrap"><a href="${escV(voiceHref)}" target="_blank" rel="noopener noreferrer">${escV(
-                    voiceHref,
-                  )}</a></p><p class="muted small-margin">Jitsi links load inside the student session page; other providers open in a new tab from the chat header.</p>`
-                : ''
-            }`
+            }<p class="muted small-margin">Participants use <strong>Join voice</strong> in the chat header for in-page audio (requires Supabase Realtime).</p>`
           : '';
       msg.textContent = 'Session created.';
-      if (voiceEl) voiceEl.value = '';
       loadTrainerSessions();
     } catch (err) {
       msg.textContent = err.message;
@@ -1401,22 +1545,8 @@ export async function initTraining() {
   document.getElementById('chatTabChat')?.addEventListener('click', () => setTrainingChatMobileTab('chat'));
   document.getElementById('chatTabBoard')?.addEventListener('click', () => setTrainingChatMobileTab('board'));
   document.getElementById('btnJoinVoice')?.addEventListener('click', () => void joinVoiceChannel());
-  document.getElementById('btnLeaveVoice')?.addEventListener('click', () => leaveVoiceChannel());
+  document.getElementById('btnLeaveVoice')?.addEventListener('click', () => void leaveVoiceChannel());
   document.getElementById('btnToggleMute')?.addEventListener('click', () => toggleVoiceMute());
-  document.getElementById('btnCopyVoiceLink')?.addEventListener('click', async () => {
-    const u = effectiveVoiceLinkForShare();
-    const msgEl = document.getElementById('chatVoiceCopyMsg');
-    if (!u) return;
-    try {
-      await navigator.clipboard.writeText(u);
-      if (msgEl) {
-        msgEl.textContent = 'Link copied.';
-        setTimeout(() => { if (msgEl) msgEl.textContent = ''; }, 2500);
-      }
-    } catch (_) {
-      if (msgEl) msgEl.textContent = 'Could not copy. Try opening the voice room.';
-    }
-  });
   window.addEventListener('resize', () => {
     if (document.getElementById('chatPanel') && !document.getElementById('chatPanel').classList.contains('hidden')) {
       syncChatPanelLayout();

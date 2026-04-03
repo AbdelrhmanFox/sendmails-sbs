@@ -527,19 +527,6 @@
               <input type="checkbox" id="trainingWhiteboardEnabled" checked />
               <span>Enable shared whiteboard for participants in this session</span>
             </label>
-            <div class="full training-voice-field">
-              <label for="trainingVoiceRoomUrl">Voice room link (optional)</label>
-              <input
-                id="trainingVoiceRoomUrl"
-                type="url"
-                inputmode="url"
-                autocomplete="off"
-                placeholder="Leave blank for auto Jitsi room, or paste Meet / Zoom / Jitsi"
-              />
-              <p class="muted field-hint">
-                If you leave this blank, a room URL is created using <code>JITSI_MEET_BASE</code> (default meet.jit.si). <strong>Public meet.jit.si often cannot be used for anonymous in-page voice</strong> — set <code>JITSI_MEET_BASE</code> to your self-hosted Jitsi for reliable training voice. You may paste any other https voice link instead.
-              </p>
-            </div>
           </form>
           <p class="muted small-margin">Students use <strong>one</strong> session link. If you set more than one group, they pick a group on the next screen.</p>
           <p id="trainingMsg" class="inline-note"></p>
@@ -584,15 +571,9 @@
               <button type="button" class="btn btn-secondary chat-whiteboard-toggle hidden" id="btnToggleWhiteboard" aria-expanded="false" aria-controls="whiteboardWrap">Show whiteboard</button>
             </div>
             <div class="chat-voice-controls hidden" id="chatVoiceControls">
-              <p id="chatVoiceMeetJitSiWarn" class="chat-voice-meet-warn hidden" role="status">
-                Public <strong>meet.jit.si</strong> blocks embedded voice and often requires a signed-in moderator or approval (you may see “members only” / lobby). For training without that, deploy your own Jitsi Meet URL and set <code class="chat-voice-code">JITSI_MEET_BASE</code> in Netlify env, or paste that URL when creating a session.
-              </p>
               <button type="button" class="btn btn-primary btn-sm hidden" id="btnJoinVoice">🎤 Join voice</button>
               <button type="button" class="btn btn-secondary btn-sm hidden" id="btnLeaveVoice">Leave voice</button>
-              <button type="button" class="btn btn-secondary btn-sm hidden" id="btnToggleMute" aria-pressed="false">🎤 Muted: off</button>
-              <a class="btn btn-secondary btn-sm hidden" id="chatVoiceRoomLink" href="#" target="_blank" rel="noopener noreferrer">Open in tab ↗</a>
-              <button type="button" class="btn btn-secondary btn-sm hidden" id="btnCopyVoiceLink">Copy link</button>
-              <span class="muted chat-voice-muted" id="chatVoiceMuted">No voice for this session</span>
+              <button type="button" class="btn btn-secondary btn-sm hidden" id="btnToggleMute" aria-pressed="false">🎤 Mute</button>
               <p class="inline-note chat-voice-copy-msg" id="chatVoiceCopyMsg" aria-live="polite"></p>
             </div>
           </div>
@@ -657,8 +638,6 @@
         </div>
           <aside class="voice-stickers-col" id="voiceStickersRight" aria-label="Voice participants right"></aside>
         </div><!-- /.training-room-wrap -->
-        <!-- Hidden Jitsi audio host – kept off-screen so audio runs without visible UI -->
-        <div id="jitsiVoiceHost" class="jitsi-voice-host" aria-hidden="true"></div>
       </section>
 
       <section id="view-training-tools" class="view">
