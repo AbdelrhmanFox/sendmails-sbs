@@ -1,0 +1,5 @@
+﻿Enrollment_ID,Trainee_ID,Batch_ID,Enrollment_Status,Payment_Status,Amount_Paid,Certificate_Issued,Enroll_Date,Notes
+EN-00001,TR-00005,543,Registered,Pending,,,2/16/2026,
+EN-00002,TR-00005,BA-00001,Registered,Pending,,,2/16/2026,
+EN-00003,TR-00006,BA-00002,Attended,Pending,0,,15-10-2003,
+EN-00004,TR-00007,BA-00002,Attended,Paid,5000,No,2/16/2026,

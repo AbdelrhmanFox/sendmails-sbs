@@ -66,9 +66,9 @@ For asset layout and syncing rules, see [`brand/README.md`](brand/README.md).
 | [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md) | Workbook-driven data model and CSV mapping. |
 | [`docs/sample-import/README.md`](docs/sample-import/README.md) | **Required columns** for Excel import and sample workbook `SBS_operations_sample.xlsx`. |
 | [`docs/WORKBOOK_SOURCE.md`](docs/WORKBOOK_SOURCE.md) | Canonical workbook path and export commands. |
-| [`VERCEL_DEPLOY.md`](VERCEL_DEPLOY.md) | Vercel project settings, env vars, and `/api/*` behaviour. |
-| [`NETLIFY_SUPABASE.md`](NETLIFY_SUPABASE.md) | Netlify + Supabase integration notes. |
-| [`SUPABASE_SETUP.md`](SUPABASE_SETUP.md) | Schema overview and optional workbook import. |
+| [`docs/deploy/VERCEL_DEPLOY.md`](docs/deploy/VERCEL_DEPLOY.md) | Vercel project settings, env vars, and `/api/*` behaviour. |
+| [`docs/deploy/NETLIFY_SUPABASE.md`](docs/deploy/NETLIFY_SUPABASE.md) | Netlify + Supabase integration notes. |
+| [`docs/deploy/SUPABASE_SETUP.md`](docs/deploy/SUPABASE_SETUP.md) | Schema overview and optional workbook import. |
 | [`CLAUDE.md`](CLAUDE.md) | Agent and delivery rules for this codebase. |
 
 ---
@@ -85,7 +85,7 @@ Set these on **Netlify** and/or **Vercel** (same names; configure per platform).
 | `JWT_SECRET` or `SUPABASE_JWT_SECRET` | Sign and verify dashboard login tokens. |
 | `SUPABASE_DATABASE_URL` | Optional; some Netlify Supabase integrations expose Postgres URL first. |
 | `SEED_SECRET` | Optional; protects the `seed` function. |
-| `NODE_OPTIONS` | Optional; e.g. `--dns-result-order=ipv4first` if Supabase fetch fails (see `netlify.toml` / `VERCEL_DEPLOY.md`). |
+| `NODE_OPTIONS` | Optional; e.g. `--dns-result-order=ipv4first` if Supabase fetch fails (see `netlify.toml` / [`docs/deploy/VERCEL_DEPLOY.md`](docs/deploy/VERCEL_DEPLOY.md)). |
 
 Redeploy after changing variables.
 
@@ -125,11 +125,11 @@ npm install
 npm run seed:admin
 ```
 
-Or call the deployed `seed` function with `SEED_SECRET` as documented in `SUPABASE_SETUP.md`.
+Or call the deployed `seed` function with `SEED_SECRET` as documented in [`docs/deploy/SUPABASE_SETUP.md`](docs/deploy/SUPABASE_SETUP.md).
 
 ### 4) Workbook pipeline (optional)
 
-Canonical workbook: `docs/DataBase(SBS)v01.xlsm` (see `docs/WORKBOOK_SOURCE.md`).
+Canonical workbook: `docs/workbook/DataBase(SBS)v01.xlsm` (see [`docs/WORKBOOK_SOURCE.md`](docs/WORKBOOK_SOURCE.md)).
 
 ```bash
 npm run workbook:export
@@ -184,7 +184,7 @@ Health check: `GET /api/health-supabase` on your deployed origin.
 - **Root:** repository root  
 - **Build:** `echo Build complete` (or as in `vercel.json`)  
 - **Output:** `dashboard`  
-- Details: [`VERCEL_DEPLOY.md`](VERCEL_DEPLOY.md)
+- Details: [`docs/deploy/VERCEL_DEPLOY.md`](docs/deploy/VERCEL_DEPLOY.md)
 
 Use **one** primary production domain per environment to avoid confusion; env vars are **not** shared between Netlify and Vercel.
 

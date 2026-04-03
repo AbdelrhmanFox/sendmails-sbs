@@ -612,6 +612,50 @@ body.participant-join .chat-panel {
   min-height: min(48vh, 320px);
 }
 
+.whiteboard-wrap {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+.whiteboard-wrap.whiteboard--off .training-whiteboard {
+  opacity: 0.45;
+  pointer-events: none;
+}
+.whiteboard-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  font-size: 13px;
+}
+.whiteboard-toolbar-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--brand-muted);
+}
+.whiteboard-toolbar select,
+.whiteboard-toolbar input[type="color"] {
+  accent-color: var(--brand-primary);
+}
+.training-whiteboard {
+  display: block;
+  width: 100%;
+  height: 240px;
+  max-height: min(40vh, 280px);
+  border-radius: var(--brand-radius);
+  border: 1px solid var(--brand-border);
+  background: var(--brand-surface);
+  touch-action: none;
+  cursor: crosshair;
+}
+.whiteboard-note {
+  margin: 0;
+  font-size: 12px;
+}
+
 .chat-line {
   display: flex;
   flex-direction: column;

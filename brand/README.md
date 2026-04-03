@@ -8,10 +8,12 @@ This folder holds the **source of truth** for brand colors and marks used by the
 | --- | --- |
 | `Main Logo/` | Official logo exports (PNG). **Sidebar uses `Colored (White Text).png`** on dark UI. |
 | `Color Palette/` | `ColorPalette.pdf` — full brand color system (primary, solids, gradients). `palette.json` hex values align with the logo and PDF; adjust both when marketing updates the PDF. |
+| `source/` | Illustrator sources when present: `Characters.ai`, and optionally `ColorPalette.ai`, `Logo Variations.ai` (marketing-owned binaries may not be in every checkout). |
 | `palette.json` | Canonical hex values (aligned with **ColorPalette.pdf** RGB swatches in file metadata). |
 | `exports/logo.png` | Copy of the white-text mark for deployment parity with `dashboard/assets/logo.png`. |
-| `Characters/` | Illustration assets (optional for marketing; not required for the staff dashboard). |
-| Stickers (source kit) | Raster stickers live under `dashboard/assets/stickers/` (`sticker-1.jpg` … `sticker-3.jpg`), copied from the visual identity **Stickers** exports. |
+| `visual-identity/` | Full visual identity kit (Stickers, Elements & Patterns, Logo, Fonts, etc.), moved from the old Drive-style root folder name. |
+
+Raster stickers for the app UI live under `dashboard/assets/stickers/` (`sticker-1.jpg` … `sticker-3.jpg`), copied from the visual identity **Stickers** exports.
 
 ## Dashboard wiring
 

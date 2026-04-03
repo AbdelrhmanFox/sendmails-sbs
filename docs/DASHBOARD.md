@@ -14,7 +14,7 @@ Top-level areas (sidebar):
 | **Automation** | admin, staff, user | Email Campaigns (n8n webhook + Google Sheets) |
 | **Admin** | admin | Users, backend config hints, finance audit log (admin only) |
 
-Role-to-areas mapping is defined in `dashboard/js/app.js` (`ROLE_AREAS`): e.g. `accountant` sees Finance only; `trainer` sees Training only; `user` sees Automation only.
+Role-to-areas mapping is defined in `dashboard/js/shared.js` (`ROLE_AREAS`): e.g. `accountant` sees Finance only; `trainer` sees Training only; `user` sees Automation only.
 
 ## Modules (detail)
 
@@ -33,7 +33,7 @@ Role-to-areas mapping is defined in `dashboard/js/app.js` (`ROLE_AREAS`): e.g. `
    Scheduled snapshot for n8n: `POST finance-data?resource=n8n-report` with header `X-N8n-Secret` matching `N8N_FINANCE_WEBHOOK_SECRET` (see `docs/N8N_FINANCE.md`).
 
 5. **Training — Live sessions**  
-   Trainers create sessions; **one student share URL** uses `?session=<session_id>`. For multiple groups, students pick a group, then the app continues with `?group=<join_token>` (same join flow). Direct `?group=<token>` still works. Trainers list and delete their own sessions (`GET`/`DELETE` on `training-sessions`); admins may delete any. Public metadata: `public-training-session`; join/chat: `training-join`, `training-messages`, optional Realtime.
+   Trainers create sessions; **one student share URL** uses `?session=<session_id>`. For multiple groups, students pick a group, then the app continues with `?group=<join_token>` (same join flow). Direct `?group=<token>` still works. Trainers list and delete their own sessions (`GET`/`DELETE` on `training-sessions`); admins may delete any. Public metadata: `public-training-session`; join/chat: `training-join`, `training-messages`, optional Realtime. **Session whiteboard:** a small canvas under the chat syncs strokes in real time via Supabase Realtime **broadcast** (no DB persistence); refresh starts blank.
 
 6. **Training — Tools**  
    `/.netlify/functions/training-data?resource=attendance|materials` for attendance rows and material links.
@@ -48,7 +48,7 @@ Role-to-areas mapping is defined in `dashboard/js/app.js` (`ROLE_AREAS`): e.g. `
 
 - `dashboard/index.html` (Quill, Supabase client, SheetJS, **Chart.js** for Finance)
 - `dashboard/css/tokens.css`, `dashboard/css/main.css`
-- `dashboard/js/app.js`
+- `dashboard/js/app.js` (ES module entry; feature modules under `dashboard/js/*.js`)
 
 ## Key behavior
 

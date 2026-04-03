@@ -4,8 +4,7 @@ The dashboard database model is workbook-driven.
 
 ## Expected workbook file (canonical)
 
-- **Canonical:** `docs/DataBase(SBS)v01.xlsm` (preferred; single source of truth for exports)
-- **Fallback:** `DataBase(SBS)v01.xlsm` at repository root (legacy path only)
+- **Canonical:** `docs/workbook/DataBase(SBS)v01.xlsm` (preferred; single source of truth for exports)
 
 ## Current status
 

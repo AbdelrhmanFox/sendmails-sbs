@@ -283,6 +283,25 @@
           <div id="trainChatScroll" class="chat-scroll" role="log" aria-live="polite" aria-relevant="additions">
             <div id="chatMessages" class="chat-messages-inner"></div>
           </div>
+          <div id="whiteboardWrap" class="whiteboard-wrap">
+            <div class="whiteboard-toolbar" role="toolbar" aria-label="Shared whiteboard">
+              <select id="whiteboardMode" aria-label="Tool">
+                <option value="pen">Pen</option>
+                <option value="eraser">Eraser</option>
+              </select>
+              <label class="whiteboard-toolbar-label">
+                Color
+                <input type="color" id="whiteboardColor" value="#00a99d" />
+              </label>
+              <label class="whiteboard-toolbar-label">
+                Width
+                <input type="range" id="whiteboardWidth" min="1" max="12" value="3" />
+              </label>
+              <button type="button" class="btn btn-secondary" id="whiteboardClearAll">Clear for everyone</button>
+            </div>
+            <canvas id="trainingWhiteboard" class="training-whiteboard" width="800" height="240" aria-label="Session whiteboard"></canvas>
+            <p id="whiteboardNote" class="muted whiteboard-note hidden"></p>
+          </div>
           <form id="chatForm" class="chat-composer" autocomplete="off">
             <label class="visually-hidden" for="chatInput">Message</label>
             <input id="chatInput" type="text" placeholder="Message" required enterkeyhint="send" />
@@ -639,6 +658,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <script src="js/app.js"></script>
+  <script type="module" src="js/app.js"></script>
 </body>
 </html>

@@ -2,7 +2,7 @@
  * Single Vercel Serverless Function (Hobby plan: max 12 functions; this replaces N separate api/*.js files).
  * Routes: /api/login, /api/seed, … — same as /.netlify/functions/:name via vercel.json rewrite.
  */
-const netlifyToVercel = require('../netlify/vercelAdapter');
+const netlifyToVercel = require('../netlify/lib/vercel-adapter');
 
 const HANDLERS = {
   login: require('../netlify/functions/login').handler,

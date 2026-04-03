@@ -5,7 +5,7 @@ const XLSX = require('xlsx');
 const ROOT = process.cwd();
 const OUT_DIR = path.join(ROOT, 'docs', 'excel-export');
 const CANDIDATES = [
-  path.join(ROOT, 'docs', 'DataBase(SBS)v01.xlsm'),
+  path.join(ROOT, 'docs', 'workbook', 'DataBase(SBS)v01.xlsm'),
   path.join(ROOT, 'DataBase(SBS)v01.xlsm'),
 ];
 
