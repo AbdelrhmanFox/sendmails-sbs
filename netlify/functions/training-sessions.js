@@ -2,7 +2,7 @@ const { cors, json, getSupabaseServiceClient, verifyAuth } = require('../lib/_sh
 
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: cors };
-  if (!['GET', 'POST'].includes(event.httpMethod)) return json({ error: 'Method not allowed' }, 405);
+  if (!['GET', 'POST', 'DELETE'].includes(event.httpMethod)) return json({ error: 'Method not allowed' }, 405);
 
   const auth = verifyAuth(event);
   if (!auth) return json({ error: 'Unauthorized' }, 401);
@@ -12,13 +12,35 @@ exports.handler = async (event) => {
   if (!supabase) return json({ error: 'Server config missing' }, 500);
 
   if (event.httpMethod === 'GET') {
-    const { data, error } = await supabase
+    let q = supabase
       .from('training_sessions')
-      .select('id, title, groups_count, created_at, training_groups(id, group_number, join_token)')
+      .select('id, title, trainer_username, groups_count, created_at, training_groups(id, group_number, join_token)')
       .order('created_at', { ascending: false })
       .limit(50);
+    if (auth.role === 'trainer') {
+      q = q.eq('trainer_username', auth.username || '');
+    }
+    const { data, error } = await q;
     if (error) return json({ error: 'Could not load training sessions' }, 500);
     return json({ sessions: data || [] });
+  }
+
+  if (event.httpMethod === 'DELETE') {
+    const sessionId = String(event.queryStringParameters?.id || '').trim();
+    if (!sessionId) return json({ error: 'id is required' }, 400);
+    const { data: row, error: loadErr } = await supabase
+      .from('training_sessions')
+      .select('id, trainer_username')
+      .eq('id', sessionId)
+      .maybeSingle();
+    if (loadErr) return json({ error: 'Could not load session' }, 500);
+    if (!row) return json({ error: 'Session not found' }, 404);
+    if (auth.role !== 'admin' && row.trainer_username !== (auth.username || '')) {
+      return json({ error: 'Not allowed to delete this session' }, 403);
+    }
+    const { error: delErr } = await supabase.from('training_sessions').delete().eq('id', sessionId);
+    if (delErr) return json({ error: delErr.message || 'Could not delete session' }, 500);
+    return json({ ok: true });
   }
 
   let body;

@@ -265,6 +265,30 @@ body.participant-join .main {
   min-width: 120px;
 }
 
+.trainer-sessions-list {
+  margin-top: 12px;
+  display: grid;
+  gap: 10px;
+}
+.trainer-session-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--brand-border);
+  border-radius: 10px;
+  background: var(--brand-surface-2);
+}
+.trainer-session-row .session-meta {
+  flex: 1;
+  min-width: 180px;
+}
+.trainer-session-row .session-meta strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
 .menu-item {
   width: 100%;
   text-align: left;

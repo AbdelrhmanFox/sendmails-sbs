@@ -1326,6 +1326,7 @@
     document.body.classList.add('participant-join');
     const trainerPanel = document.getElementById('trainerPanel');
     if (trainerPanel) trainerPanel.classList.add('hidden');
+    document.getElementById('trainerSessionsCard')?.classList.add('hidden');
     document.getElementById('participantLanding')?.classList.add('hidden');
     document.getElementById('joinPanel')?.classList.add('hidden');
     document.getElementById('chatPanel')?.classList.add('hidden');
@@ -1372,6 +1373,7 @@
     document.getElementById('participantGroupPicker')?.classList.add('hidden');
     const trainerPanel = document.getElementById('trainerPanel');
     if (trainerPanel) trainerPanel.classList.add('hidden');
+    document.getElementById('trainerSessionsCard')?.classList.add('hidden');
     const landing = document.getElementById('participantLanding');
     const panel = document.getElementById('joinPanel');
     const joinData = await jsonFetch(`/.netlify/functions/training-join?token=${encodeURIComponent(token)}`);
@@ -1423,6 +1425,75 @@
     document.getElementById('view-training').classList.add('active');
   }
 
+  async function loadTrainerSessions() {
+    const list = document.getElementById('trainerSessionsList');
+    const msg = document.getElementById('trainerSessionsMsg');
+    if (!list || !['admin', 'trainer'].includes(authRole)) return;
+    if (msg) msg.textContent = 'Loading…';
+    try {
+      const data = await jsonFetch('/.netlify/functions/training-sessions', { headers: getAuthHeaders() });
+      const sessions = data.sessions || [];
+      list.innerHTML = '';
+      if (msg) msg.textContent = '';
+      if (!sessions.length) {
+        if (msg) msg.textContent = 'No sessions yet. Create one above.';
+        return;
+      }
+      const base = `${window.location.origin}${window.location.pathname}`;
+      sessions.forEach((s) => {
+        const row = document.createElement('div');
+        row.className = 'trainer-session-row';
+        const meta = document.createElement('div');
+        meta.className = 'session-meta';
+        const titleEl = document.createElement('strong');
+        titleEl.textContent = s.title || 'Session';
+        meta.appendChild(titleEl);
+        const sub = document.createElement('div');
+        sub.className = 'muted';
+        const created = s.created_at ? new Date(s.created_at).toLocaleString() : '';
+        const who = authRole === 'admin' && s.trainer_username ? ` · Trainer: ${s.trainer_username}` : '';
+        sub.textContent = `${created} · ${s.groups_count} group(s)${who}`;
+        meta.appendChild(sub);
+        row.appendChild(meta);
+        const href = `${base}?session=${s.id}`;
+        const link = document.createElement('a');
+        link.href = href;
+        link.className = 'btn btn-secondary';
+        link.target = '_blank';
+        link.rel = 'noopener';
+        link.textContent = 'Student link';
+        row.appendChild(link);
+        const del = document.createElement('button');
+        del.type = 'button';
+        del.className = 'btn btn-secondary';
+        del.textContent = 'Delete';
+        del.addEventListener('click', async () => {
+          if (
+            !confirm(
+              'Delete this session? All groups, chat messages, and related attendance rows for this session will be removed. This cannot be undone.'
+            )
+          ) {
+            return;
+          }
+          if (msg) msg.textContent = '';
+          try {
+            await jsonFetch(`/.netlify/functions/training-sessions?id=${encodeURIComponent(s.id)}`, {
+              method: 'DELETE',
+              headers: getAuthHeaders(),
+            });
+            await loadTrainerSessions();
+          } catch (e) {
+            if (msg) msg.textContent = e.message;
+          }
+        });
+        row.appendChild(del);
+        list.appendChild(row);
+      });
+    } catch (e) {
+      if (msg) msg.textContent = e.message;
+    }
+  }
+
   async function initTraining() {
     const query = new URLSearchParams(window.location.search);
     const sessionId = query.get('session');
@@ -1461,10 +1532,17 @@
               }`
             : '';
         msg.textContent = 'Session created.';
+        loadTrainerSessions();
       } catch (err) {
         msg.textContent = err.message;
       }
     });
+
+    document.getElementById('btnRefreshTrainerSessions')?.addEventListener('click', () => loadTrainerSessions());
+
+    if (['admin', 'trainer'].includes(authRole)) {
+      loadTrainerSessions();
+    }
 
     document.getElementById('chatForm')?.addEventListener('submit', async (e) => {
       e.preventDefault();
