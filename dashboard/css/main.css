@@ -89,6 +89,98 @@ h1, h2, h3, h4, p { margin-top: 0; }
   flex-shrink: 0;
 }
 .brand p { margin: 4px 0 0; color: var(--brand-muted); font-size: 12px; }
+
+.area-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+.area-tab {
+  width: 100%;
+  text-align: left;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--brand-text);
+  padding: 10px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+}
+.area-tab:hover { background: var(--brand-surface-2); }
+.area-tab.active {
+  background: var(--brand-surface-2);
+  border-color: var(--brand-border);
+}
+
+.subnav {
+  margin-bottom: 14px;
+  padding-left: 10px;
+  border-left: 2px solid color-mix(in oklab, var(--brand-primary) 45%, var(--brand-border));
+}
+.subnav.hidden { display: none; }
+.subnav-label {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--brand-muted);
+  margin-bottom: 6px;
+}
+.subnav-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--brand-text);
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+.subnav-item:hover { background: color-mix(in oklab, var(--brand-surface-2) 80%, transparent); }
+.subnav-item.active {
+  background: var(--brand-surface-2);
+  border-color: var(--brand-border);
+}
+
+.pipeline-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+
+.quality-summary p { margin: 6px 0; font-size: 14px; }
+.quality-pre {
+  font-size: 12px;
+  line-height: 1.45;
+  max-height: 280px;
+  overflow: auto;
+  padding: 12px;
+  background: var(--brand-surface-2);
+  border-radius: 10px;
+  border: 1px solid var(--brand-border);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.tools-session-block {
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--brand-border);
+}
+.tools-session-block ul { margin: 8px 0 0; padding-left: 1.2rem; font-size: 13px; }
+.tools-materials-list { list-style: none; padding: 0; margin: 10px 0 0; }
+.tools-materials-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.finance-kpis .status-grid { margin-top: 10px; }
+
 .menu-item {
   width: 100%;
   text-align: left;

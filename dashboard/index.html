@@ -41,13 +41,38 @@
           <p>Educational Operations</p>
         </div>
       </div>
-      <nav id="menu">
-        <button class="menu-item active" data-view="home">Home</button>
-        <button class="menu-item" data-view="operations">Operations Data</button>
-        <button class="menu-item" data-view="campaigns" id="menuCampaigns">Email Campaigns</button>
-        <button class="menu-item" data-view="training">Live Session Groups</button>
-        <button class="menu-item" data-view="admin" id="menuAdmin">Manage Users</button>
+      <nav id="areaNav" class="area-nav" aria-label="Primary">
+        <button type="button" class="area-tab active" data-area="operations" id="areaOperations">Operations</button>
+        <button type="button" class="area-tab" data-area="training" id="areaTraining">Training</button>
+        <button type="button" class="area-tab" data-area="finance" id="areaFinance">Finance</button>
+        <button type="button" class="area-tab" data-area="automation" id="areaAutomation">Automation</button>
+        <button type="button" class="area-tab" data-area="admin" id="areaAdmin">Admin</button>
       </nav>
+      <div id="subnavOperations" class="subnav" data-for-area="operations">
+        <span class="subnav-label">In this area</span>
+        <button type="button" class="subnav-item active" data-view="operations-home">Overview</button>
+        <button type="button" class="subnav-item" data-view="operations-data">Operations Data</button>
+        <button type="button" class="subnav-item" data-view="operations-pipeline">Pipeline</button>
+        <button type="button" class="subnav-item" data-view="operations-capacity">Capacity</button>
+        <button type="button" class="subnav-item" data-view="operations-quality">Data quality</button>
+      </div>
+      <div id="subnavTraining" class="subnav hidden" data-for-area="training">
+        <span class="subnav-label">In this area</span>
+        <button type="button" class="subnav-item active" data-view="training">Session groups</button>
+        <button type="button" class="subnav-item" data-view="training-tools">Attendance &amp; materials</button>
+      </div>
+      <div id="subnavFinance" class="subnav hidden" data-for-area="finance">
+        <span class="subnav-label">In this area</span>
+        <button type="button" class="subnav-item active" data-view="finance">Finance dashboard</button>
+      </div>
+      <div id="subnavAutomation" class="subnav hidden" data-for-area="automation">
+        <span class="subnav-label">In this area</span>
+        <button type="button" class="subnav-item active" data-view="campaigns">Email campaigns</button>
+      </div>
+      <div id="subnavAdmin" class="subnav hidden" data-for-area="admin">
+        <span class="subnav-label">In this area</span>
+        <button type="button" class="subnav-item active" data-view="admin">Users</button>
+      </div>
       <div class="sidebar-footer">
         <div id="loggedInUser" class="muted"></div>
         <button type="button" id="btnLogout" class="btn btn-secondary btn-block">Log out</button>
@@ -55,11 +80,11 @@
     </aside>
 
     <main class="main">
-      <section id="view-home" class="view active">
+      <section id="view-operations-home" class="view active">
         <div class="view-hero">
           <div class="view-hero-text">
-            <h2>Welcome</h2>
-            <p class="subtitle">Use the left menu to manage staff operations, campaigns, and live training groups.</p>
+            <h2>Operations</h2>
+            <p class="subtitle">Enrollment pipeline, capacity, and workbook-driven records for staff.</p>
           </div>
           <div class="view-stickers" aria-hidden="true">
             <img src="assets/stickers/sticker-2.jpg" alt="" class="view-sticker" />
@@ -67,19 +92,19 @@
         </div>
         <div class="grid-three">
           <article class="card"><h3>Operations Data</h3><p>Create and update enrollment records from your workbook-driven database model.</p></article>
-          <article class="card"><h3>Email Campaigns</h3><p>Run the existing n8n sendmail automation when the feature is enabled for your role.</p></article>
-          <article class="card"><h3>Live Session Groups</h3><p>Create trainer rooms and share secure join links with participants.</p></article>
+          <article class="card"><h3>Pipeline &amp; capacity</h3><p>Review enrollment status distribution and batch utilization.</p></article>
+          <article class="card"><h3>Data quality</h3><p>Spot orphan foreign keys and duplicate enrollment identifiers.</p></article>
         </div>
       </section>
 
-      <section id="view-operations" class="view">
+      <section id="view-operations-data" class="view">
         <div class="view-hero">
           <div class="view-hero-text">
             <div class="view-header">
               <h2>Operations Data</h2>
               <button class="btn btn-secondary" id="btnRefreshEnrollments">Refresh</button>
             </div>
-            <p class="subtitle">Workbook-driven entities (trainees, courses, batches, enrollments, payments).</p>
+            <p class="subtitle">Workbook-driven entities (trainees, courses, batches, enrollments).</p>
           </div>
           <div class="view-stickers" aria-hidden="true">
             <img src="assets/stickers/sticker-1.jpg" alt="" class="view-sticker" />
@@ -128,6 +153,276 @@
               <tbody id="entityBody"></tbody>
             </table>
           </div>
+        </div>
+      </section>
+
+      <section id="view-operations-pipeline" class="view">
+        <div class="view-hero">
+          <div class="view-hero-text">
+            <h2>Pipeline</h2>
+            <p class="subtitle">Enrollment counts by status.</p>
+          </div>
+        </div>
+        <div class="card">
+          <button type="button" class="btn btn-secondary" id="btnRefreshPipeline">Refresh</button>
+          <div id="pipelineGrid" class="status-grid pipeline-grid"></div>
+          <p id="pipelineMsg" class="inline-note"></p>
+        </div>
+      </section>
+
+      <section id="view-operations-capacity" class="view">
+        <div class="view-hero">
+          <div class="view-hero-text">
+            <h2>Capacity</h2>
+            <p class="subtitle">Enrollments per batch versus declared capacity.</p>
+          </div>
+        </div>
+        <div class="card">
+          <button type="button" class="btn btn-secondary" id="btnRefreshCapacity">Refresh</button>
+          <div class="table-wrap">
+            <table id="capacityTable">
+              <thead><tr><th>Batch</th><th>Course</th><th>Capacity</th><th>Enrolled</th><th>Utilization</th></tr></thead>
+              <tbody id="capacityBody"></tbody>
+            </table>
+          </div>
+          <p id="capacityMsg" class="inline-note"></p>
+        </div>
+      </section>
+
+      <section id="view-operations-quality" class="view">
+        <div class="view-hero">
+          <div class="view-hero-text">
+            <h2>Data quality</h2>
+            <p class="subtitle">Orphan references and duplicate enrollment IDs (sample lists).</p>
+          </div>
+        </div>
+        <div class="card">
+          <button type="button" class="btn btn-secondary" id="btnRefreshQuality">Refresh</button>
+          <div id="qualitySummary" class="quality-summary"></div>
+          <pre id="qualityDetail" class="quality-pre"></pre>
+          <p id="qualityMsg" class="inline-note"></p>
+        </div>
+      </section>
+
+      <section id="view-training" class="view">
+        <div class="view-hero">
+          <div class="view-hero-text">
+            <h2>Live Session Groups</h2>
+            <p class="subtitle">Create session groups for trainers and share one link per group.</p>
+          </div>
+          <div class="view-stickers" aria-hidden="true">
+            <img src="assets/stickers/sticker-2.jpg" alt="" class="view-sticker" />
+          </div>
+        </div>
+        <div id="trainerPanel" class="card">
+          <h3>Create Session</h3>
+          <form id="trainingSessionForm" class="row">
+            <input id="trainingTitle" placeholder="Session title" required />
+            <input id="groupsCount" type="number" min="2" max="12" value="4" />
+            <button class="btn btn-primary" type="submit">Create</button>
+          </form>
+          <p id="trainingMsg" class="inline-note"></p>
+          <div id="trainingLinks"></div>
+        </div>
+        <div id="joinPanel" class="card hidden">
+          <h3 id="joinHeading">Join Group</h3>
+          <form id="joinForm" class="row">
+            <input id="joinName" placeholder="Your display name" required />
+            <button class="btn btn-primary" type="submit">Join chat</button>
+          </form>
+          <p id="joinMsg" class="inline-note"></p>
+        </div>
+        <div id="chatPanel" class="card hidden">
+          <h3>Group Chat</h3>
+          <div id="chatMessages" class="chat-messages"></div>
+          <form id="chatForm" class="row">
+            <input id="chatInput" placeholder="Write a message..." required />
+            <button class="btn btn-primary" type="submit">Send</button>
+          </form>
+        </div>
+      </section>
+
+      <section id="view-training-tools" class="view">
+        <div class="view-hero">
+          <div class="view-hero-text">
+            <h2>Attendance &amp; materials</h2>
+            <p class="subtitle">Record attendance by group and attach resource links.</p>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Load session groups</h3>
+          <button type="button" class="btn btn-secondary" id="btnLoadSessionsForTools">Refresh sessions</button>
+          <div id="toolsSessionsList" class="tools-session-list"></div>
+        </div>
+        <div class="card">
+          <h3>Attendance</h3>
+          <label for="toolsGroupId">Group ID (UUID)</label>
+          <input type="text" id="toolsGroupId" placeholder="Paste group id from session links" />
+          <div class="row">
+            <input type="text" id="toolsParticipant" placeholder="Participant name" />
+            <input type="date" id="toolsAttDate" />
+            <select id="toolsAttStatus">
+              <option value="present">Present</option>
+              <option value="absent">Absent</option>
+              <option value="late">Late</option>
+            </select>
+            <button type="button" class="btn btn-primary" id="btnSaveAttendance">Save</button>
+            <button type="button" class="btn btn-secondary" id="btnLoadAttendance">Load rows</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Date</th><th>Name</th><th>Status</th><th></th></tr></thead>
+              <tbody id="attendanceBody"></tbody>
+            </table>
+          </div>
+          <p id="toolsAttMsg" class="inline-note"></p>
+        </div>
+        <div class="card">
+          <h3>Materials</h3>
+          <div class="row">
+            <input type="text" id="toolsMatSessionId" placeholder="Session ID (optional)" />
+            <input type="text" id="toolsMatGroupId" placeholder="Group ID (optional)" />
+          </div>
+          <div class="row">
+            <input type="text" id="toolsMatTitle" placeholder="Title" />
+            <input type="url" id="toolsMatUrl" placeholder="https://..." />
+            <button type="button" class="btn btn-primary" id="btnAddMaterial">Add link</button>
+            <button type="button" class="btn btn-secondary" id="btnLoadMaterials">Load</button>
+          </div>
+          <ul id="toolsMaterialsList" class="tools-materials-list"></ul>
+          <p id="toolsMatMsg" class="inline-note"></p>
+        </div>
+      </section>
+
+      <section id="view-finance" class="view">
+        <div class="view-hero">
+          <div class="view-hero-text">
+            <h2>Finance</h2>
+            <p class="subtitle">Payments ledger, KPIs, invoices, and AR aging.</p>
+          </div>
+        </div>
+        <div class="card finance-kpis">
+          <h3>Summary</h3>
+          <div id="financeKpis" class="status-grid"></div>
+          <button type="button" class="btn btn-secondary" id="btnRefreshFinance">Refresh</button>
+        </div>
+        <div class="card">
+          <h3>Record payment</h3>
+          <form id="financePaymentForm" class="form-grid">
+            <div>
+              <label for="payEnrollmentId">Enrollment ID (business key)</label>
+              <input id="payEnrollmentId" required />
+            </div>
+            <div>
+              <label for="payAmount">Amount</label>
+              <input id="payAmount" type="number" step="0.01" required />
+            </div>
+            <div>
+              <label for="payMethod">Method</label>
+              <input id="payMethod" placeholder="e.g. bank transfer" />
+            </div>
+            <div>
+              <label for="payReceived">Received at</label>
+              <input id="payReceived" type="datetime-local" />
+            </div>
+            <div>
+              <label for="payRef">Reference</label>
+              <input id="payRef" />
+            </div>
+            <div class="full">
+              <label for="payNotes">Notes</label>
+              <input id="payNotes" />
+            </div>
+            <div class="full">
+              <button type="submit" class="btn btn-primary" id="btnSubmitPayment">Save payment</button>
+            </div>
+          </form>
+          <p id="financePayMsg" class="inline-note"></p>
+        </div>
+        <div class="card">
+          <div class="view-header">
+            <h3>Payments ledger</h3>
+            <div class="row">
+              <button type="button" class="btn btn-secondary" id="btnExportLedgerCsv">Export CSV</button>
+              <button type="button" class="btn btn-secondary" id="btnLoadLedger">Refresh</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table id="ledgerTable">
+              <thead>
+                <tr>
+                  <th>Received</th>
+                  <th>Amount</th>
+                  <th>Method</th>
+                  <th>Enrollment</th>
+                  <th>Trainee</th>
+                  <th>Reference</th>
+                </tr>
+              </thead>
+              <tbody id="ledgerBody"></tbody>
+            </table>
+          </div>
+          <p id="financeLedgerMsg" class="inline-note"></p>
+        </div>
+        <div class="card">
+          <h3>AR aging (open invoices with due date)</h3>
+          <button type="button" class="btn btn-secondary" id="btnLoadAr">Refresh AR</button>
+          <div id="arBuckets" class="status-grid"></div>
+          <p id="financeArMsg" class="inline-note"></p>
+        </div>
+        <div class="card">
+          <h3>Invoices</h3>
+          <button type="button" class="btn btn-secondary" id="btnLoadInvoices">Refresh list</button>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Number</th><th>Status</th><th>Issue</th><th>Due</th><th>Total</th><th>Actions</th></tr>
+              </thead>
+              <tbody id="invoicesBody"></tbody>
+            </table>
+          </div>
+          <p id="financeInvMsg" class="inline-note"></p>
+        </div>
+        <div class="card" id="invoiceEditorCard">
+          <h3>Create / edit invoice</h3>
+          <form id="invoiceForm" class="form-grid">
+            <input type="hidden" id="invEditId" />
+            <div>
+              <label for="invNumber">Invoice number</label>
+              <input id="invNumber" required />
+            </div>
+            <div>
+              <label for="invStatus">Status</label>
+              <select id="invStatus">
+                <option value="draft">draft</option>
+                <option value="sent">sent</option>
+                <option value="open">open</option>
+                <option value="overdue">overdue</option>
+                <option value="paid">paid</option>
+                <option value="void">void</option>
+              </select>
+            </div>
+            <div>
+              <label for="invIssue">Issue date</label>
+              <input id="invIssue" type="date" required />
+            </div>
+            <div>
+              <label for="invDue">Due date</label>
+              <input id="invDue" type="date" />
+            </div>
+            <div>
+              <label for="invTotal">Total</label>
+              <input id="invTotal" type="number" step="0.01" />
+            </div>
+            <div class="full">
+              <label for="invNotes">Notes</label>
+              <input id="invNotes" />
+            </div>
+            <div class="full">
+              <button type="submit" class="btn btn-primary" id="btnSaveInvoice">Save invoice</button>
+              <button type="button" class="btn btn-secondary" id="btnClearInvoiceForm">Clear</button>
+            </div>
+          </form>
         </div>
       </section>
 
@@ -182,44 +477,6 @@
         </div>
       </section>
 
-      <section id="view-training" class="view">
-        <div class="view-hero">
-          <div class="view-hero-text">
-            <h2>Live Session Groups</h2>
-            <p class="subtitle">Create session groups for trainers and share one link per group.</p>
-          </div>
-          <div class="view-stickers" aria-hidden="true">
-            <img src="assets/stickers/sticker-2.jpg" alt="" class="view-sticker" />
-          </div>
-        </div>
-        <div id="trainerPanel" class="card">
-          <h3>Create Session</h3>
-          <form id="trainingSessionForm" class="row">
-            <input id="trainingTitle" placeholder="Session title" required />
-            <input id="groupsCount" type="number" min="2" max="12" value="4" />
-            <button class="btn btn-primary" type="submit">Create</button>
-          </form>
-          <p id="trainingMsg" class="inline-note"></p>
-          <div id="trainingLinks"></div>
-        </div>
-        <div id="joinPanel" class="card hidden">
-          <h3 id="joinHeading">Join Group</h3>
-          <form id="joinForm" class="row">
-            <input id="joinName" placeholder="Your display name" required />
-            <button class="btn btn-primary" type="submit">Join chat</button>
-          </form>
-          <p id="joinMsg" class="inline-note"></p>
-        </div>
-        <div id="chatPanel" class="card hidden">
-          <h3>Group Chat</h3>
-          <div id="chatMessages" class="chat-messages"></div>
-          <form id="chatForm" class="row">
-            <input id="chatInput" placeholder="Write a message..." required />
-            <button class="btn btn-primary" type="submit">Send</button>
-          </form>
-        </div>
-      </section>
-
       <section id="view-admin" class="view">
         <div class="view-hero">
           <div class="view-hero-text">
@@ -239,12 +496,20 @@
             <li><code>SUPABASE_SERVICE_ROLE_KEY</code> — <strong>Secret</strong> key (<code>sb_secret_…</code>). Not the publishable key.</li>
             <li><code>SUPABASE_ANON_KEY</code> — Publishable key (Live Session / realtime).</li>
             <li><code>JWT_SECRET</code> or <code>SUPABASE_JWT_SECRET</code> — Used to sign dashboard login tokens.</li>
+            <li><code>N8N_FINANCE_WEBHOOK_SECRET</code> — Optional shared secret for the <code>finance-data</code> n8n report POST (header <code>X-N8n-Secret</code>).</li>
           </ul>
           <p class="muted small-margin">See <code>.env.example</code> for names. Local dev uses <code>.env</code> (gitignored).</p>
         </div>
         <form id="createUserForm" class="card row">
           <input type="text" id="newUsername" minlength="2" placeholder="New username" required />
           <input type="password" id="newPassword" minlength="4" placeholder="Password" required />
+          <select id="newUserRole" aria-label="Role">
+            <option value="user">user</option>
+            <option value="staff">staff</option>
+            <option value="trainer">trainer</option>
+            <option value="accountant">accountant</option>
+            <option value="admin">admin</option>
+          </select>
           <button type="submit" class="btn btn-primary" id="btnCreateUser">Add user</button>
         </form>
         <p id="createUserMsg" class="inline-note"></p>

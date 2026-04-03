@@ -40,6 +40,29 @@
     return data;
   }
 
+  const ROLE_AREAS = {
+    admin: ['operations', 'training', 'finance', 'automation', 'admin'],
+    staff: ['operations', 'automation'],
+    trainer: ['training'],
+    user: ['automation'],
+    accountant: ['finance'],
+  };
+
+  function areasForRole(role) {
+    return ROLE_AREAS[role] || ROLE_AREAS.user;
+  }
+
+  function showView(viewId) {
+    document.querySelectorAll('.view').forEach((v) => v.classList.remove('active'));
+    const el = document.getElementById(`view-${viewId}`);
+    if (el) el.classList.add('active');
+    if (viewId === 'admin') loadUsers();
+    if (viewId === 'finance') refreshFinanceAll();
+    if (viewId === 'operations-pipeline') loadPipeline();
+    if (viewId === 'operations-capacity') loadCapacity();
+    if (viewId === 'operations-quality') loadQuality();
+  }
+
   async function bootAuth() {
     if (!authToken || !authRole) {
       showLogin();
@@ -52,6 +75,9 @@
     initOperations();
     initTraining();
     initAdmin();
+    initFinance();
+    initOpsInsights();
+    initTrainingTools();
   }
 
   document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
@@ -85,24 +111,81 @@
 
   function applyRoleVisibility() {
     const role = localStorage.getItem(AUTH_ROLE) || 'user';
-    const adminItem = document.getElementById('menuAdmin');
-    const campaignsItem = document.getElementById('menuCampaigns');
-    if (adminItem) adminItem.style.display = role === 'admin' ? '' : 'none';
-    if (campaignsItem) campaignsItem.style.display = ['admin', 'staff', 'user'].includes(role) ? '' : 'none';
+    const allowed = areasForRole(role);
+    document.querySelectorAll('.area-tab').forEach((tab) => {
+      const area = tab.getAttribute('data-area');
+      const show = allowed.includes(area);
+      tab.style.display = show ? '' : 'none';
+    });
+    applyFinanceWriteVisibility(role);
+  }
+
+  function applyFinanceWriteVisibility(role) {
+    const canWrite = ['admin', 'accountant'].includes(role);
+    ['financePaymentForm', 'invoiceEditorCard'].forEach((id) => {
+      const n = document.getElementById(id);
+      if (n) n.style.display = canWrite ? '' : 'none';
+    });
   }
 
   function initShell() {
-    const buttons = Array.from(document.querySelectorAll('.menu-item'));
-    buttons.forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const view = btn.getAttribute('data-view');
-        buttons.forEach((b) => b.classList.remove('active'));
-        btn.classList.add('active');
-        document.querySelectorAll('.view').forEach((v) => v.classList.remove('active'));
-        document.getElementById(`view-${view}`)?.classList.add('active');
-        if (view === 'admin') loadUsers();
+    const role = localStorage.getItem(AUTH_ROLE) || 'user';
+    const allowed = areasForRole(role);
+
+    function showSubnavForArea(area) {
+      document.querySelectorAll('.subnav').forEach((s) => {
+        const forArea = s.getAttribute('data-for-area');
+        s.classList.toggle('hidden', forArea !== area);
+      });
+    }
+
+    function activateArea(area, viewId) {
+      document.querySelectorAll('.area-tab').forEach((t) => {
+        t.classList.toggle('active', t.getAttribute('data-area') === area);
+      });
+      showSubnavForArea(area);
+      const sub = document.querySelector(`.subnav[data-for-area="${area}"]`);
+      if (sub) {
+        sub.querySelectorAll('.subnav-item').forEach((b) => {
+          const v = b.getAttribute('data-view');
+          b.classList.toggle('active', v === viewId);
+        });
+      }
+      showView(viewId);
+    }
+
+    document.querySelectorAll('.area-tab').forEach((tab) => {
+      tab.addEventListener('click', () => {
+        const area = tab.getAttribute('data-area');
+        if (!areasForRole(role).includes(area)) return;
+        const sub = document.querySelector(`.subnav[data-for-area="${area}"]`);
+        const first = sub && sub.querySelector('.subnav-item');
+        const viewId = first ? first.getAttribute('data-view') : area;
+        activateArea(area, viewId);
       });
     });
+
+    document.querySelectorAll('.subnav-item').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const viewId = btn.getAttribute('data-view');
+        const sub = btn.closest('.subnav');
+        const area = sub && sub.getAttribute('data-for-area');
+        if (area && !areasForRole(role).includes(area)) return;
+        if (sub) sub.querySelectorAll('.subnav-item').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        if (area) {
+          document.querySelectorAll('.area-tab').forEach((t) => {
+            t.classList.toggle('active', t.getAttribute('data-area') === area);
+          });
+        }
+        showView(viewId);
+      });
+    });
+
+    const firstArea = allowed[0] || 'operations';
+    const firstSub = document.querySelector(`.subnav[data-for-area="${firstArea}"] .subnav-item`);
+    const firstView = firstSub ? firstSub.getAttribute('data-view') : 'operations-home';
+    activateArea(firstArea, firstView);
   }
 
   // -------------------------
@@ -122,6 +205,7 @@
         { key: 'university', label: 'University' },
         { key: 'specialty', label: 'Specialty' },
         { key: 'city', label: 'City' },
+        { key: 'company_id', label: 'Company ID (UUID)' },
         { key: 'created_date', label: 'Created Date' },
         { key: 'status', label: 'Status' },
         { key: 'notes', label: 'Notes' },
@@ -401,6 +485,441 @@
   }
 
   // -------------------------
+  // Operations insights (read-only API)
+  // -------------------------
+  async function loadPipeline() {
+    const grid = document.getElementById('pipelineGrid');
+    const msg = document.getElementById('pipelineMsg');
+    if (!grid) return;
+    try {
+      const data = await jsonFetch('/.netlify/functions/operations-data?resource=pipeline', { headers: getAuthHeaders() });
+      const p = data.pipeline || {};
+      grid.innerHTML = Object.keys(p)
+        .map((k) => `<div class="stat"><span class="k">${k}</span><span class="v">${p[k]}</span></div>`)
+        .join('');
+      grid.innerHTML += `<div class="stat"><span class="k">Total</span><span class="v">${data.total ?? ''}</span></div>`;
+      if (msg) msg.textContent = '';
+    } catch (err) {
+      if (msg) msg.textContent = err.message;
+    }
+  }
+
+  async function loadCapacity() {
+    const body = document.getElementById('capacityBody');
+    const msg = document.getElementById('capacityMsg');
+    if (!body) return;
+    try {
+      const data = await jsonFetch('/.netlify/functions/operations-data?resource=capacity', { headers: getAuthHeaders() });
+      body.innerHTML = (data.capacity || [])
+        .map(
+          (r) =>
+            `<tr><td>${r.batch_id ?? ''}</td><td>${r.course_id ?? ''}</td><td>${r.capacity ?? ''}</td><td>${r.enrolled ?? ''}</td><td>${r.utilization_pct != null ? `${r.utilization_pct}%` : ''}</td></tr>`,
+        )
+        .join('');
+      if (msg) msg.textContent = '';
+    } catch (err) {
+      if (msg) msg.textContent = err.message;
+    }
+  }
+
+  async function loadQuality() {
+    const summary = document.getElementById('qualitySummary');
+    const detail = document.getElementById('qualityDetail');
+    const msg = document.getElementById('qualityMsg');
+    try {
+      const data = await jsonFetch('/.netlify/functions/operations-data?resource=data-quality', { headers: getAuthHeaders() });
+      if (summary) {
+        summary.innerHTML = `<p>Orphan trainee refs: <strong>${data.orphan_trainee_refs}</strong></p>
+          <p>Orphan batch refs: <strong>${data.orphan_batch_refs}</strong></p>
+          <p>Duplicate enrollment IDs: <strong>${data.duplicate_enrollment_ids}</strong></p>`;
+      }
+      if (detail) detail.textContent = JSON.stringify(data.samples || {}, null, 2);
+      if (msg) msg.textContent = '';
+    } catch (err) {
+      if (msg) msg.textContent = err.message;
+    }
+  }
+
+  function initOpsInsights() {
+    document.getElementById('btnRefreshPipeline')?.addEventListener('click', loadPipeline);
+    document.getElementById('btnRefreshCapacity')?.addEventListener('click', loadCapacity);
+    document.getElementById('btnRefreshQuality')?.addEventListener('click', loadQuality);
+  }
+
+  // -------------------------
+  // Finance
+  // -------------------------
+  function ledgerToCsv(items) {
+    const headers = ['received_at', 'amount', 'currency', 'method', 'enrollment_id', 'trainee_id', 'reference'];
+    const lines = [headers.join(',')];
+    (items || []).forEach((row) => {
+      const e = row.enrollments || {};
+      const vals = [
+        row.received_at,
+        row.amount,
+        row.currency,
+        row.method,
+        e.enrollment_id,
+        e.trainee_id,
+        row.reference,
+      ].map((v) => {
+        const s = v == null ? '' : String(v);
+        return `"${s.replace(/"/g, '""')}"`;
+      });
+      lines.push(vals.join(','));
+    });
+    return lines.join('\n');
+  }
+
+  async function refreshFinanceKpis() {
+    const box = document.getElementById('financeKpis');
+    if (!box) return;
+    try {
+      const data = await jsonFetch('/.netlify/functions/finance-data?resource=kpis', { headers: getAuthHeaders() });
+      box.innerHTML = `
+        <div class="stat"><span class="k">MTD revenue</span><span class="v">${Number(data.mtd_revenue || 0).toFixed(2)}</span></div>
+        <div class="stat"><span class="k">Outstanding invoices</span><span class="v">${Number(data.outstanding_invoices || 0).toFixed(2)}</span></div>
+        <div class="stat"><span class="k">Payment rows</span><span class="v">${data.payment_count ?? 0}</span></div>
+      `;
+    } catch (_) {
+      box.textContent = '';
+    }
+  }
+
+  async function refreshLedger() {
+    const body = document.getElementById('ledgerBody');
+    const msg = document.getElementById('financeLedgerMsg');
+    if (!body) return;
+    try {
+      const data = await jsonFetch('/.netlify/functions/finance-data?resource=ledger&pageSize=50', { headers: getAuthHeaders() });
+      body.innerHTML = (data.items || [])
+        .map((row) => {
+          const e = row.enrollments || {};
+          return `<tr><td>${row.received_at || ''}</td><td>${row.amount ?? ''}</td><td>${row.method ?? ''}</td><td>${e.enrollment_id ?? ''}</td><td>${e.trainee_id ?? ''}</td><td>${row.reference ?? ''}</td></tr>`;
+        })
+        .join('');
+      if (msg) msg.textContent = `Showing ${(data.items || []).length} of ${data.total ?? ''}.`;
+    } catch (err) {
+      if (msg) msg.textContent = err.message;
+    }
+  }
+
+  async function refreshAr() {
+    const box = document.getElementById('arBuckets');
+    const msg = document.getElementById('financeArMsg');
+    if (!box) return;
+    try {
+      const data = await jsonFetch('/.netlify/functions/finance-data?resource=ar-aging', { headers: getAuthHeaders() });
+      const b = data.buckets || {};
+      box.innerHTML = `
+        <div class="stat"><span class="k">0–30 d</span><span class="v">${Number(b.b0_30 || 0).toFixed(2)}</span></div>
+        <div class="stat"><span class="k">31–60 d</span><span class="v">${Number(b.b31_60 || 0).toFixed(2)}</span></div>
+        <div class="stat"><span class="k">61–90 d</span><span class="v">${Number(b.b61_90 || 0).toFixed(2)}</span></div>
+        <div class="stat"><span class="k">90+ d</span><span class="v">${Number(b.b90p || 0).toFixed(2)}</span></div>
+      `;
+      if (msg) msg.textContent = `As of ${data.as_of || ''}`;
+    } catch (err) {
+      if (msg) msg.textContent = err.message;
+    }
+  }
+
+  let ledgerItemsCache = [];
+
+  async function refreshInvoices() {
+    const tbody = document.getElementById('invoicesBody');
+    const msg = document.getElementById('financeInvMsg');
+    const role = localStorage.getItem(AUTH_ROLE) || 'user';
+    const canWrite = ['admin', 'accountant'].includes(role);
+    if (!tbody) return;
+    try {
+      const data = await jsonFetch('/.netlify/functions/finance-data?resource=invoices', { headers: getAuthHeaders() });
+      ledgerItemsCache = data.items || [];
+      tbody.innerHTML = (data.items || [])
+        .map((inv) => {
+          const del = canWrite
+            ? `<button type="button" class="btn btn-secondary btn-inv-del" data-id="${inv.id}">Delete</button>`
+            : '';
+          return `<tr>
+            <td>${inv.invoice_number || ''}</td>
+            <td>${inv.status || ''}</td>
+            <td>${inv.issue_date || ''}</td>
+            <td>${inv.due_date || ''}</td>
+            <td>${inv.total ?? ''}</td>
+            <td><button type="button" class="btn btn-secondary btn-inv-edit" data-id="${inv.id}">Edit</button> ${del}</td>
+          </tr>`;
+        })
+        .join('');
+      tbody.querySelectorAll('.btn-inv-edit').forEach((btn) => {
+        btn.addEventListener('click', () => fillInvoiceForm(btn.getAttribute('data-id')));
+      });
+      tbody.querySelectorAll('.btn-inv-del').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const id = btn.getAttribute('data-id');
+          if (!id || !confirm('Delete this invoice?')) return;
+          await jsonFetch(`/.netlify/functions/finance-data?resource=invoices&id=${encodeURIComponent(id)}`, {
+            method: 'DELETE',
+            headers: getAuthHeaders(),
+          });
+          refreshInvoices();
+        });
+      });
+      if (msg) msg.textContent = '';
+    } catch (err) {
+      if (msg) msg.textContent = err.message;
+    }
+  }
+
+  function fillInvoiceForm(id) {
+    const inv = ledgerItemsCache.find((x) => String(x.id) === String(id));
+    if (!inv) return;
+    document.getElementById('invEditId').value = inv.id;
+    document.getElementById('invNumber').value = inv.invoice_number || '';
+    document.getElementById('invStatus').value = inv.status || 'draft';
+    document.getElementById('invIssue').value = inv.issue_date || '';
+    document.getElementById('invDue').value = inv.due_date || '';
+    document.getElementById('invTotal').value = inv.total != null ? inv.total : '';
+    document.getElementById('invNotes').value = inv.notes || '';
+  }
+
+  function refreshFinanceAll() {
+    refreshFinanceKpis();
+    refreshLedger();
+    refreshAr();
+    refreshInvoices();
+  }
+
+  function initFinance() {
+    document.getElementById('btnRefreshFinance')?.addEventListener('click', refreshFinanceAll);
+    document.getElementById('btnLoadLedger')?.addEventListener('click', refreshLedger);
+    document.getElementById('btnLoadAr')?.addEventListener('click', refreshAr);
+    document.getElementById('btnLoadInvoices')?.addEventListener('click', refreshInvoices);
+
+    document.getElementById('btnExportLedgerCsv')?.addEventListener('click', async () => {
+      try {
+        const data = await jsonFetch('/.netlify/functions/finance-data?resource=ledger&pageSize=500', { headers: getAuthHeaders() });
+        const csv = ledgerToCsv(data.items || []);
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'payments-ledger.csv';
+        a.click();
+        URL.revokeObjectURL(a.href);
+      } catch (_) {
+        /* ignore */
+      }
+    });
+
+    document.getElementById('financePaymentForm')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const msg = document.getElementById('financePayMsg');
+      const enrollment_id = String(document.getElementById('payEnrollmentId').value || '').trim();
+      const amount = Number(document.getElementById('payAmount').value);
+      const method = String(document.getElementById('payMethod').value || '').trim();
+      const receivedRaw = document.getElementById('payReceived').value;
+      const reference = String(document.getElementById('payRef').value || '').trim();
+      const notes = String(document.getElementById('payNotes').value || '').trim();
+      const body = { enrollment_id, amount, method, reference, notes };
+      if (receivedRaw) body.received_at = new Date(receivedRaw).toISOString();
+      try {
+        await jsonFetch('/.netlify/functions/finance-data?resource=payment', {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify(body),
+        });
+        if (msg) msg.textContent = 'Payment saved.';
+        document.getElementById('financePaymentForm').reset();
+        refreshFinanceAll();
+      } catch (err) {
+        if (msg) msg.textContent = err.message;
+      }
+    });
+
+    document.getElementById('invoiceForm')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const msg = document.getElementById('financeInvMsg');
+      const id = String(document.getElementById('invEditId').value || '').trim();
+      const payload = {
+        invoice_number: String(document.getElementById('invNumber').value || '').trim(),
+        status: String(document.getElementById('invStatus').value || 'draft'),
+        issue_date: String(document.getElementById('invIssue').value || ''),
+        due_date: String(document.getElementById('invDue').value || '') || null,
+        total: document.getElementById('invTotal').value ? Number(document.getElementById('invTotal').value) : null,
+        notes: String(document.getElementById('invNotes').value || '').trim(),
+      };
+      try {
+        if (id) {
+          payload.id = id;
+          await jsonFetch('/.netlify/functions/finance-data?resource=invoices', {
+            method: 'PUT',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(payload),
+          });
+        } else {
+          await jsonFetch('/.netlify/functions/finance-data?resource=invoices', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ ...payload, lines: [] }),
+          });
+        }
+        document.getElementById('invEditId').value = '';
+        document.getElementById('invoiceForm').reset();
+        if (msg) msg.textContent = 'Invoice saved.';
+        refreshInvoices();
+        refreshFinanceKpis();
+      } catch (err) {
+        if (msg) msg.textContent = err.message;
+      }
+    });
+
+    document.getElementById('btnClearInvoiceForm')?.addEventListener('click', () => {
+      document.getElementById('invEditId').value = '';
+      document.getElementById('invoiceForm').reset();
+    });
+  }
+
+  // -------------------------
+  // Training tools (attendance & materials)
+  // -------------------------
+  function initTrainingTools() {
+    document.getElementById('btnLoadSessionsForTools')?.addEventListener('click', loadSessionsForTools);
+    document.getElementById('btnSaveAttendance')?.addEventListener('click', saveAttendanceRow);
+    document.getElementById('btnLoadAttendance')?.addEventListener('click', loadAttendanceRows);
+    document.getElementById('btnAddMaterial')?.addEventListener('click', addMaterial);
+    document.getElementById('btnLoadMaterials')?.addEventListener('click', loadMaterialsRows);
+  }
+
+  async function loadSessionsForTools() {
+    const box = document.getElementById('toolsSessionsList');
+    if (!box) return;
+    try {
+      const data = await jsonFetch('/.netlify/functions/training-sessions', { headers: getAuthHeaders() });
+      box.innerHTML = (data.sessions || [])
+        .map((s) => {
+          const groups = (s.training_groups || [])
+            .map((g) => `<li>Group ${g.group_number}: group id <code>${g.id}</code></li>`)
+            .join('');
+          return `<div class="tools-session-block"><strong>${s.title}</strong> — session <code>${s.id}</code><ul>${groups}</ul></div>`;
+        })
+        .join('');
+    } catch (err) {
+      box.textContent = err.message;
+    }
+  }
+
+  async function saveAttendanceRow() {
+    const msg = document.getElementById('toolsAttMsg');
+    const group_id = String(document.getElementById('toolsGroupId').value || '').trim();
+    const participant_name = String(document.getElementById('toolsParticipant').value || '').trim();
+    const attendance_date = String(document.getElementById('toolsAttDate').value || '');
+    const status = String(document.getElementById('toolsAttStatus').value || 'present');
+    try {
+      await jsonFetch('/.netlify/functions/training-data?resource=attendance', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ group_id, participant_name, attendance_date, status }),
+      });
+      if (msg) msg.textContent = 'Saved.';
+      loadAttendanceRows();
+    } catch (err) {
+      if (msg) msg.textContent = err.message;
+    }
+  }
+
+  async function loadAttendanceRows() {
+    const body = document.getElementById('attendanceBody');
+    const msg = document.getElementById('toolsAttMsg');
+    const group_id = String(document.getElementById('toolsGroupId').value || '').trim();
+    if (!group_id) {
+      if (msg) msg.textContent = 'Enter group id.';
+      return;
+    }
+    try {
+      const data = await jsonFetch(
+        `/.netlify/functions/training-data?resource=attendance&group_id=${encodeURIComponent(group_id)}`,
+        { headers: getAuthHeaders() },
+      );
+      body.innerHTML = (data.items || [])
+        .map(
+          (r) =>
+            `<tr><td>${r.attendance_date || ''}</td><td>${r.participant_name || ''}</td><td>${r.status || ''}</td><td><button type="button" class="btn btn-secondary btn-att-del" data-id="${r.id}">Remove</button></td></tr>`,
+        )
+        .join('');
+      body.querySelectorAll('.btn-att-del').forEach((b) => {
+        b.addEventListener('click', async () => {
+          const id = b.getAttribute('data-id');
+          await jsonFetch(`/.netlify/functions/training-data?resource=attendance&id=${encodeURIComponent(id)}`, {
+            method: 'DELETE',
+            headers: getAuthHeaders(),
+          });
+          loadAttendanceRows();
+        });
+      });
+      if (msg) msg.textContent = '';
+    } catch (err) {
+      if (msg) msg.textContent = err.message;
+    }
+  }
+
+  async function loadMaterialsRows() {
+    const list = document.getElementById('toolsMaterialsList');
+    const msg = document.getElementById('toolsMatMsg');
+    const session_id = String(document.getElementById('toolsMatSessionId').value || '').trim();
+    const group_id = String(document.getElementById('toolsMatGroupId').value || '').trim();
+    const q = new URLSearchParams({ resource: 'materials' });
+    if (session_id) q.set('session_id', session_id);
+    if (group_id) q.set('group_id', group_id);
+    try {
+      const data = await jsonFetch(`/.netlify/functions/training-data?${q}`, { headers: getAuthHeaders() });
+      list.innerHTML = (data.items || [])
+        .map(
+          (m) =>
+            `<li><a href="${m.url}" target="_blank" rel="noopener">${m.title}</a> <button type="button" class="btn btn-secondary btn-mat-del" data-id="${m.id}">Remove</button></li>`,
+        )
+        .join('');
+      list.querySelectorAll('.btn-mat-del').forEach((b) => {
+        b.addEventListener('click', async () => {
+          const id = b.getAttribute('data-id');
+          await jsonFetch(`/.netlify/functions/training-data?resource=materials&id=${encodeURIComponent(id)}`, {
+            method: 'DELETE',
+            headers: getAuthHeaders(),
+          });
+          loadMaterialsRows();
+        });
+      });
+      if (msg) msg.textContent = '';
+    } catch (err) {
+      if (msg) msg.textContent = err.message;
+    }
+  }
+
+  async function addMaterial() {
+    const msg = document.getElementById('toolsMatMsg');
+    const session_id = String(document.getElementById('toolsMatSessionId').value || '').trim();
+    const group_id = String(document.getElementById('toolsMatGroupId').value || '').trim();
+    const title = String(document.getElementById('toolsMatTitle').value || '').trim();
+    const url = String(document.getElementById('toolsMatUrl').value || '').trim();
+    if (!title || !url) {
+      if (msg) msg.textContent = 'Title and URL required.';
+      return;
+    }
+    if (!session_id && !group_id) {
+      if (msg) msg.textContent = 'Provide session ID or group ID.';
+      return;
+    }
+    try {
+      await jsonFetch('/.netlify/functions/training-data?resource=materials', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ session_id: session_id || null, group_id: group_id || null, title, url }),
+      });
+      if (msg) msg.textContent = 'Material added.';
+      loadMaterialsRows();
+    } catch (err) {
+      if (msg) msg.textContent = err.message;
+    }
+  }
+
+  // -------------------------
   // Campaigns (n8n)
   // -------------------------
   let quill;
@@ -590,9 +1109,14 @@
     const query = new URLSearchParams(window.location.search);
     const token = query.get('group');
     if (token) {
+      document.querySelectorAll('.area-tab').forEach((t) => t.classList.toggle('active', t.getAttribute('data-area') === 'training'));
+      document.querySelectorAll('.subnav').forEach((s) => s.classList.toggle('hidden', s.getAttribute('data-for-area') !== 'training'));
+      const trSub = document.querySelector('.subnav[data-for-area="training"]');
+      if (trSub) {
+        trSub.querySelectorAll('.subnav-item').forEach((b) => b.classList.toggle('active', b.getAttribute('data-view') === 'training'));
+      }
       document.querySelectorAll('.view').forEach((v) => v.classList.remove('active'));
       document.getElementById('view-training').classList.add('active');
-      document.querySelectorAll('.menu-item').forEach((m) => m.classList.remove('active'));
       await joinByTokenFlow(token);
     }
 
@@ -703,10 +1227,11 @@
       const password = String(document.getElementById('newPassword').value || '');
       if (!username || !password) return;
       try {
+        const role = String(document.getElementById('newUserRole')?.value || 'user');
         await jsonFetch('/.netlify/functions/create-user', {
           method: 'POST',
           headers: getAuthHeaders(),
-          body: JSON.stringify({ username, password }),
+          body: JSON.stringify({ username, password, role }),
         });
         document.getElementById('createUserMsg').textContent = 'User added.';
         document.getElementById('createUserForm').reset();

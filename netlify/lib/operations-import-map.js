@@ -25,6 +25,7 @@ const HEADER_TO_FIELD = {
     university: 'university',
     specialty: 'specialty',
     city: 'city',
+    company_id: 'company_id',
     created_date: 'created_date',
     status: 'status',
     notes: 'notes',

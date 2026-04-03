@@ -35,6 +35,7 @@ const ENTITY_CONFIG = {
       university: String(b.university || '').trim() || null,
       specialty: String(b.specialty || '').trim() || null,
       city: String(b.city || '').trim() || null,
+      company_id: String(b.company_id || '').trim() || null,
       created_date: normalizeDate(b.created_date),
       status: String(b.status || 'Active').trim(),
       notes: String(b.notes || '').trim() || null,
@@ -98,6 +99,81 @@ function requireFields(payload, fields) {
   return missing;
 }
 
+async function handleOpsInsight(event, auth, supabase) {
+  if (event.httpMethod !== 'GET') return json({ error: 'Method not allowed' }, 405);
+  if (!['admin', 'staff', 'user'].includes(auth.role)) return json({ error: 'Forbidden' }, 403);
+
+  const resource = String(event.queryStringParameters?.resource || '').trim().toLowerCase();
+
+  if (resource === 'pipeline') {
+    const { data: enrollments, error } = await supabase.from('enrollments').select('enrollment_status');
+    if (error) return json({ error: error.message || 'Pipeline query failed' }, 500);
+    const pipeline = {};
+    (enrollments || []).forEach((e) => {
+      const k = e.enrollment_status || 'Unknown';
+      pipeline[k] = (pipeline[k] || 0) + 1;
+    });
+    return json({ pipeline, total: enrollments?.length || 0 });
+  }
+
+  if (resource === 'capacity') {
+    const { data: batches, error: bErr } = await supabase.from('batches').select('batch_id, capacity, course_id');
+    if (bErr) return json({ error: bErr.message || 'Capacity query failed' }, 500);
+    const { data: ens, error: eErr } = await supabase.from('enrollments').select('batch_id');
+    if (eErr) return json({ error: eErr.message || 'Capacity query failed' }, 500);
+    const perBatch = {};
+    (ens || []).forEach((e) => {
+      const b = e.batch_id;
+      if (!b) return;
+      perBatch[b] = (perBatch[b] || 0) + 1;
+    });
+    const capacity = (batches || []).map((b) => {
+      const enrolled = perBatch[b.batch_id] || 0;
+      const cap = b.capacity != null ? Number(b.capacity) : null;
+      return {
+        batch_id: b.batch_id,
+        course_id: b.course_id,
+        capacity: cap,
+        enrolled,
+        utilization_pct: cap && cap > 0 ? Math.round((100 * enrolled) / cap) : null,
+      };
+    });
+    return json({ capacity });
+  }
+
+  if (resource === 'data-quality') {
+    const { data: trainees } = await supabase.from('trainees').select('trainee_id');
+    const traineeSet = new Set((trainees || []).map((t) => t.trainee_id));
+    const { data: batches } = await supabase.from('batches').select('batch_id');
+    const batchSet = new Set((batches || []).map((b) => b.batch_id));
+    const { data: ens } = await supabase.from('enrollments').select('enrollment_id, trainee_id, batch_id');
+
+    const orphanTrainee = [];
+    const orphanBatch = [];
+    const idCounts = {};
+    (ens || []).forEach((e) => {
+      if (!traineeSet.has(e.trainee_id)) orphanTrainee.push(e.enrollment_id);
+      if (!batchSet.has(e.batch_id)) orphanBatch.push(e.enrollment_id);
+      const ek = e.enrollment_id;
+      idCounts[ek] = (idCounts[ek] || 0) + 1;
+    });
+    const duplicateEnrollmentIds = Object.keys(idCounts).filter((k) => idCounts[k] > 1);
+
+    return json({
+      orphan_trainee_refs: orphanTrainee.length,
+      orphan_batch_refs: orphanBatch.length,
+      duplicate_enrollment_ids: duplicateEnrollmentIds.length,
+      samples: {
+        orphan_trainee: orphanTrainee.slice(0, 15),
+        orphan_batch: orphanBatch.slice(0, 15),
+        duplicate_enrollment_ids_sample: duplicateEnrollmentIds.slice(0, 15),
+      },
+    });
+  }
+
+  return json({ error: 'Unknown resource' }, 400);
+}
+
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: cors };
   if (!['GET', 'POST', 'PUT', 'DELETE'].includes(event.httpMethod)) return json({ error: 'Method not allowed' }, 405);
@@ -106,12 +182,17 @@ exports.handler = async (event) => {
   if (!auth) return json({ error: 'Unauthorized' }, 401);
   if (!['admin', 'staff', 'trainer', 'user'].includes(auth.role)) return json({ error: 'Forbidden' }, 403);
 
+  const supabase = getSupabaseServiceClient();
+  if (!supabase) return json({ error: 'Server config missing' }, 500);
+
+  const insightResource = String(event.queryStringParameters?.resource || '').trim();
+  if (insightResource) {
+    return handleOpsInsight(event, auth, supabase);
+  }
+
   const entity = String(event.queryStringParameters?.entity || '').trim().toLowerCase();
   const cfg = ENTITY_CONFIG[entity];
   if (!cfg) return json({ error: 'Unknown entity' }, 400);
-
-  const supabase = getSupabaseServiceClient();
-  if (!supabase) return json({ error: 'Server config missing' }, 500);
 
   if (event.httpMethod === 'GET') {
     const { data, error } = await supabase.from(cfg.table).select('*').order('created_at', { ascending: false }).limit(300);

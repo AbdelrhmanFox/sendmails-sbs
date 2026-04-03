@@ -34,17 +34,20 @@ exports.handler = async (event) => {
 
   let body;
   try { body = JSON.parse(event.body || '{}'); } catch (_) { return json({ error: 'Invalid JSON' }, 400); }
-  const { username, password } = body;
+  const { username, password, role: roleIn } = body;
   const un = String(username || '').trim();
   if (!un || un.length < 2) return json({ error: 'Username too short' }, 400);
   if (!password || typeof password !== 'string' || password.length < 4) return json({ error: 'Password must be at least 4 characters' }, 400);
+
+  const allowedRoles = new Set(['admin', 'staff', 'trainer', 'user', 'accountant']);
+  const role = allowedRoles.has(String(roleIn || '').trim()) ? String(roleIn || '').trim() : 'user';
 
   const supabase = createClient(supabaseUrl, supabaseKey);
   const { data: existing } = await supabase.from('app_users').select('username').eq('username', un).maybeSingle();
   if (existing) return json({ error: 'Username already exists' }, 409);
 
   const password_hash = await bcrypt.hash(password, 10);
-  const { error: insertErr } = await supabase.from('app_users').insert({ username: un, password_hash, role: 'user' });
+  const { error: insertErr } = await supabase.from('app_users').insert({ username: un, password_hash, role });
   if (insertErr) {
     console.error('[create-user] Supabase insert:', insertErr);
     return json({

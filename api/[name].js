@@ -11,6 +11,8 @@ const HANDLERS = {
   'training-join': require('../netlify/functions/training-join').handler,
   'training-messages': require('../netlify/functions/training-messages').handler,
   'operations-data': require('../netlify/functions/operations-data').handler,
+  'finance-data': require('../netlify/functions/finance-data').handler,
+  'training-data': require('../netlify/functions/training-data').handler,
   'create-user': require('../netlify/functions/create-user').handler,
   'list-users': require('../netlify/functions/list-users').handler,
   'public-config': require('../netlify/functions/public-config').handler,
