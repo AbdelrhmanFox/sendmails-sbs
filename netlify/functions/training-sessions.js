@@ -1,4 +1,12 @@
-const { cors, json, getSupabaseServiceClient, verifyAuth } = require('../lib/_shared');
+const { cors, json, getSupabaseServiceClient, verifyAuth, trimEnvValue } = require('../lib/_shared');
+
+/** Default Jitsi room per session (one link for trainer + all groups). Override base with JITSI_MEET_BASE. */
+function defaultVoiceRoomUrlForSession(sessionId) {
+  const sid = String(sessionId).replace(/-/g, '');
+  const base = (trimEnvValue(process.env.JITSI_MEET_BASE) || 'https://meet.jit.si').replace(/\/+$/, '');
+  const room = `SBS-Session-${sid}`;
+  return `${base}/${encodeURIComponent(room)}`;
+}
 
 function sanitizeVoiceRoomUrl(raw) {
   if (raw == null || raw === '') return null;
@@ -83,6 +91,18 @@ exports.handler = async (event) => {
     .single();
   if (sessionErr) return json({ error: sessionErr.message || 'Could not create training session' }, 500);
 
+  let finalSession = session;
+  if (!finalSession.voice_room_url && finalSession.id) {
+    const autoUrl = defaultVoiceRoomUrlForSession(finalSession.id);
+    const { data: updated, error: updErr } = await supabase
+      .from('training_sessions')
+      .update({ voice_room_url: autoUrl })
+      .eq('id', finalSession.id)
+      .select('*')
+      .single();
+    if (!updErr && updated) finalSession = updated;
+  }
+
   const groups = [];
   for (let i = 1; i <= groupsCount; i += 1) groups.push({ session_id: session.id, group_number: i });
   const { data: createdGroups, error: groupsErr } = await supabase
@@ -93,7 +113,7 @@ exports.handler = async (event) => {
 
   return json({
     ok: true,
-    session,
+    session: finalSession,
     groups: (createdGroups || []).sort((a, b) => a.group_number - b.group_number),
   });
 };

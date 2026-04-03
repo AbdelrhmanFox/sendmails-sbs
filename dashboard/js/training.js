@@ -818,10 +818,22 @@ export async function initTraining() {
       const sorted = (data.groups || []).slice().sort((a, b) => a.group_number - b.group_number);
       const session = data.session;
       const href = session && session.id ? `${base}?session=${session.id}` : base;
+      const voiceHref = session && session.voice_room_url ? String(session.voice_room_url) : '';
+      const escV = (v) =>
+        String(v)
+          .replace(/&/g, '&amp;')
+          .replace(/"/g, '&quot;')
+          .replace(/</g, '&lt;');
       links.innerHTML =
         session && session.id
-          ? `<h4>Share link for students</h4><p class="share-link-wrap"><a href="${href}" target="_blank" rel="noopener">${href}</a></p>${
+          ? `<h4>Share link for students</h4><p class="share-link-wrap"><a href="${escV(href)}" target="_blank" rel="noopener">${escV(href)}</a></p>${
               sorted.length > 1 ? `<p class="muted small-margin">Students choose their group after opening this link.</p>` : ''
+            }${
+              voiceHref
+                ? `<h4>Voice room</h4><p class="share-link-wrap"><a href="${escV(voiceHref)}" target="_blank" rel="noopener noreferrer">${escV(
+                    voiceHref,
+                  )}</a></p><p class="muted small-margin">Also available in the group chat header after join (Open voice room).</p>`
+                : ''
             }`
           : '';
       msg.textContent = 'Session created.';
