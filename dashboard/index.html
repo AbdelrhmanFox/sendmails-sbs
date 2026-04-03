@@ -341,7 +341,16 @@
             <button type="button" class="btn btn-secondary" id="btnWizNext1" disabled>Next</button>
           </div>
           <div id="wizStep2" class="wizard-panel hidden">
-            <label for="wiz_course_search">Course</label>
+            <label for="wiz_course_select">Course</label>
+            <select id="wiz_course_select" aria-label="Course from catalog">
+              <option value="">Select a course…</option>
+            </select>
+            <label for="wiz_batch_select">Batch</label>
+            <select id="wiz_batch_select" aria-label="Batch for this course" disabled>
+              <option value="">Select a course first…</option>
+            </select>
+            <p class="muted" style="margin: 12px 0 6px; font-size: 13px">Or search by name or ID:</p>
+            <label for="wiz_course_search">Course search</label>
             <input id="wiz_course_search" placeholder="Search course" autocomplete="off" />
             <div id="wiz_course_results" class="ops-typeahead-results"></div>
             <p id="wiz_course_selected" class="ops-selected-tag muted"></p>
@@ -686,6 +695,11 @@
             <div class="chart-panel">
               <h4>Payments by method</h4>
               <div class="chart-wrap"><canvas id="chartPaymentMethods" aria-label="Payments by method"></canvas></div>
+            </div>
+            <div class="chart-panel chart-panel--full">
+              <h4>Top trainees by payments (ledger)</h4>
+              <p class="muted small-margin">Sum of recorded payments linked to enrollments. Uses the same <strong>payments</strong> table as the ledger (not Operations enrollment amount alone).</p>
+              <div class="chart-wrap chart-wrap--short"><canvas id="chartTraineePayments" aria-label="Payments by trainee"></canvas></div>
             </div>
             <div class="chart-panel chart-panel--full">
               <h4>AR aging (open invoices)</h4>

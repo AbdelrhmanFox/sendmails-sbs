@@ -5,6 +5,7 @@ let ledgerPage = 1;
 const LEDGER_PAGE_SIZE = 50;
 let financeChartRevenue = null;
 let financeChartMethods = null;
+let financeChartTrainees = null;
 let financeChartAr = null;
 
 function ledgerToCsv(items) {
@@ -49,6 +50,10 @@ function destroyFinanceCharts() {
     financeChartMethods.destroy();
     financeChartMethods = null;
   }
+  if (financeChartTrainees) {
+    financeChartTrainees.destroy();
+    financeChartTrainees = null;
+  }
   if (financeChartAr) {
     financeChartAr.destroy();
     financeChartAr = null;
@@ -59,8 +64,9 @@ async function refreshFinanceCharts() {
   const msg = document.getElementById('financeChartsMsg');
   const cRev = document.getElementById('chartRevenueTrend');
   const cMeth = document.getElementById('chartPaymentMethods');
+  const cTrainees = document.getElementById('chartTraineePayments');
   const cAr = document.getElementById('chartArAging');
-  if (!cRev || !cMeth || !cAr) return;
+  if (!cRev || !cMeth || !cTrainees || !cAr) return;
   if (typeof Chart === 'undefined') {
     if (msg) msg.textContent = 'Chart library failed to load.';
     return;
@@ -75,9 +81,10 @@ async function refreshFinanceCharts() {
   const surface = getComputedStyle(document.documentElement).getPropertyValue('--brand-surface').trim() || '#161a4f';
 
   try {
-    const [rev, meth, ar] = await Promise.all([
+    const [rev, meth, byTrainee, ar] = await Promise.all([
       jsonFetch('/.netlify/functions/finance-data?resource=chart-revenue-trend&months=6', { headers: getAuthHeaders() }),
       jsonFetch('/.netlify/functions/finance-data?resource=chart-payment-methods&days=90', { headers: getAuthHeaders() }),
+      jsonFetch('/.netlify/functions/finance-data?resource=chart-payments-by-trainee&days=365', { headers: getAuthHeaders() }),
       jsonFetch('/.netlify/functions/finance-data?resource=ar-aging', { headers: getAuthHeaders() }),
     ]);
 
@@ -171,6 +178,72 @@ async function refreshFinanceCharts() {
                 },
               },
             },
+          },
+        },
+      });
+    }
+
+    const tLabels = byTrainee.labels || [];
+    const tVals = byTrainee.values || [];
+    const sumT = tVals.reduce((a, b) => a + Number(b || 0), 0);
+    if (!sumT || !tLabels.length) {
+      financeChartTrainees = new Chart(cTrainees, {
+        type: 'bar',
+        data: {
+          labels: ['No payment rows'],
+          datasets: [
+            {
+              label: `Total (${byTrainee.currency || 'EGP'})`,
+              data: [0],
+              backgroundColor: 'rgba(180,176,200,0.22)',
+              borderColor: surface,
+              borderWidth: 1,
+            },
+          ],
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { enabled: false },
+          },
+          scales: { x: { display: false }, y: { display: false } },
+        },
+      });
+    } else {
+      financeChartTrainees = new Chart(cTrainees, {
+        type: 'bar',
+        data: {
+          labels: tLabels,
+          datasets: [
+            {
+              label: `Paid (${byTrainee.currency || 'EGP'})`,
+              data: tVals,
+              backgroundColor: rgbaFromCssVar('--brand-primary', 0.75),
+              borderColor: surface,
+              borderWidth: 1,
+            },
+          ],
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label(ctx) {
+                  return `${Number(ctx.parsed.x).toFixed(2)} ${byTrainee.currency || 'EGP'}`;
+                },
+              },
+            },
+          },
+          scales: {
+            x: { ticks: { color: mutedColor }, grid: { color: gridColor } },
+            y: { ticks: { color: mutedColor, autoSkip: false, font: { size: 10 } }, grid: { display: false } },
           },
         },
       });

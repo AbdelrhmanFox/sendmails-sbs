@@ -54,6 +54,9 @@ const wizard = {
   batch: null,
 };
 
+let wizardCourseById = {};
+let wizardBatchById = {};
+
 function fillSelect(sel, options, placeholder) {
   if (!sel) return;
   const opts = placeholder
@@ -772,6 +775,61 @@ function syncEnrollBulk() {
   }
 }
 
+async function ensureWizardCoursesLoaded() {
+  const sel = document.getElementById('wiz_course_select');
+  if (!sel || sel.dataset.loaded === '1') return;
+  sel.innerHTML = '<option value="">Loading courses…</option>';
+  try {
+    const data = await jsonFetch(`${OPS}?entity=courses&pageSize=500&page=1`, { headers: getAuthHeaders() });
+    const items = data.items || [];
+    wizardCourseById = {};
+    sel.innerHTML =
+      '<option value="">Select a course…</option>' +
+      items
+        .map((c) => {
+          wizardCourseById[c.course_id] = c;
+          return `<option value="${escapeHtml(c.course_id)}">${escapeHtml(c.course_name)} (${escapeHtml(c.course_id)})</option>`;
+        })
+        .join('');
+    sel.dataset.loaded = '1';
+  } catch (_) {
+    sel.innerHTML = '<option value="">Could not load courses</option>';
+  }
+}
+
+async function loadWizardBatchSelect(courseId) {
+  const sel = document.getElementById('wiz_batch_select');
+  if (!sel) return;
+  wizardBatchById = {};
+  if (!courseId) {
+    sel.innerHTML = '<option value="">Select a course first…</option>';
+    sel.disabled = true;
+    return;
+  }
+  sel.disabled = false;
+  sel.innerHTML = '<option value="">Loading batches…</option>';
+  try {
+    const data = await jsonFetch(`${OPS}?entity=batches&course_id=${encodeURIComponent(courseId)}&pageSize=200`, { headers: getAuthHeaders() });
+    const items = data.items || [];
+    items.forEach((b) => {
+      wizardBatchById[b.batch_id] = b;
+    });
+    sel.innerHTML =
+      '<option value="">Select a batch…</option>' +
+      items
+        .map((b) => {
+          const cap = b.capacity != null ? Number(b.capacity) : null;
+          const en = b.enrolled_count ?? 0;
+          const hint = cap != null ? ` · ${en}/${cap}` : '';
+          return `<option value="${escapeHtml(b.batch_id)}">${escapeHtml(b.batch_name || b.batch_id)}${hint}</option>`;
+        })
+        .join('');
+    if (!items.length) sel.innerHTML = '<option value="">No batches for this course</option>';
+  } catch (_) {
+    sel.innerHTML = '<option value="">Could not load batches</option>';
+  }
+}
+
 function resetWizard() {
   wizard.step = 1;
   wizard.trainee = null;
@@ -784,6 +842,13 @@ function resetWizard() {
   document.getElementById('wiz_trainee_selected').textContent = '';
   document.getElementById('wiz_course_selected').textContent = '';
   document.getElementById('wiz_batch_cards').innerHTML = '';
+  const wcs = document.getElementById('wiz_course_select');
+  const wbs = document.getElementById('wiz_batch_select');
+  if (wcs) wcs.value = '';
+  if (wbs) {
+    wbs.innerHTML = '<option value="">Select a course first…</option>';
+    wbs.disabled = true;
+  }
   document.getElementById('wizMsg').textContent = '';
   fillSelect(document.getElementById('wiz_enrollment_status'), ENROLLMENT_STATUSES);
   fillSelect(document.getElementById('wiz_payment_status'), PAYMENT_STATUSES);
@@ -802,6 +867,7 @@ function setWizardStep(n) {
   document.getElementById('wizStep3').classList.toggle('hidden', n !== 3);
   document.getElementById('btnWizNext1').disabled = !wizard.trainee;
   document.getElementById('btnWizNext2').disabled = !(wizard.course && wizard.batch);
+  if (n === 2) void ensureWizardCoursesLoaded();
 }
 
 function wizToggleAmount() {
@@ -863,8 +929,13 @@ async function wizSearchCourses(q) {
       const items = window.__wizLastCourses || [];
       wizard.course = items.find((x) => x.course_id === cid) || { course_id: cid, course_name: b.textContent.split('(')[0].trim() };
       document.getElementById('wiz_course_selected').textContent = `Course: ${wizard.course.course_name} (${cid})`;
+      const selC = document.getElementById('wiz_course_select');
+      if (selC && wizardCourseById[cid]) selC.value = cid;
+      await loadWizardBatchSelect(cid);
       await loadWizardBatchCards(cid);
       wizard.batch = null;
+      const selB = document.getElementById('wiz_batch_select');
+      if (selB) selB.value = '';
       setWizardStep(2);
       document.getElementById('btnWizNext2').disabled = true;
     });
@@ -902,6 +973,8 @@ async function loadWizardBatchCards(courseId) {
     card.addEventListener('click', () => {
       const bid = card.getAttribute('data-bid');
       wizard.batch = (items || []).find((x) => x.batch_id === bid);
+      const selB = document.getElementById('wiz_batch_select');
+      if (selB && bid) selB.value = bid;
       host.querySelectorAll('.batch-picker-card').forEach((c) => c.classList.remove('batch-picker-selected'));
       card.classList.add('batch-picker-selected');
       setWizardStep(2);
@@ -1124,6 +1197,8 @@ export function initOperations() {
   bindProfileTabs();
   setupTraineeFormRefs();
 
+  document.getElementById('btnProfileBack')?.addEventListener('click', () => goToView('operations-trainees'));
+
   document.getElementById('btnNewTrainee')?.addEventListener('click', openTraineeFormNew);
   document.getElementById('btnTraineeFormCancel')?.addEventListener('click', () => showTraineeForm(false));
   document.getElementById('traineeForm')?.addEventListener('submit', submitTraineeForm);
@@ -1248,7 +1323,45 @@ export function initOperations() {
     wizard.batch = keepBatch;
     wizard.course = keepCourse;
     setWizardStep(1);
-    if (keepCourse) void loadWizardBatchCards(keepCourse.course_id);
+    if (keepCourse) {
+      void (async () => {
+        await ensureWizardCoursesLoaded();
+        const selC = document.getElementById('wiz_course_select');
+        if (selC && keepCourse.course_id) selC.value = keepCourse.course_id;
+        await loadWizardBatchSelect(keepCourse.course_id);
+        const selB = document.getElementById('wiz_batch_select');
+        if (selB && keepBatch?.batch_id) selB.value = keepBatch.batch_id;
+        await loadWizardBatchCards(keepCourse.course_id);
+        if (keepBatch?.batch_id) {
+          document.querySelectorAll('.batch-picker-card').forEach((c) => {
+            c.classList.toggle('batch-picker-selected', c.getAttribute('data-bid') === keepBatch.batch_id);
+          });
+        }
+      })();
+    }
+  });
+  document.getElementById('wiz_course_select')?.addEventListener('change', async (e) => {
+    const cid = e.target.value;
+    wizard.course = cid ? wizardCourseById[cid] : null;
+    wizard.batch = null;
+    document.getElementById('wiz_course_results').innerHTML = '';
+    document.getElementById('wiz_course_search').value = '';
+    document.getElementById('wiz_course_selected').textContent = wizard.course ? `Course: ${wizard.course.course_name} (${cid})` : '';
+    document.getElementById('wiz_batch_cards').innerHTML = '';
+    await loadWizardBatchSelect(cid);
+    setWizardStep(2);
+  });
+  document.getElementById('wiz_batch_select')?.addEventListener('change', (e) => {
+    const bid = e.target.value;
+    wizard.batch = bid ? wizardBatchById[bid] : null;
+    const host = document.getElementById('wiz_batch_cards');
+    if (host) {
+      host.querySelectorAll('.batch-picker-card').forEach((c) => {
+        c.classList.toggle('batch-picker-selected', bid && c.getAttribute('data-bid') === bid);
+      });
+    }
+    setWizardStep(2);
+    updateWizSummary();
   });
   document.getElementById('wiz_trainee_search')?.addEventListener('input', debounce((e) => void wizSearchTrainees(e.target.value.trim()), 300));
   document.getElementById('wiz_course_search')?.addEventListener('input', debounce((e) => void wizSearchCourses(e.target.value.trim()), 300));

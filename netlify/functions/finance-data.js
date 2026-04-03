@@ -145,6 +145,39 @@ exports.handler = async (event) => {
     return json({ currency: 'EGP', labels, values, days });
   }
 
+  if (event.httpMethod === 'GET' && resource === 'chart-payments-by-trainee') {
+    const days = Math.min(730, Math.max(30, parseInt(String(event.queryStringParameters?.days || '365'), 10) || 365));
+    const start = new Date(Date.now() - days * 864e5).toISOString();
+    const { data: pay, error } = await supabase
+      .from('payments')
+      .select('amount, enrollments ( trainee_id )')
+      .gte('received_at', start);
+    if (error) return json({ error: error.message || 'Chart query failed' }, 500);
+    const byTrainee = {};
+    (pay || []).forEach((p) => {
+      const en = p.enrollments;
+      const row = Array.isArray(en) ? en[0] : en;
+      const tid = row && row.trainee_id;
+      if (!tid) return;
+      byTrainee[tid] = (byTrainee[tid] || 0) + Math.abs(Number(p.amount || 0));
+    });
+    const entries = Object.entries(byTrainee).sort((a, b) => b[1] - a[1]).slice(0, 15);
+    const ids = entries.map((e) => e[0]);
+    let labels = entries.map(([tid]) => tid);
+    if (ids.length) {
+      const { data: trainees, error: te } = await supabase.from('trainees').select('trainee_id, full_name').in('trainee_id', ids);
+      if (!te && trainees && trainees.length) {
+        const nameBy = Object.fromEntries(trainees.map((t) => [t.trainee_id, t.full_name]));
+        labels = entries.map(([tid]) => {
+          const n = nameBy[tid];
+          return n ? `${n} (${tid})` : tid;
+        });
+      }
+    }
+    const values = entries.map(([, v]) => v);
+    return json({ currency: 'EGP', labels, values, days });
+  }
+
   if (event.httpMethod === 'GET' && resource === 'ledger') {
     const { page, pageSize, from, to } = parsePage(event.queryStringParameters || {});
     const fromDate = event.queryStringParameters?.from ? normalizeDate(event.queryStringParameters.from) : null;
