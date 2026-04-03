@@ -199,9 +199,17 @@ function jitsiVoiceEmbedSrc(roomUrl, displayName) {
     const path = u.pathname.replace(/\/+$/, '');
     if (!path || path === '/') return null;
     const base = `${u.origin}${path}`;
-    const name = String(displayName || '').trim().slice(0, 100);
-    if (name) return `${base}#userInfo.displayName=${encodeURIComponent(name)}`;
-    return base;
+    const name = String(displayName || '').trim().slice(0, 100) || 'Guest';
+    // Audio-only layout, skip prejoin, use chat display name (avatar "stickers" = Jitsi initials when video is off).
+    const hashParts = [
+      `userInfo.displayName=${encodeURIComponent(name)}`,
+      'config.prejoinConfig.enabled=false',
+      'config.startAudioOnly=true',
+      'config.startWithVideoMuted=true',
+      'config.startWithAudioMuted=false',
+      'config.readOnlyName=true',
+    ];
+    return `${base}#${hashParts.join('&')}`;
   } catch (_) {
     return null;
   }
@@ -215,6 +223,7 @@ function updateVoiceRoomUi() {
   const embedWrap = document.getElementById('chatVoiceEmbedWrap');
   const iframe = document.getElementById('chatVoiceEmbed');
   const extNote = document.getElementById('chatVoiceExternalNote');
+  const voiceHint = document.getElementById('chatVoiceHint');
   if (!link || !copyBtn || !muted) return;
   const displayName = trainingState.senderName || '';
   const embedSrc = url ? jitsiVoiceEmbedSrc(url, displayName) : null;
@@ -237,6 +246,7 @@ function updateVoiceRoomUi() {
       }
     } else {
       embedWrap?.classList.add('hidden');
+      voiceHint?.classList.add('hidden');
       if (iframe) {
         iframe.removeAttribute('src');
         iframe.removeAttribute('data-src');
@@ -250,6 +260,7 @@ function updateVoiceRoomUi() {
     copyBtn.classList.add('hidden');
     muted.classList.remove('hidden');
     embedWrap?.classList.add('hidden');
+    voiceHint?.classList.add('hidden');
     if (iframe) {
       iframe.removeAttribute('src');
       iframe.removeAttribute('data-src');

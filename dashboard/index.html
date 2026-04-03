@@ -584,11 +584,14 @@
               <span class="muted chat-voice-muted hidden" id="chatVoiceMuted">No voice link set for this session. The trainer can add a Meet or Jitsi URL when creating the session.</span>
               <p class="inline-note chat-voice-copy-msg" id="chatVoiceCopyMsg" aria-live="polite"></p>
             </div>
-            <div id="chatVoiceEmbedWrap" class="chat-voice-embed-wrap hidden" aria-label="Voice and video room">
+            <p id="chatVoiceHint" class="muted chat-voice-hint hidden" role="note">
+              Voice only — your chat display name is used automatically (avatar tiles, no extra sign-in).
+            </p>
+            <div id="chatVoiceEmbedWrap" class="chat-voice-embed-wrap hidden" aria-label="Voice room">
               <iframe
                 id="chatVoiceEmbed"
                 class="chat-voice-embed"
-                title="Session voice room"
+                title="Session voice room (audio only)"
                 allow="camera; microphone; fullscreen; display-capture; autoplay"
                 allowfullscreen
                 loading="lazy"

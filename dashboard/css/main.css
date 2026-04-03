@@ -677,6 +677,15 @@ body.participant-join .chat-panel {
   display: none !important;
 }
 
+.chat-voice-hint {
+  margin: 0 0 8px;
+  font-size: 12px;
+  line-height: 1.35;
+}
+.chat-voice-hint.hidden {
+  display: none !important;
+}
+
 .chat-voice-embed-wrap {
   flex-shrink: 0;
   margin: 10px 0 4px;
