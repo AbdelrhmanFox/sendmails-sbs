@@ -1409,8 +1409,3 @@ export function initOpsInsights() {
   document.getElementById('btnRefreshCapacity')?.addEventListener('click', loadCapacity);
   document.getElementById('btnRefreshQuality')?.addEventListener('click', loadQuality);
 }
-</think>
-
-
-<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
-Read
