@@ -206,85 +206,218 @@ function clearTrainingParticipantPolls() {
   trainingSessionAliveMisses = 0;
 }
 
-/** Jitsi Meet (and typical jitsi hostnames) can load in an iframe; Meet/Zoom/etc. cannot. */
-function jitsiVoiceEmbedSrc(roomUrl, displayName) {
+/* ── Voice channel: Jitsi External API + custom sticker UI ────────────── */
+
+let jitsiVoiceApi = null;
+let voiceJoined = false;
+let voiceMuted = false;
+const voicePeers = new Map(); // id → { name, muted, self, side }
+
+function voiceIsJitsiUrl(url) {
   try {
-    const u = new URL(String(roomUrl).trim());
-    if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
-    const host = u.hostname.toLowerCase();
-    const isJitsi = host === 'meet.jit.si' || host.endsWith('.jit.si') || host.includes('jitsi');
-    if (!isJitsi) return null;
-    const path = u.pathname.replace(/\/+$/, '');
-    if (!path || path === '/') return null;
-    const base = `${u.origin}${path}`;
-    const name = String(displayName || '').trim().slice(0, 100) || 'Guest';
-    // Audio-only layout, skip prejoin, use chat display name (avatar "stickers" = Jitsi initials when video is off).
-    const hashParts = [
-      `userInfo.displayName=${encodeURIComponent(name)}`,
-      'config.minParticipants=1',
-      'config.prejoinConfig.enabled=false',
-      'config.startAudioOnly=true',
-      'config.startWithVideoMuted=true',
-      'config.startWithAudioMuted=false',
-      'config.readOnlyName=true',
-    ];
-    return `${base}#${hashParts.join('&')}`;
+    const h = new URL(String(url).trim()).hostname.toLowerCase();
+    return h === 'meet.jit.si' || h.endsWith('.jit.si') || h.includes('jitsi');
   } catch (_) {
-    return null;
+    return false;
   }
 }
 
-function updateVoiceRoomUi() {
+function vsEsc(s) {
+  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function vsInitials(name) {
+  return String(name || 'U').trim().split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+}
+
+function nextVoiceSide() {
+  let r = 0, l = 0;
+  for (const p of voicePeers.values()) {
+    if (p.side === 'right') r++; else l++;
+  }
+  return r <= l ? 'right' : 'left';
+}
+
+function renderVoiceStickers() {
+  const leftCol = document.getElementById('voiceStickersLeft');
+  const rightCol = document.getElementById('voiceStickersRight');
+  if (!leftCol || !rightCol) return;
+  leftCol.innerHTML = '';
+  rightCol.innerHTML = '';
+  for (const [id, peer] of voicePeers) {
+    const col = peer.side === 'right' ? rightCol : leftCol;
+    const wrap = document.createElement('div');
+    wrap.className = `voice-sticker${peer.self ? ' voice-sticker--self' : ''}`;
+    wrap.id = `vs-${CSS.escape(id)}`;
+    wrap.innerHTML = `
+      <div class="voice-sticker-circle">${vsEsc(vsInitials(peer.name))}</div>
+      <span class="voice-sticker-name">${vsEsc(peer.name)}</span>
+      <span class="voice-sticker-mute-icon${peer.muted ? '' : ' hidden'}" title="Muted">🔇</span>
+    `;
+    col.appendChild(wrap);
+  }
+}
+
+function addVoicePeer(id, name, isSelf) {
+  if (!voicePeers.has(id)) {
+    voicePeers.set(id, { name: String(name || 'User'), muted: false, self: Boolean(isSelf), side: nextVoiceSide() });
+    renderVoiceStickers();
+  }
+}
+
+function removeVoicePeer(id) {
+  if (voicePeers.has(id)) {
+    voicePeers.delete(id);
+    renderVoiceStickers();
+  }
+}
+
+function setVoicePeerMuted(id, muted) {
+  const peer = voicePeers.get(id);
+  if (peer) { peer.muted = muted; renderVoiceStickers(); }
+}
+
+function updateVoiceControlsUi() {
   const url = trainingState.voiceRoomUrl;
-  const link = document.getElementById('chatVoiceRoomLink');
+  const controls = document.getElementById('chatVoiceControls');
+  const joinBtn = document.getElementById('btnJoinVoice');
+  const leaveBtn = document.getElementById('btnLeaveVoice');
+  const muteBtn = document.getElementById('btnToggleMute');
+  const linkEl = document.getElementById('chatVoiceRoomLink');
   const copyBtn = document.getElementById('btnCopyVoiceLink');
-  const muted = document.getElementById('chatVoiceMuted');
-  const embedWrap = document.getElementById('chatVoiceEmbedWrap');
-  const iframe = document.getElementById('chatVoiceEmbed');
-  const extNote = document.getElementById('chatVoiceExternalNote');
-  const voiceHint = document.getElementById('chatVoiceHint');
-  if (!link || !copyBtn || !muted) return;
-  const displayName = trainingState.senderName || '';
-  const embedSrc = url ? jitsiVoiceEmbedSrc(url, displayName) : null;
-
-  extNote?.classList.add('hidden');
-
-  if (url) {
-    link.href = url;
-    link.classList.remove('hidden');
-    copyBtn.classList.remove('hidden');
-    muted.classList.add('hidden');
-
-    if (embedWrap && iframe && embedSrc) {
-      embedWrap.classList.remove('hidden');
-      link.textContent = 'Open voice in new tab';
-      const prev = iframe.getAttribute('data-src');
-      if (prev !== embedSrc) {
-        iframe.setAttribute('data-src', embedSrc);
-        iframe.src = embedSrc;
-      }
-    } else {
-      embedWrap?.classList.add('hidden');
-      voiceHint?.classList.add('hidden');
-      if (iframe) {
-        iframe.removeAttribute('src');
-        iframe.removeAttribute('data-src');
-      }
-      link.textContent = 'Open voice room';
-      extNote?.classList.remove('hidden');
+  const mutedSpan = document.getElementById('chatVoiceMuted');
+  if (!controls) return;
+  if (!url) {
+    controls.classList.remove('hidden');
+    joinBtn?.classList.add('hidden');
+    leaveBtn?.classList.add('hidden');
+    muteBtn?.classList.add('hidden');
+    linkEl?.classList.add('hidden');
+    copyBtn?.classList.add('hidden');
+    mutedSpan?.classList.remove('hidden');
+    return;
+  }
+  controls.classList.remove('hidden');
+  mutedSpan?.classList.add('hidden');
+  if (linkEl) { linkEl.href = url; linkEl.classList.remove('hidden'); }
+  copyBtn?.classList.remove('hidden');
+  if (voiceJoined) {
+    joinBtn?.classList.add('hidden');
+    leaveBtn?.classList.remove('hidden');
+    muteBtn?.classList.remove('hidden');
+    if (muteBtn) {
+      muteBtn.textContent = voiceMuted ? '🔇 Unmute' : '🎤 Mute';
+      muteBtn.setAttribute('data-muted', String(voiceMuted));
+      muteBtn.setAttribute('aria-pressed', String(voiceMuted));
     }
   } else {
-    link.removeAttribute('href');
-    link.classList.add('hidden');
-    copyBtn.classList.add('hidden');
-    muted.classList.remove('hidden');
-    embedWrap?.classList.add('hidden');
-    voiceHint?.classList.add('hidden');
-    if (iframe) {
-      iframe.removeAttribute('src');
-      iframe.removeAttribute('data-src');
-    }
-    link.textContent = 'Open voice room';
+    joinBtn?.classList.remove('hidden');
+    leaveBtn?.classList.add('hidden');
+    muteBtn?.classList.add('hidden');
+  }
+}
+
+/** Alias kept for all existing callers in this file. */
+function updateVoiceRoomUi() { updateVoiceControlsUi(); }
+
+function loadJitsiScript(host) {
+  return new Promise((resolve, reject) => {
+    if (document.getElementById('jitsi-ext-api')) { resolve(); return; }
+    const s = document.createElement('script');
+    s.id = 'jitsi-ext-api';
+    s.src = `https://${host}/external_api.js`;
+    s.onload = resolve;
+    s.onerror = () => reject(new Error(`Could not load Jitsi API from ${host}`));
+    document.head.appendChild(s);
+  });
+}
+
+async function startJitsiVoice(roomUrl, displayName) {
+  const container = document.getElementById('jitsiVoiceHost');
+  if (!container || jitsiVoiceApi) return;
+  try {
+    const u = new URL(String(roomUrl).trim());
+    const host = u.hostname;
+    const roomName = u.pathname.replace(/^\/+|\/+$/g, '');
+    if (!roomName) return;
+    await loadJitsiScript(host);
+    if (!window.JitsiMeetExternalAPI) return;
+    jitsiVoiceApi = new window.JitsiMeetExternalAPI(host, {
+      roomName,
+      parentNode: container,
+      userInfo: { displayName: displayName || 'Guest' },
+      width: '100%',
+      height: '100%',
+      configOverwrite: {
+        startAudioOnly: true,
+        startWithVideoMuted: true,
+        startWithAudioMuted: false,
+        prejoinConfig: { enabled: false },
+        minParticipants: 1,
+        readOnlyName: true,
+      },
+      interfaceConfigOverwrite: {
+        TOOLBAR_BUTTONS: [],
+        SHOW_JITSI_WATERMARK: false,
+        SHOW_WATERMARK_FOR_GUESTS: false,
+        HIDE_INVITE_MORE_HEADER: true,
+      },
+    });
+    jitsiVoiceApi.addEventListener('videoConferenceJoined', ({ displayName: n }) => {
+      addVoicePeer('_self', n || displayName, true);
+    });
+    jitsiVoiceApi.addEventListener('videoConferenceLeft', () => removeVoicePeer('_self'));
+    jitsiVoiceApi.addEventListener('participantJoined', ({ id, displayName: n }) => addVoicePeer(id, n || 'User', false));
+    jitsiVoiceApi.addEventListener('participantLeft', ({ id }) => removeVoicePeer(id));
+    jitsiVoiceApi.addEventListener('audioMuteStatusChanged', ({ muted }) => {
+      voiceMuted = muted;
+      setVoicePeerMuted('_self', muted);
+      updateVoiceControlsUi();
+    });
+  } catch (e) {
+    console.warn('Jitsi External API init failed:', e);
+  }
+}
+
+function stopJitsiVoice() {
+  if (jitsiVoiceApi) {
+    try { jitsiVoiceApi.dispose(); } catch (_) {}
+    jitsiVoiceApi = null;
+  }
+  const container = document.getElementById('jitsiVoiceHost');
+  if (container) container.innerHTML = '';
+}
+
+async function joinVoiceChannel() {
+  if (voiceJoined || !trainingState.voiceRoomUrl) return;
+  voiceJoined = true;
+  voiceMuted = false;
+  updateVoiceControlsUi();
+  if (voiceIsJitsiUrl(trainingState.voiceRoomUrl)) {
+    await startJitsiVoice(trainingState.voiceRoomUrl, trainingState.senderName || 'Guest');
+  } else {
+    addVoicePeer('_self', trainingState.senderName || 'Guest', true);
+  }
+}
+
+function leaveVoiceChannel() {
+  if (!voiceJoined) return;
+  voiceJoined = false;
+  voiceMuted = false;
+  stopJitsiVoice();
+  voicePeers.clear();
+  renderVoiceStickers();
+  updateVoiceControlsUi();
+}
+
+function toggleVoiceMute() {
+  if (!voiceJoined) return;
+  if (jitsiVoiceApi) {
+    jitsiVoiceApi.executeCommand('toggleAudio');
+  } else {
+    voiceMuted = !voiceMuted;
+    setVoicePeerMuted('_self', voiceMuted);
+    updateVoiceControlsUi();
   }
 }
 
@@ -873,13 +1006,7 @@ async function handleTrainingSessionEnded() {
   await teardownTrainingChatRealtime();
   await teardownWhiteboardUi();
 
-  const iframe = document.getElementById('chatVoiceEmbed');
-  if (iframe) {
-    iframe.removeAttribute('src');
-    iframe.removeAttribute('data-src');
-  }
-  document.getElementById('chatVoiceEmbedWrap')?.classList.add('hidden');
-  document.getElementById('chatVoiceHint')?.classList.add('hidden');
+  leaveVoiceChannel();
 
   const chatPanel = document.getElementById('chatPanel');
   chatPanel?.classList.add('chat-panel--session-ended');
@@ -1159,6 +1286,9 @@ export async function initTraining() {
 
   document.getElementById('chatTabChat')?.addEventListener('click', () => setTrainingChatMobileTab('chat'));
   document.getElementById('chatTabBoard')?.addEventListener('click', () => setTrainingChatMobileTab('board'));
+  document.getElementById('btnJoinVoice')?.addEventListener('click', () => void joinVoiceChannel());
+  document.getElementById('btnLeaveVoice')?.addEventListener('click', () => leaveVoiceChannel());
+  document.getElementById('btnToggleMute')?.addEventListener('click', () => toggleVoiceMute());
   document.getElementById('btnCopyVoiceLink')?.addEventListener('click', async () => {
     const u = trainingState.voiceRoomUrl;
     const msgEl = document.getElementById('chatVoiceCopyMsg');
@@ -1167,12 +1297,10 @@ export async function initTraining() {
       await navigator.clipboard.writeText(u);
       if (msgEl) {
         msgEl.textContent = 'Link copied.';
-        setTimeout(() => {
-          if (msgEl) msgEl.textContent = '';
-        }, 2500);
+        setTimeout(() => { if (msgEl) msgEl.textContent = ''; }, 2500);
       }
     } catch (_) {
-      if (msgEl) msgEl.textContent = 'Could not copy. Try opening the voice room and copy from the browser bar.';
+      if (msgEl) msgEl.textContent = 'Could not copy. Try opening the voice room.';
     }
   });
   window.addEventListener('resize', () => {

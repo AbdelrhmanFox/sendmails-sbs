@@ -569,7 +569,9 @@
           </form>
           <p id="joinMsg" class="inline-note"></p>
         </div>
-        <div id="chatPanel" class="card chat-panel hidden">
+        <div class="training-room-wrap" id="trainingRoomWrap">
+          <aside class="voice-stickers-col" id="voiceStickersLeft" aria-label="Voice participants left"></aside>
+          <div id="chatPanel" class="card chat-panel hidden">
           <div id="chatSessionEndedBanner" class="chat-session-ended-banner hidden" role="alert">
             <p><strong>Session ended.</strong> This session was removed by the trainer. Chat and voice here are closed — the meeting link is no longer tied to this group.</p>
           </div>
@@ -581,28 +583,15 @@
               </div>
               <button type="button" class="btn btn-secondary chat-whiteboard-toggle hidden" id="btnToggleWhiteboard" aria-expanded="false" aria-controls="whiteboardWrap">Show whiteboard</button>
             </div>
-            <div class="chat-panel-voice-row" id="chatVoiceRow">
-              <a class="btn btn-primary chat-voice-open hidden" id="chatVoiceRoomLink" href="#" target="_blank" rel="noopener noreferrer">Open voice room</a>
-              <button type="button" class="btn btn-secondary chat-voice-copy hidden" id="btnCopyVoiceLink">Copy voice link</button>
-              <span class="muted chat-voice-muted hidden" id="chatVoiceMuted">No voice link set for this session. The trainer can add a Meet or Jitsi URL when creating the session.</span>
+            <div class="chat-voice-controls hidden" id="chatVoiceControls">
+              <button type="button" class="btn btn-primary btn-sm hidden" id="btnJoinVoice">🎤 Join voice</button>
+              <button type="button" class="btn btn-secondary btn-sm hidden" id="btnLeaveVoice">Leave voice</button>
+              <button type="button" class="btn btn-secondary btn-sm hidden" id="btnToggleMute" aria-pressed="false">🎤 Muted: off</button>
+              <a class="btn btn-secondary btn-sm hidden" id="chatVoiceRoomLink" href="#" target="_blank" rel="noopener noreferrer">Open in tab ↗</a>
+              <button type="button" class="btn btn-secondary btn-sm hidden" id="btnCopyVoiceLink">Copy link</button>
+              <span class="muted chat-voice-muted" id="chatVoiceMuted">No voice for this session</span>
               <p class="inline-note chat-voice-copy-msg" id="chatVoiceCopyMsg" aria-live="polite"></p>
             </div>
-            <p id="chatVoiceHint" class="muted chat-voice-hint hidden" role="note">
-              Voice only — your chat display name is used automatically (avatar tiles, no extra sign-in).
-            </p>
-            <div id="chatVoiceEmbedWrap" class="chat-voice-embed-wrap hidden" aria-label="Voice room">
-              <iframe
-                id="chatVoiceEmbed"
-                class="chat-voice-embed"
-                title="Session voice room (audio only)"
-                allow="camera; microphone; fullscreen; display-capture; autoplay"
-                allowfullscreen
-                loading="lazy"
-              ></iframe>
-            </div>
-            <p id="chatVoiceExternalNote" class="muted chat-voice-external-note hidden">
-              This session uses an external voice link. Open it in a new tab to join audio or video.
-            </p>
           </div>
           <div class="chat-panel-mobile-tabs hidden" id="chatPanelMobileTabs" role="tablist" aria-label="Chat or whiteboard">
             <button type="button" class="btn btn-secondary chat-mobile-tab active" role="tab" id="chatTabChat" aria-selected="true" aria-controls="chatPaneChat">Chat</button>
@@ -663,6 +652,10 @@
             </div>
           </div>
         </div>
+          <aside class="voice-stickers-col" id="voiceStickersRight" aria-label="Voice participants right"></aside>
+        </div><!-- /.training-room-wrap -->
+        <!-- Hidden Jitsi audio host – kept off-screen so audio runs without visible UI -->
+        <div id="jitsiVoiceHost" class="jitsi-voice-host" aria-hidden="true"></div>
       </section>
 
       <section id="view-training-tools" class="view">

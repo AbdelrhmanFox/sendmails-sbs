@@ -687,61 +687,171 @@ body.participant-join .chat-panel {
   margin-bottom: 6px;
 }
 
-.chat-panel-voice-row {
+/* ── Voice controls bar (replaces embed / old voice row) ─────────────── */
+.chat-voice-controls {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px 12px;
+  gap: 6px 10px;
   margin-top: 10px;
+  padding: 6px 8px;
+  border-radius: var(--brand-radius-dense);
+  background: color-mix(in oklab, var(--brand-surface-2) 60%, transparent);
+  border: 1px solid color-mix(in oklab, var(--brand-border) 50%, transparent);
+}
+.chat-voice-controls.hidden {
+  display: none !important;
 }
 .chat-voice-copy-msg {
   flex-basis: 100%;
   margin: 0;
   min-height: 1.2em;
-}
-.chat-voice-open.hidden,
-.chat-voice-copy.hidden,
-.chat-voice-muted.hidden {
-  display: none !important;
-}
-
-.chat-voice-hint {
-  margin: 0 0 8px;
   font-size: 12px;
-  line-height: 1.35;
 }
-.chat-voice-hint.hidden {
+.chat-voice-muted {
+  font-size: 12px;
+  color: var(--brand-muted);
+}
+.chat-voice-muted.hidden,
+#btnJoinVoice.hidden,
+#btnLeaveVoice.hidden,
+#btnToggleMute.hidden,
+#chatVoiceRoomLink.hidden,
+#btnCopyVoiceLink.hidden {
+  display: none !important;
+}
+#btnToggleMute[data-muted='true'] {
+  background: color-mix(in oklab, var(--brand-danger) 20%, var(--brand-surface-2));
+  border-color: color-mix(in oklab, var(--brand-danger) 60%, var(--brand-border));
+  color: var(--brand-danger);
+}
+
+/* ── Voice participant sticker columns ────────────────────────────────── */
+.training-room-wrap {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  width: 100%;
+}
+.training-room-wrap > #chatPanel {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.voice-stickers-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  padding: 16px 6px;
+  min-width: 68px;
+  max-width: 80px;
+  flex-shrink: 0;
+}
+.voice-sticker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  position: relative;
+  animation: vsAppear 0.25s ease-out;
+}
+@keyframes vsAppear {
+  from { opacity: 0; transform: scale(0.7); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.voice-sticker-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--brand-primary);
+  border: 2px solid transparent;
+  transition: border-color 0.25s, box-shadow 0.25s;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  flex-shrink: 0;
+}
+.voice-sticker--speaking .voice-sticker-circle {
+  border-color: color-mix(in oklab, #22c55e 80%, #fff);
+  box-shadow: 0 0 0 3px color-mix(in oklab, #22c55e 30%, transparent);
+}
+.voice-sticker--self .voice-sticker-circle {
+  background: var(--brand-secondary, #6366f1);
+}
+.voice-sticker-name {
+  font-size: 10px;
+  text-align: center;
+  max-width: 66px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--brand-muted);
+  line-height: 1.2;
+}
+.voice-sticker-mute-icon {
+  position: absolute;
+  bottom: 22px;
+  right: -2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: color-mix(in oklab, var(--brand-danger) 90%, #000);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  line-height: 1;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+  border: 1px solid rgba(255,255,255,0.15);
+}
+.voice-sticker-mute-icon.hidden {
   display: none !important;
 }
 
-.chat-voice-embed-wrap {
-  flex-shrink: 0;
-  margin: 10px 0 4px;
-  border-radius: var(--brand-radius);
+/* Hidden Jitsi audio host – positioned off-screen */
+.jitsi-voice-host {
+  position: absolute;
+  left: -9999px;
+  top: -9999px;
+  width: 400px;
+  height: 300px;
   overflow: hidden;
-  border: 1px solid color-mix(in oklab, var(--brand-border) 65%, transparent);
-  background: color-mix(in oklab, var(--brand-surface-2) 88%, #000);
-  height: min(38vh, 400px);
-  min-height: 200px;
+  pointer-events: none;
 }
-.chat-voice-embed-wrap.hidden {
-  display: none !important;
-}
-.chat-voice-embed {
-  display: block;
-  width: 100%;
-  height: 100%;
-  min-height: 200px;
-  border: none;
-  vertical-align: top;
-}
-.chat-voice-external-note {
-  margin: 6px 0 0;
-  font-size: 13px;
-  line-height: 1.4;
-}
-.chat-voice-external-note.hidden {
-  display: none !important;
+
+/* ── Responsive: narrow screens collapse sticker cols below chat ──────── */
+@media (max-width: 600px) {
+  .training-room-wrap {
+    flex-wrap: wrap;
+  }
+  .training-room-wrap > #chatPanel {
+    order: 1;
+    flex: 1 1 100%;
+  }
+  .voice-stickers-col {
+    order: 2;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 100%;
+    width: 100%;
+    padding: 8px 4px;
+    min-width: unset;
+    gap: 12px;
+  }
+  .voice-sticker-circle {
+    width: 38px;
+    height: 38px;
+    font-size: 13px;
+  }
+  .voice-sticker-name {
+    max-width: 50px;
+  }
 }
 
 .chat-panel-mobile-tabs {
