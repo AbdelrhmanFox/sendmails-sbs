@@ -22,3 +22,5 @@ npm run data-model:build
 ```
 
 These commands keep `docs/excel-export/` and `docs/DATA_MODEL.md` aligned with workbook structure.
+
+To load data without the CLI, use **Operations Data → Import from Excel** in the dashboard (`.xlsx` with the same headers as the export sheets).

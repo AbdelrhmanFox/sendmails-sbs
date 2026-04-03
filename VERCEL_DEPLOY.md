@@ -31,8 +31,9 @@ Redeploy after changing env vars.
 
 ## API routes
 
-- **Single serverless function:** `api/[name].js` dispatches to all former endpoints (`/api/login`, `/api/seed`, …). This keeps the deployment within the **Vercel Hobby limit of 12 functions** (one dynamic route instead of 13 files).
+- **Single serverless function:** `api/[name].js` dispatches to all former endpoints (`/api/login`, `/api/seed`, `/api/operations-data`, …). This keeps the deployment within the **Vercel Hobby limit of 12 functions** (one dynamic route instead of 13 files).
 - **Dashboard compatibility:** Requests to `/.netlify/functions/login` are **rewritten** to `/api/login` (see `vercel.json`), so the existing `dashboard/js/app.js` does not need changes.
+- **Bulk import:** `POST /api/operations-data?entity=…&bulk=1` with JSON `{ "items": [ … ] }` is used by the Operations Excel importer (same handler as Netlify).
 
 ## Local preview (optional)
 

@@ -345,38 +345,25 @@ In short: **Bulk email from a Google Sheet, one every 5 minutes, with merge fiel
 
 ## 10. File Structure
 
+The implementation has grown past the original brief (sidebar shell, workbook operations, training groups, brand assets, Vercel router). **Authoritative layout:** [README.md](../README.md).
+
+Current shape (summary):
+
 ```
 project/
-├── automation/
-│   └── workflow.json          # n8n workflow JSON: Webhook, IFs, Google Sheets,
-│                              # Code, Filter, Split In Batches, SMTP, Wait, Set, Respond
-├── dashboard/
-│   ├── index.html             # Single HTML: login screen + app (header, tabs, 7 step cards,
-│   │                          # QR pane, admin pane). Scripts: Quill, app.js.
-│   ├── css/
-│   │   └── main.css           # CSS variables (colors, radii, font), layout (header, tabs, cards),
-│   │                          # form controls, buttons, status grid, editor, preview, auth styles.
-│   └── js/
-│       ├── app.js             # Auth (login, logout, protected calls), webhook calls (preview,
-│       │                       # status, send), Quill init, RTL/LTR, status polling, Save/Load
-│       │                       # columns, copy, i18n, tab switching, admin CRUD.
-│       └── config.js          # Optional: API base or config (e.g. empty for same-origin).
-├── netlify/
-│   └── functions/
-│       ├── login.js           # POST: validate credentials (Supabase or local fallback), return JWT.
-│       ├── create-user.js     # POST: admin only; hash password, insert app_users.
-│       ├── list-users.js      # GET: admin only; return users from app_users.
-│       ├── reset-password.js  # POST: admin or self; update password_hash.
-│       ├── delete-user.js    # POST: admin only; delete user (not self, not last admin).
-│       └── seed.js            # GET: optional; create first admin (key in query).
-├── netlify.toml               # [build]: command, publish = "dashboard", NODE_VERSION.
-│                              # [[headers]]: X-Frame-Options, X-Content-Type-Options.
-├── README.md                  # Project overview, quick start, deploy, notes.
-└── docs/
-    ├── DASHBOARD.md           # Short dashboard overview (layout, behaviour, files).
-    ├── PROJECT_PROMPT.md      # Full project brief (source for this breakdown).
-    └── PROJECT_BREAKDOWN.md   # This file — structured extraction of the brief.
+├── automation/workflow.json   # n8n: campaigns (preview, send, status)
+├── api/[name].js              # Vercel: dispatches to netlify/functions handlers
+├── dashboard/                 # Static UI: login, Home, Operations (CRUD + Excel import), Campaigns, Training, Admin
+├── netlify/functions/       # login, operations-data, training-*, users, public-config, seed, …
+├── netlify/lib/             # Shared helpers (e.g. operations-import-map.js, _shared.js)
+├── supabase/schema.sql
+├── docs/                    # DATA_MODEL, WORKBOOK_SOURCE, DASHBOARD, this file, …
+├── brand/                   # palette, logo exports
+├── vercel.json, netlify.toml
+└── README.md
 ```
+
+Earlier subsections in this document (e.g. seven-step wizard, QR, RTL/i18n) describe the **original** brief; where they conflict with the live app, trust `README.md` and `docs/DASHBOARD.md`.
 
 ---
 

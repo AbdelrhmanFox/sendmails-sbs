@@ -7,11 +7,8 @@ Run the full file `supabase/schema.sql` in Supabase SQL Editor.
 This creates:
 
 - `app_users`
-- `enrollments`
-- `training_sessions`
-- `training_groups`
-- `training_participants`
-- `training_messages`
+- `trainees`, `courses`, `batches`, `enrollments` (workbook-driven operations data)
+- `training_sessions`, `training_groups`, `training_participants`, `training_messages`
 
 and related RLS policies for training public join/chat flows.
 
@@ -55,6 +52,8 @@ Source file:
 
 - `docs/DataBase(SBS)v01.xlsm` (canonical; root `DataBase(SBS)v01.xlsm` is a legacy fallback)
 - exported sheets in `docs/excel-export/*.csv`
+
+You can also load matching **`.xlsx`** files from the dashboard **Operations Data** module (Import from Excel); see [README.md](README.md).
 
 ## Troubleshooting
 

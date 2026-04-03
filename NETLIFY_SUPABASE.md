@@ -38,7 +38,7 @@ Set these in Netlify project environment variables:
 3. Run `supabase/schema.sql` in Supabase SQL Editor.
 4. Seed admin once via `/.netlify/functions/seed?key=...` or local script.
 5. Login and verify all modules:
-   - Operations Data
+   - Operations Data (CRUD and optional **Import from Excel** for `.xlsx` aligned with workbook columns)
    - Email Campaigns
    - Live Session Groups
    - Admin (role-based)
