@@ -1,5 +1,18 @@
 const { cors, json, getSupabaseServiceClient } = require('../lib/_shared');
 
+function voiceUrlFromSession(row) {
+  if (!row || row.voice_room_url == null || row.voice_room_url === '') return null;
+  const s = String(row.voice_room_url).trim();
+  if (!s) return null;
+  try {
+    const u = new URL(s);
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
+    return u.href;
+  } catch (_) {
+    return null;
+  }
+}
+
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: cors };
   if (!['GET', 'POST'].includes(event.httpMethod)) return json({ error: 'Method not allowed' }, 405);
@@ -12,7 +25,7 @@ exports.handler = async (event) => {
 
   const { data: group, error: groupErr } = await supabase
     .from('training_groups')
-    .select('id, group_number, session_id, training_sessions(title, whiteboard_enabled)')
+    .select('id, group_number, session_id, training_sessions(title, whiteboard_enabled, voice_room_url)')
     .eq('join_token', token)
     .maybeSingle();
   if (groupErr) return json({ error: 'Could not load group' }, 500);
@@ -20,6 +33,7 @@ exports.handler = async (event) => {
 
   const sessionRow = group.training_sessions || {};
   const whiteboardEnabled = sessionRow.whiteboard_enabled !== false;
+  const voiceRoomUrl = voiceUrlFromSession(sessionRow);
 
   if (event.httpMethod === 'GET') {
     return json({
@@ -29,6 +43,7 @@ exports.handler = async (event) => {
       sessionId: group.session_id,
       sessionTitle: sessionRow.title || 'Training Session',
       whiteboardEnabled,
+      voiceRoomUrl,
     });
   }
 
@@ -55,6 +70,7 @@ exports.handler = async (event) => {
     sessionId: group.session_id,
     sessionTitle: sessionRow.title || 'Training Session',
     whiteboardEnabled,
+    voiceRoomUrl,
     participant,
   });
 };

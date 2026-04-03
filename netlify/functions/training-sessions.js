@@ -1,5 +1,18 @@
 const { cors, json, getSupabaseServiceClient, verifyAuth } = require('../lib/_shared');
 
+function sanitizeVoiceRoomUrl(raw) {
+  if (raw == null || raw === '') return null;
+  const s = String(raw).trim();
+  if (!s || s.length > 2000) return null;
+  try {
+    const u = new URL(s);
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
+    return u.href;
+  } catch (_) {
+    return null;
+  }
+}
+
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: cors };
   if (!['GET', 'POST', 'DELETE'].includes(event.httpMethod)) return json({ error: 'Method not allowed' }, 405);
@@ -14,7 +27,9 @@ exports.handler = async (event) => {
   if (event.httpMethod === 'GET') {
     let q = supabase
       .from('training_sessions')
-      .select('id, title, trainer_username, groups_count, whiteboard_enabled, created_at, training_groups(id, group_number, join_token)')
+      .select(
+        'id, title, trainer_username, groups_count, whiteboard_enabled, voice_room_url, created_at, training_groups(id, group_number, join_token)',
+      )
       .order('created_at', { ascending: false })
       .limit(50);
     if (auth.role === 'trainer') {
@@ -52,6 +67,7 @@ exports.handler = async (event) => {
   const title = String(body.title || '').trim();
   const groupsCount = Math.max(1, Math.min(12, Number(body.groupsCount || 1)));
   const whiteboardEnabled = body.whiteboardEnabled !== false;
+  const voiceRoomUrl = sanitizeVoiceRoomUrl(body.voiceRoomUrl);
   if (!title) return json({ error: 'Title is required' }, 400);
 
   const { data: session, error: sessionErr } = await supabase
@@ -61,6 +77,7 @@ exports.handler = async (event) => {
       title,
       groups_count: groupsCount,
       whiteboard_enabled: whiteboardEnabled,
+      voice_room_url: voiceRoomUrl,
     })
     .select('*')
     .single();

@@ -157,6 +157,7 @@ create table if not exists training_sessions (
   groups_count int not null default 1 check (groups_count between 1 and 12),
   is_active boolean not null default true,
   whiteboard_enabled boolean not null default true,
+  voice_room_url text,
   created_at timestamptz not null default now()
 );
 

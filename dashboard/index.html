@@ -527,6 +527,17 @@
               <input type="checkbox" id="trainingWhiteboardEnabled" checked />
               <span>Enable shared whiteboard for participants in this session</span>
             </label>
+            <div class="full training-voice-field">
+              <label for="trainingVoiceRoomUrl">Voice room link (optional)</label>
+              <input
+                id="trainingVoiceRoomUrl"
+                type="url"
+                inputmode="url"
+                autocomplete="off"
+                placeholder="https://meet.google.com/... or Jitsi / Zoom"
+              />
+              <p class="muted field-hint">Google Meet, Jitsi, Zoom, or any https link. Shown in group chat as &quot;Open voice room&quot;.</p>
+            </div>
           </form>
           <p class="muted small-margin">Students use <strong>one</strong> session link. If you set more than one group, they pick a group on the next screen.</p>
           <p id="trainingMsg" class="inline-note"></p>
@@ -565,42 +576,58 @@
               </div>
               <button type="button" class="btn btn-secondary chat-whiteboard-toggle hidden" id="btnToggleWhiteboard" aria-expanded="false" aria-controls="whiteboardWrap">Show whiteboard</button>
             </div>
-          </div>
-          <div id="trainChatScroll" class="chat-scroll" role="log" aria-live="polite" aria-relevant="additions">
-            <div id="chatMessages" class="chat-messages-inner"></div>
-          </div>
-          <div id="whiteboardWrap" class="whiteboard-wrap whiteboard-wrap--collapsed whiteboard-wrap--session-off" aria-hidden="true">
-            <div class="whiteboard-expandable">
-              <div class="whiteboard-header">
-                <span class="whiteboard-title">Quick board</span>
-                <span class="muted whiteboard-hint">Shared live — not saved after refresh</span>
-              </div>
-              <div class="whiteboard-toolbar" role="toolbar" aria-label="Shared whiteboard">
-                <select id="whiteboardMode" class="whiteboard-tool-select" aria-label="Drawing tool">
-                  <option value="pen">Pen</option>
-                  <option value="eraser">Eraser</option>
-                </select>
-                <label class="whiteboard-toolbar-label">
-                  <span class="wb-label-text">Color</span>
-                  <input type="color" id="whiteboardColor" value="#00a99d" />
-                </label>
-                <label class="whiteboard-toolbar-label whiteboard-width-label">
-                  <span class="wb-label-text">Width</span>
-                  <input type="range" id="whiteboardWidth" min="1" max="12" value="3" />
-                </label>
-                <button type="button" class="whiteboard-clear" id="whiteboardClearAll">Clear all</button>
-              </div>
-              <div class="whiteboard-canvas-shell">
-                <canvas id="trainingWhiteboard" class="training-whiteboard" width="800" height="200" aria-label="Session whiteboard"></canvas>
-              </div>
-              <p id="whiteboardNote" class="muted whiteboard-note hidden"></p>
+            <div class="chat-panel-voice-row" id="chatVoiceRow">
+              <a class="btn btn-primary chat-voice-open hidden" id="chatVoiceRoomLink" href="#" target="_blank" rel="noopener noreferrer">Open voice room</a>
+              <button type="button" class="btn btn-secondary chat-voice-copy hidden" id="btnCopyVoiceLink">Copy voice link</button>
+              <span class="muted chat-voice-muted hidden" id="chatVoiceMuted">No voice link set for this session. The trainer can add a Meet or Jitsi URL when creating the session.</span>
+              <p class="inline-note chat-voice-copy-msg" id="chatVoiceCopyMsg" aria-live="polite"></p>
             </div>
           </div>
-          <form id="chatForm" class="chat-composer" autocomplete="off">
-            <label class="visually-hidden" for="chatInput">Message</label>
-            <input id="chatInput" type="text" placeholder="Message" required enterkeyhint="send" />
-            <button class="btn btn-primary chat-send" type="submit" aria-label="Send message">Send</button>
-          </form>
+          <div class="chat-panel-mobile-tabs hidden" id="chatPanelMobileTabs" role="tablist" aria-label="Chat or whiteboard">
+            <button type="button" class="btn btn-secondary chat-mobile-tab active" role="tab" id="chatTabChat" aria-selected="true" aria-controls="chatPaneChat">Chat</button>
+            <button type="button" class="btn btn-secondary chat-mobile-tab" role="tab" id="chatTabBoard" aria-selected="false" aria-controls="chatPaneBoard">Board</button>
+          </div>
+          <div class="chat-panel-body">
+            <div class="chat-panel-pane chat-panel-pane--board" id="chatPaneBoard" role="tabpanel" aria-labelledby="chatTabBoard">
+              <div id="whiteboardWrap" class="whiteboard-wrap whiteboard-wrap--collapsed whiteboard-wrap--session-off" aria-hidden="true">
+                <div class="whiteboard-expandable">
+                  <div class="whiteboard-header">
+                    <span class="whiteboard-title">Quick board</span>
+                    <span class="muted whiteboard-hint">Shared live — not saved after refresh</span>
+                  </div>
+                  <div class="whiteboard-toolbar" role="toolbar" aria-label="Shared whiteboard">
+                    <select id="whiteboardMode" class="whiteboard-tool-select" aria-label="Drawing tool">
+                      <option value="pen">Pen</option>
+                      <option value="eraser">Eraser</option>
+                    </select>
+                    <label class="whiteboard-toolbar-label">
+                      <span class="wb-label-text">Color</span>
+                      <input type="color" id="whiteboardColor" value="#00a99d" />
+                    </label>
+                    <label class="whiteboard-toolbar-label whiteboard-width-label">
+                      <span class="wb-label-text">Width</span>
+                      <input type="range" id="whiteboardWidth" min="1" max="12" value="3" />
+                    </label>
+                    <button type="button" class="whiteboard-clear" id="whiteboardClearAll">Clear all</button>
+                  </div>
+                  <div class="whiteboard-canvas-shell">
+                    <canvas id="trainingWhiteboard" class="training-whiteboard" width="800" height="200" aria-label="Session whiteboard"></canvas>
+                  </div>
+                  <p id="whiteboardNote" class="muted whiteboard-note hidden"></p>
+                </div>
+              </div>
+            </div>
+            <div class="chat-panel-pane chat-panel-pane--chat chat-panel-pane--active" id="chatPaneChat" role="tabpanel" aria-labelledby="chatTabChat">
+              <div id="trainChatScroll" class="chat-scroll" role="log" aria-live="polite" aria-relevant="additions">
+                <div id="chatMessages" class="chat-messages-inner"></div>
+              </div>
+              <form id="chatForm" class="chat-composer" autocomplete="off">
+                <label class="visually-hidden" for="chatInput">Message</label>
+                <input id="chatInput" type="text" placeholder="Message" required enterkeyhint="send" />
+                <button class="btn btn-primary chat-send" type="submit" aria-label="Send message">Send</button>
+              </form>
+            </div>
+          </div>
         </div>
       </section>
 

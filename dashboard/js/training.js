@@ -185,7 +185,85 @@ const trainingState = {
   supabase: null,
   whiteboardAllowed: false,
   whiteboardSubscribed: false,
+  voiceRoomUrl: null,
 };
+
+function updateVoiceRoomUi() {
+  const url = trainingState.voiceRoomUrl;
+  const link = document.getElementById('chatVoiceRoomLink');
+  const copyBtn = document.getElementById('btnCopyVoiceLink');
+  const muted = document.getElementById('chatVoiceMuted');
+  if (!link || !copyBtn || !muted) return;
+  if (url) {
+    link.href = url;
+    link.classList.remove('hidden');
+    copyBtn.classList.remove('hidden');
+    muted.classList.add('hidden');
+  } else {
+    link.removeAttribute('href');
+    link.classList.add('hidden');
+    copyBtn.classList.add('hidden');
+    muted.classList.remove('hidden');
+  }
+}
+
+function setTrainingChatMobileTab(which) {
+  const paneChat = document.getElementById('chatPaneChat');
+  const paneBoard = document.getElementById('chatPaneBoard');
+  const tabChat = document.getElementById('chatTabChat');
+  const tabBoard = document.getElementById('chatTabBoard');
+  const wrap = document.getElementById('whiteboardWrap');
+  const isChat = which === 'chat';
+  paneChat?.classList.toggle('chat-panel-pane--active', isChat);
+  paneBoard?.classList.toggle('chat-panel-pane--active', !isChat);
+  tabChat?.classList.toggle('active', isChat);
+  tabBoard?.classList.toggle('active', !isChat);
+  tabChat?.setAttribute('aria-selected', isChat ? 'true' : 'false');
+  tabBoard?.setAttribute('aria-selected', isChat ? 'false' : 'true');
+  if (trainingState.whiteboardAllowed && wrap && !wrap.classList.contains('whiteboard-wrap--session-off')) {
+    wrap.classList.remove('whiteboard-wrap--collapsed');
+    wrap.setAttribute('aria-hidden', 'false');
+  }
+  if (!isChat) {
+    requestAnimationFrame(() => {
+      resizeBoardToDisplay();
+      void ensureWhiteboardRealtime();
+    });
+  }
+}
+
+function syncChatPanelLayout() {
+  const panel = document.getElementById('chatPanel');
+  const tabs = document.getElementById('chatPanelMobileTabs');
+  const paneChat = document.getElementById('chatPaneChat');
+  const paneBoard = document.getElementById('chatPaneBoard');
+  const wrap = document.getElementById('whiteboardWrap');
+  const split = window.matchMedia('(min-width: 900px)').matches && trainingState.whiteboardAllowed;
+  document.getElementById('btnToggleWhiteboard')?.classList.add('hidden');
+  panel?.classList.toggle('chat-panel--split', split);
+
+  if (!trainingState.whiteboardAllowed) {
+    tabs?.classList.add('hidden');
+    paneChat?.classList.add('chat-panel-pane--active');
+    paneBoard?.classList.remove('chat-panel-pane--active');
+    return;
+  }
+
+  if (split) {
+    tabs?.classList.add('hidden');
+    wrap?.classList.remove('whiteboard-wrap--collapsed');
+    wrap?.setAttribute('aria-hidden', 'false');
+    paneBoard?.classList.add('chat-panel-pane--active');
+    paneChat?.classList.add('chat-panel-pane--active');
+    void ensureWhiteboardRealtime();
+    requestAnimationFrame(() => resizeBoardToDisplay());
+  } else {
+    tabs?.classList.remove('hidden');
+    setTrainingChatMobileTab('chat');
+    wrap?.classList.remove('whiteboard-wrap--collapsed');
+    wrap?.setAttribute('aria-hidden', 'false');
+  }
+}
 
 let whiteboardChannel = null;
 let boardDrawing = false;
@@ -271,14 +349,16 @@ function applyWhiteboardPolicyToChatUi() {
     btn.setAttribute('aria-expanded', 'false');
     void teardownWhiteboardUi();
     trainingState.whiteboardSubscribed = false;
+    document.getElementById('chatPaneBoard')?.classList.add('chat-panel-pane--hidden');
+    syncChatPanelLayout();
+    updateVoiceRoomUi();
     return;
   }
+  document.getElementById('chatPaneBoard')?.classList.remove('chat-panel-pane--hidden');
   wrap.classList.remove('whiteboard-wrap--session-off');
-  wrap.classList.add('whiteboard-wrap--collapsed');
-  wrap.setAttribute('aria-hidden', 'true');
-  btn.classList.remove('hidden');
-  btn.textContent = 'Show whiteboard';
   btn.setAttribute('aria-expanded', 'false');
+  syncChatPanelLayout();
+  updateVoiceRoomUi();
 }
 
 async function ensureWhiteboardRealtime() {
@@ -539,10 +619,10 @@ async function showSessionGroupPickerFlow(sessionId) {
 
   try {
     const data = await jsonFetch(`/.netlify/functions/public-training-session?sessionId=${encodeURIComponent(sessionId)}`);
-    setTrainingParticipantHero(
-      data.title || 'Live session',
-      'Choose a group below. You will enter your display name on the next step.',
-    );
+    const subHint = data.voiceRoomUrl
+      ? 'Choose a group below. You will enter your display name on the next step. A voice room link will appear in the chat header.'
+      : 'Choose a group below. You will enter your display name on the next step.';
+    setTrainingParticipantHero(data.title || 'Live session', subHint);
     if (picker) picker.classList.remove('hidden');
     if (buttonsEl) {
       (data.groups || []).forEach((g) => {
@@ -576,6 +656,7 @@ async function joinByTokenFlow(token) {
   const panel = document.getElementById('joinPanel');
   const joinData = await jsonFetch(`/.netlify/functions/training-join?token=${encodeURIComponent(token)}`);
   trainingState.whiteboardAllowed = joinData.whiteboardEnabled !== false;
+  trainingState.voiceRoomUrl = joinData.voiceRoomUrl || null;
   setTrainingParticipantHero(
     joinData.sessionTitle || 'Live session',
     `Group ${joinData.groupNumber} — continue to enter your display name and open the chat.`,
@@ -603,6 +684,7 @@ async function joinByTokenFlow(token) {
       trainingState.participantId = joined.participant.id;
       trainingState.senderName = joined.participant.display_name;
       trainingState.whiteboardAllowed = joined.whiteboardEnabled !== false;
+      trainingState.voiceRoomUrl = joined.voiceRoomUrl || joinData.voiceRoomUrl || null;
       panel.classList.add('hidden');
       document.getElementById('chatPanel').classList.remove('hidden');
       const sub = document.getElementById('chatPanelSub');
@@ -720,6 +802,8 @@ export async function initTraining() {
     const links = document.getElementById('trainingLinks');
     try {
       const wbEl = document.getElementById('trainingWhiteboardEnabled');
+      const voiceEl = document.getElementById('trainingVoiceRoomUrl');
+      const voiceRoomUrlRaw = voiceEl ? String(voiceEl.value || '').trim() : '';
       const data = await jsonFetch('/.netlify/functions/training-sessions', {
         method: 'POST',
         headers: getAuthHeaders(),
@@ -727,6 +811,7 @@ export async function initTraining() {
           title,
           groupsCount,
           whiteboardEnabled: wbEl ? wbEl.checked : true,
+          voiceRoomUrl: voiceRoomUrlRaw || undefined,
         }),
       });
       const base = `${window.location.origin}${window.location.pathname}`;
@@ -740,6 +825,7 @@ export async function initTraining() {
             }`
           : '';
       msg.textContent = 'Session created.';
+      if (voiceEl) voiceEl.value = '';
       loadTrainerSessions();
     } catch (err) {
       msg.textContent = err.message;
@@ -752,22 +838,28 @@ export async function initTraining() {
     loadTrainerSessions();
   }
 
-  document.getElementById('btnToggleWhiteboard')?.addEventListener('click', async () => {
-    const wrap = document.getElementById('whiteboardWrap');
-    const btn = document.getElementById('btnToggleWhiteboard');
-    if (!wrap || !btn || !trainingState.whiteboardAllowed) return;
-    if (wrap.classList.contains('whiteboard-wrap--collapsed')) {
-      wrap.classList.remove('whiteboard-wrap--collapsed');
-      wrap.setAttribute('aria-hidden', 'false');
-      btn.setAttribute('aria-expanded', 'true');
-      btn.textContent = 'Hide whiteboard';
-      await ensureWhiteboardRealtime();
-      requestAnimationFrame(() => resizeBoardToDisplay());
-    } else {
-      wrap.classList.add('whiteboard-wrap--collapsed');
-      wrap.setAttribute('aria-hidden', 'true');
-      btn.setAttribute('aria-expanded', 'false');
-      btn.textContent = 'Show whiteboard';
+  document.getElementById('chatTabChat')?.addEventListener('click', () => setTrainingChatMobileTab('chat'));
+  document.getElementById('chatTabBoard')?.addEventListener('click', () => setTrainingChatMobileTab('board'));
+  document.getElementById('btnCopyVoiceLink')?.addEventListener('click', async () => {
+    const u = trainingState.voiceRoomUrl;
+    const msgEl = document.getElementById('chatVoiceCopyMsg');
+    if (!u) return;
+    try {
+      await navigator.clipboard.writeText(u);
+      if (msgEl) {
+        msgEl.textContent = 'Link copied.';
+        setTimeout(() => {
+          if (msgEl) msgEl.textContent = '';
+        }, 2500);
+      }
+    } catch (_) {
+      if (msgEl) msgEl.textContent = 'Could not copy. Try opening the voice room and copy from the browser bar.';
+    }
+  });
+  window.addEventListener('resize', () => {
+    if (document.getElementById('chatPanel') && !document.getElementById('chatPanel').classList.contains('hidden')) {
+      syncChatPanelLayout();
+      resizeBoardToDisplay();
     }
   });
 

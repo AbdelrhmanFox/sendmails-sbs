@@ -16,7 +16,7 @@ exports.handler = async (event) => {
 
   const { data: session, error: sessionErr } = await supabase
     .from('training_sessions')
-    .select('id, title, whiteboard_enabled')
+    .select('id, title, whiteboard_enabled, voice_room_url')
     .eq('id', sessionId)
     .maybeSingle();
   if (sessionErr) return json({ error: 'Could not load session' }, 500);
@@ -29,10 +29,21 @@ exports.handler = async (event) => {
     .order('group_number', { ascending: true });
   if (groupsErr) return json({ error: 'Could not load groups' }, 500);
 
+  let voiceRoomUrl = null;
+  if (session.voice_room_url) {
+    try {
+      const u = new URL(String(session.voice_room_url).trim());
+      if (u.protocol === 'http:' || u.protocol === 'https:') voiceRoomUrl = u.href;
+    } catch (_) {
+      /* ignore */
+    }
+  }
+
   return json({
     ok: true,
     title: session.title || 'Live session',
     whiteboardEnabled: session.whiteboard_enabled !== false,
+    voiceRoomUrl,
     groups: groups || [],
   });
 };
