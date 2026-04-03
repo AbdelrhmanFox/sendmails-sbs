@@ -28,7 +28,7 @@ exports.handler = async (event) => {
     return json({ error: 'Invalid JSON' }, 400);
   }
   const title = String(body.title || '').trim();
-  const groupsCount = Math.max(2, Math.min(12, Number(body.groupsCount || 4)));
+  const groupsCount = Math.max(1, Math.min(12, Number(body.groupsCount || 1)));
   if (!title) return json({ error: 'Title is required' }, 400);
 
   const { data: session, error: sessionErr } = await supabase

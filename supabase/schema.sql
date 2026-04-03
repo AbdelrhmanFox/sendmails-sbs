@@ -154,7 +154,7 @@ create table if not exists training_sessions (
   id uuid primary key default gen_random_uuid(),
   trainer_username text not null,
   title text not null,
-  groups_count int not null default 4 check (groups_count between 2 and 12),
+  groups_count int not null default 1 check (groups_count between 1 and 12),
   is_active boolean not null default true,
   created_at timestamptz not null default now()
 );

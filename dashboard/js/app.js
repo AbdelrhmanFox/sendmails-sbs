@@ -52,11 +52,19 @@
     return ROLE_AREAS[role] || ROLE_AREAS.user;
   }
 
+  let ledgerPage = 1;
+  let auditPage = 1;
+  let attendanceRowsCache = [];
+  const LEDGER_PAGE_SIZE = 50;
+
   function showView(viewId) {
     document.querySelectorAll('.view').forEach((v) => v.classList.remove('active'));
     const el = document.getElementById(`view-${viewId}`);
     if (el) el.classList.add('active');
-    if (viewId === 'admin') loadUsers();
+    if (viewId === 'admin') {
+      loadUsers();
+      loadFinanceAudit();
+    }
     if (viewId === 'finance') refreshFinanceAll();
     if (viewId === 'operations-pipeline') loadPipeline();
     if (viewId === 'operations-capacity') loadCapacity();
@@ -78,6 +86,7 @@
     initFinance();
     initOpsInsights();
     initTrainingTools();
+    initBulkEnrollment();
   }
 
   document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
@@ -586,21 +595,68 @@
     }
   }
 
+  function buildLedgerQuery(extra) {
+    const page = extra && extra.page != null ? String(extra.page) : String(ledgerPage);
+    const pageSize = extra && extra.pageSize != null ? String(extra.pageSize) : String(LEDGER_PAGE_SIZE);
+    const q = new URLSearchParams({ resource: 'ledger', page, pageSize });
+    const from = document.getElementById('ledgerFrom')?.value;
+    const to = document.getElementById('ledgerTo')?.value;
+    const method = String(document.getElementById('ledgerMethod')?.value || '').trim();
+    const enrollmentId = String(document.getElementById('ledgerEnrollmentId')?.value || '').trim();
+    if (from) q.set('from', from);
+    if (to) q.set('to', to);
+    if (method) q.set('method', method);
+    if (enrollmentId) q.set('enrollment_id', enrollmentId);
+    return q.toString();
+  }
+
   async function refreshLedger() {
     const body = document.getElementById('ledgerBody');
     const msg = document.getElementById('financeLedgerMsg');
+    const pageInfo = document.getElementById('ledgerPageInfo');
     if (!body) return;
     try {
-      const data = await jsonFetch('/.netlify/functions/finance-data?resource=ledger&pageSize=50', { headers: getAuthHeaders() });
+      const data = await jsonFetch(`/.netlify/functions/finance-data?${buildLedgerQuery()}`, { headers: getAuthHeaders() });
       body.innerHTML = (data.items || [])
         .map((row) => {
           const e = row.enrollments || {};
           return `<tr><td>${row.received_at || ''}</td><td>${row.amount ?? ''}</td><td>${row.method ?? ''}</td><td>${e.enrollment_id ?? ''}</td><td>${e.trainee_id ?? ''}</td><td>${row.reference ?? ''}</td></tr>`;
         })
         .join('');
-      if (msg) msg.textContent = `Showing ${(data.items || []).length} of ${data.total ?? ''}.`;
+      const total = data.total != null ? data.total : 0;
+      const pages = Math.max(1, Math.ceil(total / LEDGER_PAGE_SIZE));
+      if (pageInfo) pageInfo.textContent = `Page ${data.page || ledgerPage} of ${pages} (${total} rows)`;
+      if (msg) msg.textContent = `Showing ${(data.items || []).length} of ${total}.`;
     } catch (err) {
       if (msg) msg.textContent = err.message;
+    }
+  }
+
+  async function loadFinanceAudit() {
+    const tbody = document.getElementById('financeAuditBody');
+    const info = document.getElementById('auditPageInfo');
+    if (!tbody) return;
+    const role = localStorage.getItem(AUTH_ROLE) || '';
+    if (role !== 'admin') {
+      tbody.innerHTML = '';
+      return;
+    }
+    try {
+      const data = await jsonFetch(
+        `/.netlify/functions/finance-data?resource=audit&page=${auditPage}&pageSize=30`,
+        { headers: getAuthHeaders() },
+      );
+      tbody.innerHTML = (data.items || [])
+        .map((r) => {
+          const payload = r.payload != null ? JSON.stringify(r.payload) : '';
+          return `<tr><td>${r.created_at || ''}</td><td>${r.actor || ''}</td><td>${r.action || ''}</td><td>${r.entity || ''}</td><td>${r.entity_id || ''}</td><td class="audit-payload">${payload.slice(0, 200)}${payload.length > 200 ? '…' : ''}</td></tr>`;
+        })
+        .join('');
+      const total = data.total != null ? data.total : 0;
+      const pages = Math.max(1, Math.ceil(total / 30));
+      if (info) info.textContent = `Page ${auditPage} of ${pages}`;
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="6">${err.message}</td></tr>`;
     }
   }
 
@@ -669,6 +725,48 @@
     }
   }
 
+  function clearInvoiceLinesEditor() {
+    const el = document.getElementById('invoiceLinesEditor');
+    if (el) el.innerHTML = '';
+  }
+
+  function addInvoiceLineRow(line) {
+    const el = document.getElementById('invoiceLinesEditor');
+    if (!el) return;
+    const row = document.createElement('div');
+    row.className = 'invoice-line-row row';
+    const d = line || {};
+    row.innerHTML = `
+      <input type="text" class="inv-line-desc" placeholder="Description" value="${String(d.description || '').replace(/"/g, '&quot;')}" />
+      <input type="number" class="inv-line-qty" placeholder="Qty" step="any" value="${d.quantity != null ? d.quantity : '1'}" />
+      <input type="number" class="inv-line-price" placeholder="Unit price" step="0.01" value="${d.unit_price != null ? d.unit_price : ''}" />
+      <input type="number" class="inv-line-total" placeholder="Line total" step="0.01" value="${d.line_total != null ? d.line_total : ''}" />
+      <input type="text" class="inv-line-enrollment-uuid" placeholder="Enrollment UUID (optional)" value="${String(d.enrollment_uuid || '').replace(/"/g, '&quot;')}" />
+    `;
+    el.appendChild(row);
+  }
+
+  function collectInvoiceLines() {
+    const rows = document.querySelectorAll('#invoiceLinesEditor .invoice-line-row');
+    const lines = [];
+    rows.forEach((row) => {
+      const description = row.querySelector('.inv-line-desc')?.value;
+      const quantity = row.querySelector('.inv-line-qty')?.value;
+      const unit_price = row.querySelector('.inv-line-price')?.value;
+      const line_total = row.querySelector('.inv-line-total')?.value;
+      const enrollment_uuid = row.querySelector('.inv-line-enrollment-uuid')?.value;
+      if (!String(description || '').trim() && !String(line_total || '').trim()) return;
+      lines.push({
+        description: description != null ? String(description) : null,
+        quantity: quantity !== '' && quantity != null ? Number(quantity) : 1,
+        unit_price: unit_price !== '' && unit_price != null ? Number(unit_price) : null,
+        line_total: line_total !== '' && line_total != null ? Number(line_total) : null,
+        enrollment_uuid: enrollment_uuid ? String(enrollment_uuid).trim() || null : null,
+      });
+    });
+    return lines;
+  }
+
   function fillInvoiceForm(id) {
     const inv = ledgerItemsCache.find((x) => String(x.id) === String(id));
     if (!inv) return;
@@ -679,6 +777,10 @@
     document.getElementById('invDue').value = inv.due_date || '';
     document.getElementById('invTotal').value = inv.total != null ? inv.total : '';
     document.getElementById('invNotes').value = inv.notes || '';
+    clearInvoiceLinesEditor();
+    const ils = inv.invoice_lines || [];
+    if (ils.length) ils.forEach((ln) => addInvoiceLineRow(ln));
+    else addInvoiceLineRow(null);
   }
 
   function refreshFinanceAll() {
@@ -690,13 +792,17 @@
 
   function initFinance() {
     document.getElementById('btnRefreshFinance')?.addEventListener('click', refreshFinanceAll);
-    document.getElementById('btnLoadLedger')?.addEventListener('click', refreshLedger);
+    document.getElementById('btnLoadLedger')?.addEventListener('click', () => {
+      ledgerPage = 1;
+      refreshLedger();
+    });
     document.getElementById('btnLoadAr')?.addEventListener('click', refreshAr);
     document.getElementById('btnLoadInvoices')?.addEventListener('click', refreshInvoices);
 
     document.getElementById('btnExportLedgerCsv')?.addEventListener('click', async () => {
       try {
-        const data = await jsonFetch('/.netlify/functions/finance-data?resource=ledger&pageSize=500', { headers: getAuthHeaders() });
+        const q = buildLedgerQuery({ page: '1', pageSize: '500' });
+        const data = await jsonFetch(`/.netlify/functions/finance-data?${q}`, { headers: getAuthHeaders() });
         const csv = ledgerToCsv(data.items || []);
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
         const a = document.createElement('a');
@@ -708,6 +814,56 @@
         /* ignore */
       }
     });
+
+    document.getElementById('btnExportLedgerXlsx')?.addEventListener('click', async () => {
+      if (typeof XLSX === 'undefined') return;
+      try {
+        const q = buildLedgerQuery({ page: '1', pageSize: '500' });
+        const data = await jsonFetch(`/.netlify/functions/finance-data?${q}`, { headers: getAuthHeaders() });
+        const rows = [['received_at', 'amount', 'currency', 'method', 'enrollment_id', 'trainee_id', 'reference']];
+        (data.items || []).forEach((row) => {
+          const e = row.enrollments || {};
+          rows.push([row.received_at, row.amount, row.currency, row.method, e.enrollment_id, e.trainee_id, row.reference]);
+        });
+        const ws = XLSX.utils.aoa_to_sheet(rows);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'ledger');
+        XLSX.writeFile(wb, 'payments-ledger.xlsx');
+      } catch (_) {
+        /* ignore */
+      }
+    });
+
+    document.getElementById('btnLedgerPrev')?.addEventListener('click', () => {
+      if (ledgerPage > 1) {
+        ledgerPage -= 1;
+        refreshLedger();
+      }
+    });
+    document.getElementById('btnLedgerNext')?.addEventListener('click', () => {
+      ledgerPage += 1;
+      refreshLedger();
+    });
+    ['ledgerFrom', 'ledgerTo', 'ledgerMethod', 'ledgerEnrollmentId'].forEach((id) => {
+      document.getElementById(id)?.addEventListener('change', () => {
+        ledgerPage = 1;
+        refreshLedger();
+      });
+    });
+
+    document.getElementById('btnAuditPrev')?.addEventListener('click', () => {
+      if (auditPage > 1) {
+        auditPage -= 1;
+        loadFinanceAudit();
+      }
+    });
+    document.getElementById('btnAuditNext')?.addEventListener('click', () => {
+      auditPage += 1;
+      loadFinanceAudit();
+    });
+    document.getElementById('btnAuditRefresh')?.addEventListener('click', loadFinanceAudit);
+
+    document.getElementById('btnAddInvoiceLine')?.addEventListener('click', () => addInvoiceLineRow(null));
 
     document.getElementById('financePaymentForm')?.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -745,6 +901,7 @@
         due_date: String(document.getElementById('invDue').value || '') || null,
         total: document.getElementById('invTotal').value ? Number(document.getElementById('invTotal').value) : null,
         notes: String(document.getElementById('invNotes').value || '').trim(),
+        lines: collectInvoiceLines(),
       };
       try {
         if (id) {
@@ -758,11 +915,13 @@
           await jsonFetch('/.netlify/functions/finance-data?resource=invoices', {
             method: 'POST',
             headers: getAuthHeaders(),
-            body: JSON.stringify({ ...payload, lines: [] }),
+            body: JSON.stringify(payload),
           });
         }
         document.getElementById('invEditId').value = '';
         document.getElementById('invoiceForm').reset();
+        clearInvoiceLinesEditor();
+        addInvoiceLineRow(null);
         if (msg) msg.textContent = 'Invoice saved.';
         refreshInvoices();
         refreshFinanceKpis();
@@ -774,6 +933,39 @@
     document.getElementById('btnClearInvoiceForm')?.addEventListener('click', () => {
       document.getElementById('invEditId').value = '';
       document.getElementById('invoiceForm').reset();
+      clearInvoiceLinesEditor();
+      addInvoiceLineRow(null);
+    });
+
+    clearInvoiceLinesEditor();
+    addInvoiceLineRow(null);
+  }
+
+  function initBulkEnrollment() {
+    document.getElementById('btnBulkEnrollment')?.addEventListener('click', async () => {
+      const msg = document.getElementById('bulkEnrollmentMsg');
+      const raw = String(document.getElementById('bulkEnrollmentIds')?.value || '');
+      const enrollment_ids = raw
+        .split(/\r?\n/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const enrollment_status = String(document.getElementById('bulkEnrollmentStatus')?.value || '');
+      if (!enrollment_ids.length) {
+        if (msg) msg.textContent = 'Enter at least one enrollment ID.';
+        return;
+      }
+      if (!confirm(`Set status to ${enrollment_status} for ${enrollment_ids.length} enrollment(s)?`)) return;
+      try {
+        const data = await jsonFetch('/.netlify/functions/operations-data?resource=bulk-enrollments', {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ enrollment_ids, enrollment_status }),
+        });
+        if (msg) msg.textContent = `Updated ${data.updated} row(s).`;
+        if (currentEntity() === 'enrollments') loadEntityRows();
+      } catch (err) {
+        if (msg) msg.textContent = err.message;
+      }
     });
   }
 
@@ -784,16 +976,43 @@
     document.getElementById('btnLoadSessionsForTools')?.addEventListener('click', loadSessionsForTools);
     document.getElementById('btnSaveAttendance')?.addEventListener('click', saveAttendanceRow);
     document.getElementById('btnLoadAttendance')?.addEventListener('click', loadAttendanceRows);
+    document.getElementById('btnExportAttendanceCsv')?.addEventListener('click', exportAttendanceCsv);
     document.getElementById('btnAddMaterial')?.addEventListener('click', addMaterial);
     document.getElementById('btnLoadMaterials')?.addEventListener('click', loadMaterialsRows);
+    document.getElementById('toolsGroupSelect')?.addEventListener('change', (e) => {
+      const v = String(e.target.value || '').trim();
+      const gid = document.getElementById('toolsGroupId');
+      if (gid) gid.value = v;
+    });
+  }
+
+  function exportAttendanceCsv() {
+    if (!attendanceRowsCache.length) return;
+    const headers = ['attendance_date', 'participant_name', 'status', 'notes'];
+    const lines = [headers.join(',')];
+    attendanceRowsCache.forEach((r) => {
+      const vals = [r.attendance_date, r.participant_name, r.status, r.notes].map((v) => {
+        const s = v == null ? '' : String(v);
+        return `"${s.replace(/"/g, '""')}"`;
+      });
+      lines.push(vals.join(','));
+    });
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'attendance.csv';
+    a.click();
+    URL.revokeObjectURL(a.href);
   }
 
   async function loadSessionsForTools() {
     const box = document.getElementById('toolsSessionsList');
+    const sel = document.getElementById('toolsGroupSelect');
     if (!box) return;
     try {
       const data = await jsonFetch('/.netlify/functions/training-sessions', { headers: getAuthHeaders() });
-      box.innerHTML = (data.sessions || [])
+      const sessions = data.sessions || [];
+      box.innerHTML = sessions
         .map((s) => {
           const groups = (s.training_groups || [])
             .map((g) => `<li>Group ${g.group_number}: group id <code>${g.id}</code></li>`)
@@ -801,6 +1020,15 @@
           return `<div class="tools-session-block"><strong>${s.title}</strong> — session <code>${s.id}</code><ul>${groups}</ul></div>`;
         })
         .join('');
+      if (sel) {
+        const opts = ['<option value="">— Pick a group —</option>'];
+        sessions.forEach((s) => {
+          (s.training_groups || []).forEach((g) => {
+            opts.push(`<option value="${g.id}">${s.title} — Group ${g.group_number}</option>`);
+          });
+        });
+        sel.innerHTML = opts.join('');
+      }
     } catch (err) {
       box.textContent = err.message;
     }
@@ -838,7 +1066,8 @@
         `/.netlify/functions/training-data?resource=attendance&group_id=${encodeURIComponent(group_id)}`,
         { headers: getAuthHeaders() },
       );
-      body.innerHTML = (data.items || [])
+      attendanceRowsCache = data.items || [];
+      body.innerHTML = attendanceRowsCache
         .map(
           (r) =>
             `<tr><td>${r.attendance_date || ''}</td><td>${r.participant_name || ''}</td><td>${r.status || ''}</td><td><button type="button" class="btn btn-secondary btn-att-del" data-id="${r.id}">Remove</button></td></tr>`,
@@ -1081,28 +1310,43 @@
   }
 
   async function joinByTokenFlow(token) {
+    document.body.classList.add('participant-join');
+    const trainerPanel = document.getElementById('trainerPanel');
+    if (trainerPanel) trainerPanel.classList.add('hidden');
+    const landing = document.getElementById('participantLanding');
     const panel = document.getElementById('joinPanel');
-    panel.classList.remove('hidden');
     const joinData = await jsonFetch(`/.netlify/functions/training-join?token=${encodeURIComponent(token)}`);
-    document.getElementById('joinHeading').textContent = `${joinData.sessionTitle} — Group ${joinData.groupNumber}`;
-    document.getElementById('joinForm').onsubmit = async (e) => {
-      e.preventDefault();
-      const displayName = String(document.getElementById('joinName').value || '').trim();
-      if (!displayName) return;
-      const joined = await jsonFetch(`/.netlify/functions/training-join?token=${encodeURIComponent(token)}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ displayName }),
-      });
-      trainingState.groupId = joined.groupId;
-      trainingState.participantId = joined.participant.id;
-      trainingState.senderName = joined.participant.display_name;
-      panel.classList.add('hidden');
-      document.getElementById('chatPanel').classList.remove('hidden');
-      await loadRecentMessages();
-      await initRealtime();
-      setInterval(loadRecentMessages, 10000);
+    document.getElementById('participantLandingTitle').textContent = joinData.sessionTitle || 'Live session';
+    document.getElementById('participantLandingSubtitle').textContent = `Group ${joinData.groupNumber} — continue to enter your display name and open the chat.`;
+    if (landing) landing.classList.remove('hidden');
+    if (panel) panel.classList.add('hidden');
+    document.getElementById('chatPanel').classList.add('hidden');
+
+    const startJoin = () => {
+      if (landing) landing.classList.add('hidden');
+      if (panel) panel.classList.remove('hidden');
+      document.getElementById('joinHeading').textContent = `${joinData.sessionTitle} — Group ${joinData.groupNumber}`;
+      document.getElementById('joinForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const displayName = String(document.getElementById('joinName').value || '').trim();
+        if (!displayName) return;
+        const joined = await jsonFetch(`/.netlify/functions/training-join?token=${encodeURIComponent(token)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ displayName }),
+        });
+        trainingState.groupId = joined.groupId;
+        trainingState.participantId = joined.participant.id;
+        trainingState.senderName = joined.participant.display_name;
+        panel.classList.add('hidden');
+        document.getElementById('chatPanel').classList.remove('hidden');
+        loadRecentMessages();
+        initRealtime();
+        setInterval(loadRecentMessages, 10000);
+      };
     };
+
+    document.getElementById('btnParticipantContinue').onclick = startJoin;
   }
 
   async function initTraining() {
@@ -1123,7 +1367,7 @@
     document.getElementById('trainingSessionForm')?.addEventListener('submit', async (e) => {
       e.preventDefault();
       const title = String(document.getElementById('trainingTitle').value || '').trim();
-      const groupsCount = Number(document.getElementById('groupsCount').value || 4);
+      const groupsCount = Number(document.getElementById('groupsCount').value || 1);
       if (!title) return;
       const msg = document.getElementById('trainingMsg');
       const links = document.getElementById('trainingLinks');
@@ -1134,9 +1378,12 @@
           body: JSON.stringify({ title, groupsCount }),
         });
         const base = `${window.location.origin}${window.location.pathname}`;
-        links.innerHTML = `<h4>Session Links</h4>${(data.groups || []).map((g) => (
-          `<p>Group ${g.group_number}: <a href="${base}?group=${g.join_token}" target="_blank" rel="noopener">${base}?group=${g.join_token}</a></p>`
-        )).join('')}`;
+        const sorted = (data.groups || []).slice().sort((a, b) => a.group_number - b.group_number);
+        const primary = sorted[0];
+        const href = primary ? `${base}?group=${primary.join_token}` : base;
+        links.innerHTML = primary
+          ? `<h4>Share link for students</h4><p class="share-link-wrap"><a href="${href}" target="_blank" rel="noopener">${href}</a></p>${sorted.length > 1 ? `<p class="muted small-margin">Additional groups were created for breakout use; only the link above is shown here.</p>` : ''}`
+          : '';
         msg.textContent = 'Session created.';
       } catch (err) {
         msg.textContent = err.message;

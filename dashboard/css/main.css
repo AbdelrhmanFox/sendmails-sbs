@@ -181,6 +181,76 @@ h1, h2, h3, h4, p { margin-top: 0; }
 
 .finance-kpis .status-grid { margin-top: 10px; }
 
+.ledger-filters input,
+.ledger-pager {
+  margin-bottom: 10px;
+}
+.ledger-pager .muted {
+  margin: 0 8px;
+  font-size: 13px;
+}
+
+.bulk-textarea {
+  width: 100%;
+  font-family: ui-monospace, monospace;
+  font-size: 13px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--brand-border);
+  background: var(--brand-surface-2);
+  color: var(--brand-text);
+  margin-bottom: 10px;
+}
+
+.invoice-lines-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.invoice-line-row {
+  align-items: flex-end;
+}
+.invoice-line-row input {
+  margin-bottom: 0;
+  flex: 1;
+  min-width: 100px;
+}
+
+.audit-payload {
+  max-width: 280px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 12px;
+}
+
+.small-margin {
+  margin-top: 8px;
+  margin-bottom: 0;
+}
+.share-link-wrap {
+  word-break: break-all;
+  font-size: 14px;
+}
+
+body.participant-join .app {
+  grid-template-columns: 1fr;
+}
+body.participant-join .sidebar {
+  display: none;
+}
+body.participant-join .main {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.participant-landing {
+  text-align: center;
+}
+.participant-landing .btn {
+  margin-top: 12px;
+}
+
 .menu-item {
   width: 100%;
   text-align: left;

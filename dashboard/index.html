@@ -154,6 +154,20 @@
             </table>
           </div>
         </div>
+        <div class="card" id="bulkEnrollmentCard">
+          <h3>Bulk update enrollment status</h3>
+          <p class="muted">One enrollment business ID per line (must match <code>enrollment_id</code> text).</p>
+          <textarea id="bulkEnrollmentIds" rows="5" class="bulk-textarea" placeholder="EN-001&#10;EN-002"></textarea>
+          <label for="bulkEnrollmentStatus">New status</label>
+          <select id="bulkEnrollmentStatus">
+            <option value="Registered">Registered</option>
+            <option value="Attended">Attended</option>
+            <option value="Cancelled">Cancelled</option>
+            <option value="Completed">Completed</option>
+          </select>
+          <button type="button" class="btn btn-primary" id="btnBulkEnrollment">Apply to listed IDs</button>
+          <p id="bulkEnrollmentMsg" class="inline-note"></p>
+        </div>
       </section>
 
       <section id="view-operations-pipeline" class="view">
@@ -218,11 +232,17 @@
           <h3>Create Session</h3>
           <form id="trainingSessionForm" class="row">
             <input id="trainingTitle" placeholder="Session title" required />
-            <input id="groupsCount" type="number" min="2" max="12" value="4" />
+            <input id="groupsCount" type="number" min="1" max="12" value="1" title="Number of groups (1 = single link for students)" />
             <button class="btn btn-primary" type="submit">Create</button>
           </form>
+          <p class="muted small-margin">Students receive <strong>one</strong> share link (first group). Use more groups only if you need breakout rooms internally.</p>
           <p id="trainingMsg" class="inline-note"></p>
           <div id="trainingLinks"></div>
+        </div>
+        <div id="participantLanding" class="card hidden participant-landing">
+          <h3 id="participantLandingTitle">Live session</h3>
+          <p id="participantLandingSubtitle" class="subtitle">Tap continue to enter your display name and open the group chat.</p>
+          <button type="button" class="btn btn-primary" id="btnParticipantContinue">Continue</button>
         </div>
         <div id="joinPanel" class="card hidden">
           <h3 id="joinHeading">Join Group</h3>
@@ -256,8 +276,12 @@
         </div>
         <div class="card">
           <h3>Attendance</h3>
+          <label for="toolsGroupSelect">Group</label>
+          <select id="toolsGroupSelect" aria-label="Pick session group">
+            <option value="">— Load sessions first, then pick a group —</option>
+          </select>
           <label for="toolsGroupId">Group ID (UUID)</label>
-          <input type="text" id="toolsGroupId" placeholder="Paste group id from session links" />
+          <input type="text" id="toolsGroupId" placeholder="Or paste group UUID" />
           <div class="row">
             <input type="text" id="toolsParticipant" placeholder="Participant name" />
             <input type="date" id="toolsAttDate" />
@@ -268,6 +292,7 @@
             </select>
             <button type="button" class="btn btn-primary" id="btnSaveAttendance">Save</button>
             <button type="button" class="btn btn-secondary" id="btnLoadAttendance">Load rows</button>
+            <button type="button" class="btn btn-secondary" id="btnExportAttendanceCsv">Export CSV</button>
           </div>
           <div class="table-wrap">
             <table>
@@ -319,8 +344,9 @@
             </div>
             <div>
               <label for="payMethod">Method</label>
-              <input id="payMethod" placeholder="e.g. bank transfer" />
+              <input id="payMethod" placeholder="e.g. bank transfer; use refund for credits" />
             </div>
+            <p class="muted full" style="font-size:12px;margin:0">Use method <code>refund</code> with a negative amount to record a refund or adjustment.</p>
             <div>
               <label for="payReceived">Received at</label>
               <input id="payReceived" type="datetime-local" />
@@ -344,8 +370,20 @@
             <h3>Payments ledger</h3>
             <div class="row">
               <button type="button" class="btn btn-secondary" id="btnExportLedgerCsv">Export CSV</button>
+              <button type="button" class="btn btn-secondary" id="btnExportLedgerXlsx">Export Excel</button>
               <button type="button" class="btn btn-secondary" id="btnLoadLedger">Refresh</button>
             </div>
+          </div>
+          <div class="row ledger-filters">
+            <input type="date" id="ledgerFrom" aria-label="From date" />
+            <input type="date" id="ledgerTo" aria-label="To date" />
+            <input type="text" id="ledgerMethod" placeholder="Method contains" />
+            <input type="text" id="ledgerEnrollmentId" placeholder="Enrollment ID" />
+          </div>
+          <div class="row ledger-pager">
+            <button type="button" class="btn btn-secondary" id="btnLedgerPrev">Previous</button>
+            <span id="ledgerPageInfo" class="muted"></span>
+            <button type="button" class="btn btn-secondary" id="btnLedgerNext">Next</button>
           </div>
           <div class="table-wrap">
             <table id="ledgerTable">
@@ -518,6 +556,22 @@
             <thead><tr><th>Username</th><th>Role</th><th>Actions</th></tr></thead>
             <tbody id="usersTableBody"></tbody>
           </table>
+        </div>
+        <div class="card" id="financeAuditCard">
+          <h3>Finance audit log</h3>
+          <p class="muted">Append-only log of finance mutations (payments, invoices).</p>
+          <div class="row ledger-pager">
+            <button type="button" class="btn btn-secondary" id="btnAuditPrev">Previous</button>
+            <span id="auditPageInfo" class="muted"></span>
+            <button type="button" class="btn btn-secondary" id="btnAuditNext">Next</button>
+            <button type="button" class="btn btn-secondary" id="btnAuditRefresh">Refresh</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>When</th><th>Actor</th><th>Action</th><th>Entity</th><th>ID</th><th>Payload</th></tr></thead>
+              <tbody id="financeAuditBody"></tbody>
+            </table>
+          </div>
         </div>
       </section>
     </main>

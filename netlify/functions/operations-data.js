@@ -174,6 +174,30 @@ async function handleOpsInsight(event, auth, supabase) {
   return json({ error: 'Unknown resource' }, 400);
 }
 
+async function handleBulkEnrollments(event, auth, supabase) {
+  if (event.httpMethod !== 'POST') return json({ error: 'Method not allowed' }, 405);
+  if (!['admin', 'staff'].includes(auth.role)) return json({ error: 'Forbidden' }, 403);
+  let body;
+  try {
+    body = JSON.parse(event.body || '{}');
+  } catch (_) {
+    return json({ error: 'Invalid JSON' }, 400);
+  }
+  const rawIds = Array.isArray(body.enrollment_ids) ? body.enrollment_ids : [];
+  const ids = rawIds.map((x) => String(x || '').trim()).filter(Boolean);
+  const status = String(body.enrollment_status || '').trim();
+  const allowed = new Set(['Registered', 'Attended', 'Cancelled', 'Completed']);
+  if (!status || !allowed.has(status)) return json({ error: 'Invalid enrollment_status' }, 400);
+  if (!ids.length || ids.length > 200) return json({ error: 'Provide 1–200 enrollment_ids' }, 400);
+  const { data, error } = await supabase
+    .from('enrollments')
+    .update({ enrollment_status: status, updated_at: new Date().toISOString() })
+    .in('enrollment_id', ids)
+    .select('enrollment_id');
+  if (error) return json({ error: error.message || 'Bulk update failed' }, 500);
+  return json({ ok: true, requested: ids.length, updated: (data || []).length });
+}
+
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: cors };
   if (!['GET', 'POST', 'PUT', 'DELETE'].includes(event.httpMethod)) return json({ error: 'Method not allowed' }, 405);
@@ -185,8 +209,11 @@ exports.handler = async (event) => {
   const supabase = getSupabaseServiceClient();
   if (!supabase) return json({ error: 'Server config missing' }, 500);
 
-  const insightResource = String(event.queryStringParameters?.resource || '').trim();
-  if (insightResource) {
+  const qResource = String(event.queryStringParameters?.resource || '').trim().toLowerCase();
+  if (qResource === 'bulk-enrollments') {
+    return handleBulkEnrollments(event, auth, supabase);
+  }
+  if (qResource) {
     return handleOpsInsight(event, auth, supabase);
   }
 

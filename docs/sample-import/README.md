@@ -31,6 +31,7 @@ Use these names so imports match the locked workbook and `npm run import:workboo
 | `University` | No | |
 | `Specialty` | No | |
 | `City` | No | |
+| `Company_ID` | No | Optional. UUID of a row in `companies` (`company_id` snake_case also accepted). The company must exist in the database before import or the row may fail the foreign key check. |
 | `Created_Date` | No | Date: `YYYY-MM-DD`, `MM/DD/YYYY`, or Excel date |
 | `Status` | No | Defaults to `Active` |
 | `Notes` | No | |

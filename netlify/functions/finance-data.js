@@ -172,6 +172,10 @@ exports.handler = async (event) => {
     const enrollmentKey = String(body.enrollment_id || '').trim();
     const amount = body.amount === '' || body.amount == null ? NaN : Number(body.amount);
     if (!enrollmentKey || Number.isNaN(amount)) return json({ error: 'enrollment_id and amount required' }, 400);
+    const methodNorm = String(body.method || '').trim().toLowerCase();
+    if (amount < 0 && methodNorm !== 'refund') {
+      return json({ error: 'Negative amounts are only allowed when method is "refund"' }, 400);
+    }
 
     const { data: en, error: enErr } = await supabase.from('enrollments').select('id').eq('enrollment_id', enrollmentKey).maybeSingle();
     if (enErr || !en) return json({ error: 'Enrollment not found for enrollment_id' }, 400);
@@ -190,7 +194,7 @@ exports.handler = async (event) => {
 
     const { data: inserted, error } = await supabase.from('payments').insert(row).select('*').single();
     if (error) return json({ error: error.message || 'Payment insert failed' }, 500);
-    await writeAudit(supabase, row.created_by, 'insert', 'payment', inserted.id, { amount, enrollment_id: enrollmentKey });
+    await writeAudit(supabase, row.created_by, 'insert', 'payment', inserted.id, { amount, enrollment_id: enrollmentKey, method: row.method });
     return json({ ok: true, item: inserted });
   }
 
@@ -236,6 +240,9 @@ exports.handler = async (event) => {
       };
       await supabase.from('invoice_lines').insert(lr);
     }
+    if (lines.length) {
+      await writeAudit(supabase, String(auth.username || 'user'), 'insert', 'invoice_lines', inv.id, { count: lines.length });
+    }
 
     return json({ ok: true, item: inv });
   }
@@ -268,6 +275,24 @@ exports.handler = async (event) => {
     const { data: inv, error } = await supabase.from('invoices').update(invRow).eq('id', id).select('*').single();
     if (error) return json({ error: error.message || 'Invoice update failed' }, 500);
     await writeAudit(supabase, String(auth.username || 'user'), 'update', 'invoice', id, invRow);
+
+    if (Array.isArray(body.lines)) {
+      const { error: delErr } = await supabase.from('invoice_lines').delete().eq('invoice_id', id);
+      if (delErr) return json({ error: delErr.message || 'Could not replace invoice lines' }, 500);
+      for (const line of body.lines) {
+        const lr = {
+          invoice_id: id,
+          enrollment_uuid: line.enrollment_uuid || null,
+          description: line.description != null ? String(line.description) : null,
+          quantity: line.quantity != null ? Number(line.quantity) : 1,
+          unit_price: line.unit_price != null ? Number(line.unit_price) : null,
+          line_total: line.line_total != null ? Number(line.line_total) : null,
+        };
+        await supabase.from('invoice_lines').insert(lr);
+      }
+      await writeAudit(supabase, String(auth.username || 'user'), 'replace_lines', 'invoice', id, { line_count: body.lines.length });
+    }
+
     return json({ ok: true, item: inv });
   }
 
@@ -285,6 +310,18 @@ exports.handler = async (event) => {
     const { data, error } = await supabase.from('companies').select('*').order('name', { ascending: true }).limit(500);
     if (error) return json({ error: error.message || 'Could not load companies' }, 500);
     return json({ items: data || [] });
+  }
+
+  if (event.httpMethod === 'GET' && resource === 'audit') {
+    if (auth.role !== 'admin') return json({ error: 'Forbidden' }, 403);
+    const { page, pageSize, from, to } = parsePage(event.queryStringParameters || {});
+    const { data, error, count } = await supabase
+      .from('finance_audit_log')
+      .select('*', { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .range(from, to);
+    if (error) return json({ error: error.message || 'Audit query failed' }, 500);
+    return json({ items: data || [], total: count != null ? count : 0, page, pageSize });
   }
 
   return json({ error: 'Unknown resource or method' }, 400);

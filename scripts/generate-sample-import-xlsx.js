@@ -10,9 +10,9 @@ const ROOT = path.join(__dirname, '..');
 const OUT = path.join(ROOT, 'docs', 'sample-import', 'SBS_operations_sample.xlsx');
 
 const trainees = [
-  ['Trainee_ID', 'Full_Name', 'Phone', 'Email', 'Type', 'Company_Name', 'Job_Title', 'University', 'Specialty', 'City', 'Created_Date', 'Status', 'Notes'],
-  ['TR-SAMPLE01', 'Sample Trainee', '+1000000000', 'sample.trainee@example.com', 'Doctor', 'Sample Co', 'Analyst', 'Sample University', 'General', 'Cairo', '2026-01-15', 'Active', 'Demo import row'],
-  ['TR-SAMPLE02', 'Second Trainee', '', 'second@example.com', 'Student', '', '', '', '', 'Alexandria', '2026-02-01', 'Active', ''],
+  ['Trainee_ID', 'Full_Name', 'Phone', 'Email', 'Type', 'Company_Name', 'Job_Title', 'University', 'Specialty', 'City', 'Company_ID', 'Created_Date', 'Status', 'Notes'],
+  ['TR-SAMPLE01', 'Sample Trainee', '+1000000000', 'sample.trainee@example.com', 'Doctor', 'Sample Co', 'Analyst', 'Sample University', 'General', 'Cairo', '', '2026-01-15', 'Active', 'Demo import row'],
+  ['TR-SAMPLE02', 'Second Trainee', '', 'second@example.com', 'Student', '', '', '', '', 'Alexandria', '', '2026-02-01', 'Active', ''],
 ];
 
 const courses = [
