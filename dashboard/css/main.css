@@ -197,6 +197,11 @@ h1, h2, h3, h4, p { margin-top: 0; }
   margin: 0;
 }
 .finance-kpis .status-grid { margin-top: 0; }
+.finance-source-hint {
+  max-width: 48rem;
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
 
 .finance-charts-card .view-header {
   align-items: flex-start;
