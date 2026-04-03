@@ -16,7 +16,7 @@ exports.handler = async (event) => {
 
   const { data: session, error: sessionErr } = await supabase
     .from('training_sessions')
-    .select('id, title')
+    .select('id, title, whiteboard_enabled')
     .eq('id', sessionId)
     .maybeSingle();
   if (sessionErr) return json({ error: 'Could not load session' }, 500);
@@ -32,6 +32,7 @@ exports.handler = async (event) => {
   return json({
     ok: true,
     title: session.title || 'Live session',
+    whiteboardEnabled: session.whiteboard_enabled !== false,
     groups: groups || [],
   });
 };

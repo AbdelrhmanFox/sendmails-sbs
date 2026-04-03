@@ -309,8 +309,10 @@ body.participant-join .sidebar {
   display: none;
 }
 body.participant-join .main {
-  max-width: 640px;
+  max-width: min(920px, 100%);
   margin: 0 auto;
+  padding-left: 16px;
+  padding-right: 16px;
 }
 
 .participant-landing {
@@ -568,18 +570,30 @@ h2::after {
   display: flex;
   flex-direction: column;
   gap: 0;
-  max-height: min(85vh, 720px);
-  min-height: 360px;
+  max-height: min(92vh, 900px);
+  min-height: 420px;
   padding-bottom: 12px;
 }
 body.participant-join .chat-panel {
-  max-height: min(88vh, 780px);
+  max-height: min(94vh, 940px);
+  min-height: min(70vh, 520px);
 }
 .chat-panel-head {
   flex-shrink: 0;
   margin-bottom: 8px;
   padding-bottom: 8px;
   border-bottom: 1px solid color-mix(in oklab, var(--brand-border) 50%, transparent);
+}
+.chat-panel-head-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.chat-panel-titles {
+  flex: 1;
+  min-width: 0;
 }
 .chat-panel-head h3 {
   margin-bottom: 2px;
@@ -590,15 +604,60 @@ body.participant-join .chat-panel {
   font-size: 13px;
   line-height: 1.4;
 }
+.chat-whiteboard-toggle {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.chat-whiteboard-toggle.hidden {
+  display: none;
+}
+
+.training-session-form .row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.training-whiteboard-opt {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: var(--brand-muted);
+  cursor: pointer;
+}
+.training-whiteboard-opt input {
+  margin: 4px 0 0;
+  width: auto;
+}
 
 .whiteboard-wrap {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+.whiteboard-wrap:not(.whiteboard-wrap--collapsed):not(.whiteboard-wrap--session-off) {
   margin-bottom: 10px;
   padding-bottom: 10px;
   border-bottom: 1px solid color-mix(in oklab, var(--brand-border) 40%, transparent);
+}
+.whiteboard-wrap--session-off {
+  display: none;
+}
+.whiteboard-wrap--collapsed .whiteboard-expandable {
+  display: none;
+}
+.whiteboard-wrap--collapsed {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+}
+.whiteboard-expandable {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 .whiteboard-header {
   display: flex;
@@ -696,8 +755,8 @@ body.participant-join .chat-panel {
 .training-whiteboard {
   display: block;
   width: 100%;
-  height: 168px;
-  max-height: 22vh;
+  height: 220px;
+  max-height: min(38vh, 360px);
   border: none;
   border-radius: 0;
   background: transparent;
@@ -754,7 +813,7 @@ body.participant-join .chat-panel {
   flex-direction: column;
   gap: 8px;
   padding: 12px 10px 14px;
-  min-height: 120px;
+  min-height: 180px;
 }
 
 .chat-line {
@@ -875,8 +934,8 @@ body.participant-join .chat-panel {
     min-height: 100px;
   }
   .training-whiteboard {
-    height: 140px;
-    max-height: 28vh;
+    height: 180px;
+    max-height: 36vh;
   }
   .whiteboard-clear {
     margin-left: 0;

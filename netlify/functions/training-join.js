@@ -12,11 +12,14 @@ exports.handler = async (event) => {
 
   const { data: group, error: groupErr } = await supabase
     .from('training_groups')
-    .select('id, group_number, session_id, training_sessions(title)')
+    .select('id, group_number, session_id, training_sessions(title, whiteboard_enabled)')
     .eq('join_token', token)
     .maybeSingle();
   if (groupErr) return json({ error: 'Could not load group' }, 500);
   if (!group) return json({ error: 'Invalid group link' }, 404);
+
+  const sessionRow = group.training_sessions || {};
+  const whiteboardEnabled = sessionRow.whiteboard_enabled !== false;
 
   if (event.httpMethod === 'GET') {
     return json({
@@ -24,7 +27,8 @@ exports.handler = async (event) => {
       groupId: group.id,
       groupNumber: group.group_number,
       sessionId: group.session_id,
-      sessionTitle: group.training_sessions?.title || 'Training Session',
+      sessionTitle: sessionRow.title || 'Training Session',
+      whiteboardEnabled,
     });
   }
 
@@ -49,7 +53,8 @@ exports.handler = async (event) => {
     groupId: group.id,
     groupNumber: group.group_number,
     sessionId: group.session_id,
-    sessionTitle: group.training_sessions?.title || 'Training Session',
+    sessionTitle: sessionRow.title || 'Training Session',
+    whiteboardEnabled,
     participant,
   });
 };

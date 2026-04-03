@@ -14,7 +14,7 @@ exports.handler = async (event) => {
   if (event.httpMethod === 'GET') {
     let q = supabase
       .from('training_sessions')
-      .select('id, title, trainer_username, groups_count, created_at, training_groups(id, group_number, join_token)')
+      .select('id, title, trainer_username, groups_count, whiteboard_enabled, created_at, training_groups(id, group_number, join_token)')
       .order('created_at', { ascending: false })
       .limit(50);
     if (auth.role === 'trainer') {
@@ -51,11 +51,17 @@ exports.handler = async (event) => {
   }
   const title = String(body.title || '').trim();
   const groupsCount = Math.max(1, Math.min(12, Number(body.groupsCount || 1)));
+  const whiteboardEnabled = body.whiteboardEnabled !== false;
   if (!title) return json({ error: 'Title is required' }, 400);
 
   const { data: session, error: sessionErr } = await supabase
     .from('training_sessions')
-    .insert({ trainer_username: auth.username || 'trainer', title, groups_count: groupsCount })
+    .insert({
+      trainer_username: auth.username || 'trainer',
+      title,
+      groups_count: groupsCount,
+      whiteboard_enabled: whiteboardEnabled,
+    })
     .select('*')
     .single();
   if (sessionErr) return json({ error: sessionErr.message || 'Could not create training session' }, 500);

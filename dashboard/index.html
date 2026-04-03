@@ -242,10 +242,16 @@
         </div>
         <div id="trainerPanel" class="card">
           <h3>Create Session</h3>
-          <form id="trainingSessionForm" class="row">
-            <input id="trainingTitle" placeholder="Session title" required />
-            <input id="groupsCount" type="number" min="1" max="12" value="1" title="Number of groups (1 = single link for students)" />
-            <button class="btn btn-primary" type="submit">Create</button>
+          <form id="trainingSessionForm" class="training-session-form">
+            <div class="row">
+              <input id="trainingTitle" placeholder="Session title" required />
+              <input id="groupsCount" type="number" min="1" max="12" value="1" title="Number of groups (1 = single link for students)" />
+              <button class="btn btn-primary" type="submit">Create</button>
+            </div>
+            <label class="training-whiteboard-opt">
+              <input type="checkbox" id="trainingWhiteboardEnabled" checked />
+              <span>Enable shared whiteboard for participants in this session</span>
+            </label>
           </form>
           <p class="muted small-margin">Students use <strong>one</strong> session link. If you set more than one group, they pick a group on the next screen.</p>
           <p id="trainingMsg" class="inline-note"></p>
@@ -277,33 +283,40 @@
         </div>
         <div id="chatPanel" class="card chat-panel hidden">
           <div class="chat-panel-head">
-            <h3>Group chat</h3>
-            <p class="muted chat-panel-sub" id="chatPanelSub"></p>
+            <div class="chat-panel-head-top">
+              <div class="chat-panel-titles">
+                <h3>Group chat</h3>
+                <p class="muted chat-panel-sub" id="chatPanelSub"></p>
+              </div>
+              <button type="button" class="btn btn-secondary chat-whiteboard-toggle hidden" id="btnToggleWhiteboard" aria-expanded="false" aria-controls="whiteboardWrap">Show whiteboard</button>
+            </div>
           </div>
-          <div id="whiteboardWrap" class="whiteboard-wrap">
-            <div class="whiteboard-header">
-              <span class="whiteboard-title">Quick board</span>
-              <span class="muted whiteboard-hint">Shared live — not saved after refresh</span>
+          <div id="whiteboardWrap" class="whiteboard-wrap whiteboard-wrap--collapsed whiteboard-wrap--session-off" aria-hidden="true">
+            <div class="whiteboard-expandable">
+              <div class="whiteboard-header">
+                <span class="whiteboard-title">Quick board</span>
+                <span class="muted whiteboard-hint">Shared live — not saved after refresh</span>
+              </div>
+              <div class="whiteboard-toolbar" role="toolbar" aria-label="Shared whiteboard">
+                <select id="whiteboardMode" class="whiteboard-tool-select" aria-label="Drawing tool">
+                  <option value="pen">Pen</option>
+                  <option value="eraser">Eraser</option>
+                </select>
+                <label class="whiteboard-toolbar-label">
+                  <span class="wb-label-text">Color</span>
+                  <input type="color" id="whiteboardColor" value="#00a99d" />
+                </label>
+                <label class="whiteboard-toolbar-label whiteboard-width-label">
+                  <span class="wb-label-text">Width</span>
+                  <input type="range" id="whiteboardWidth" min="1" max="12" value="3" />
+                </label>
+                <button type="button" class="whiteboard-clear" id="whiteboardClearAll">Clear all</button>
+              </div>
+              <div class="whiteboard-canvas-shell">
+                <canvas id="trainingWhiteboard" class="training-whiteboard" width="800" height="200" aria-label="Session whiteboard"></canvas>
+              </div>
+              <p id="whiteboardNote" class="muted whiteboard-note hidden"></p>
             </div>
-            <div class="whiteboard-toolbar" role="toolbar" aria-label="Shared whiteboard">
-              <select id="whiteboardMode" class="whiteboard-tool-select" aria-label="Drawing tool">
-                <option value="pen">Pen</option>
-                <option value="eraser">Eraser</option>
-              </select>
-              <label class="whiteboard-toolbar-label">
-                <span class="wb-label-text">Color</span>
-                <input type="color" id="whiteboardColor" value="#00a99d" />
-              </label>
-              <label class="whiteboard-toolbar-label whiteboard-width-label">
-                <span class="wb-label-text">Width</span>
-                <input type="range" id="whiteboardWidth" min="1" max="12" value="3" />
-              </label>
-              <button type="button" class="whiteboard-clear" id="whiteboardClearAll">Clear all</button>
-            </div>
-            <div class="whiteboard-canvas-shell">
-              <canvas id="trainingWhiteboard" class="training-whiteboard" width="800" height="200" aria-label="Session whiteboard"></canvas>
-            </div>
-            <p id="whiteboardNote" class="muted whiteboard-note hidden"></p>
           </div>
           <div id="trainChatScroll" class="chat-scroll" role="log" aria-live="polite" aria-relevant="additions">
             <div id="chatMessages" class="chat-messages-inner"></div>

@@ -183,6 +183,8 @@ const trainingState = {
   senderName: null,
   channel: null,
   supabase: null,
+  whiteboardAllowed: false,
+  whiteboardSubscribed: false,
 };
 
 let whiteboardChannel = null;
@@ -254,6 +256,35 @@ function setWhiteboardDisabled(msg) {
     note.classList.toggle('hidden', !msg);
   }
   if (wrap) wrap.classList.toggle('whiteboard--off', !!msg);
+}
+
+function applyWhiteboardPolicyToChatUi() {
+  const wrap = document.getElementById('whiteboardWrap');
+  const btn = document.getElementById('btnToggleWhiteboard');
+  if (!wrap || !btn) return;
+  if (!trainingState.whiteboardAllowed) {
+    wrap.classList.add('whiteboard-wrap--session-off');
+    wrap.classList.add('whiteboard-wrap--collapsed');
+    wrap.setAttribute('aria-hidden', 'true');
+    btn.classList.add('hidden');
+    btn.textContent = 'Show whiteboard';
+    btn.setAttribute('aria-expanded', 'false');
+    void teardownWhiteboardUi();
+    trainingState.whiteboardSubscribed = false;
+    return;
+  }
+  wrap.classList.remove('whiteboard-wrap--session-off');
+  wrap.classList.add('whiteboard-wrap--collapsed');
+  wrap.setAttribute('aria-hidden', 'true');
+  btn.classList.remove('hidden');
+  btn.textContent = 'Show whiteboard';
+  btn.setAttribute('aria-expanded', 'false');
+}
+
+async function ensureWhiteboardRealtime() {
+  if (!trainingState.whiteboardAllowed || trainingState.whiteboardSubscribed) return;
+  await attachWhiteboardRealtime();
+  trainingState.whiteboardSubscribed = Boolean(whiteboardChannel);
 }
 
 function resizeBoardToDisplay() {
@@ -412,6 +443,7 @@ function initWhiteboardUi() {
 
 async function attachWhiteboardRealtime() {
   setWhiteboardDisabled('');
+  if (!trainingState.whiteboardAllowed) return;
   await teardownWhiteboardUi();
   if (!trainingState.groupId) return;
   const panel = document.getElementById('chatPanel');
@@ -472,7 +504,6 @@ async function initRealtime() {
         appendChatMessage(payload.new);
       });
     await trainingState.channel.subscribe();
-    await attachWhiteboardRealtime();
   } catch (_) {
     // keep polling fallback only
   }
@@ -544,6 +575,7 @@ async function joinByTokenFlow(token) {
   const landing = document.getElementById('participantLanding');
   const panel = document.getElementById('joinPanel');
   const joinData = await jsonFetch(`/.netlify/functions/training-join?token=${encodeURIComponent(token)}`);
+  trainingState.whiteboardAllowed = joinData.whiteboardEnabled !== false;
   setTrainingParticipantHero(
     joinData.sessionTitle || 'Live session',
     `Group ${joinData.groupNumber} — continue to enter your display name and open the chat.`,
@@ -570,12 +602,14 @@ async function joinByTokenFlow(token) {
       trainingState.groupId = joined.groupId;
       trainingState.participantId = joined.participant.id;
       trainingState.senderName = joined.participant.display_name;
+      trainingState.whiteboardAllowed = joined.whiteboardEnabled !== false;
       panel.classList.add('hidden');
       document.getElementById('chatPanel').classList.remove('hidden');
       const sub = document.getElementById('chatPanelSub');
       if (sub) {
         sub.textContent = `${joined.sessionTitle || joinData.sessionTitle || 'Live session'} · Group ${joined.groupNumber ?? joinData.groupNumber}`;
       }
+      applyWhiteboardPolicyToChatUi();
       loadRecentMessages();
       initRealtime();
       setInterval(loadRecentMessages, 10000);
@@ -685,10 +719,15 @@ export async function initTraining() {
     const msg = document.getElementById('trainingMsg');
     const links = document.getElementById('trainingLinks');
     try {
+      const wbEl = document.getElementById('trainingWhiteboardEnabled');
       const data = await jsonFetch('/.netlify/functions/training-sessions', {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ title, groupsCount }),
+        body: JSON.stringify({
+          title,
+          groupsCount,
+          whiteboardEnabled: wbEl ? wbEl.checked : true,
+        }),
       });
       const base = `${window.location.origin}${window.location.pathname}`;
       const sorted = (data.groups || []).slice().sort((a, b) => a.group_number - b.group_number);
@@ -712,6 +751,25 @@ export async function initTraining() {
   if (['admin', 'trainer'].includes(authRole)) {
     loadTrainerSessions();
   }
+
+  document.getElementById('btnToggleWhiteboard')?.addEventListener('click', async () => {
+    const wrap = document.getElementById('whiteboardWrap');
+    const btn = document.getElementById('btnToggleWhiteboard');
+    if (!wrap || !btn || !trainingState.whiteboardAllowed) return;
+    if (wrap.classList.contains('whiteboard-wrap--collapsed')) {
+      wrap.classList.remove('whiteboard-wrap--collapsed');
+      wrap.setAttribute('aria-hidden', 'false');
+      btn.setAttribute('aria-expanded', 'true');
+      btn.textContent = 'Hide whiteboard';
+      await ensureWhiteboardRealtime();
+      requestAnimationFrame(() => resizeBoardToDisplay());
+    } else {
+      wrap.classList.add('whiteboard-wrap--collapsed');
+      wrap.setAttribute('aria-hidden', 'true');
+      btn.setAttribute('aria-expanded', 'false');
+      btn.textContent = 'Show whiteboard';
+    }
+  });
 
   document.getElementById('chatForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
