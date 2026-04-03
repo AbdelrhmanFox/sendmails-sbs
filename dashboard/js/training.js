@@ -271,6 +271,7 @@ let boardLast = null;
 let boardThrottleUntil = 0;
 const BOARD_THROTTLE_MS = 0;
 const WHITE_EVENT = 'white';
+let whiteboardUiAbort = null;
 
 function scrollTrainingChatToBottom() {
   const el = document.getElementById('trainChatScroll');
@@ -386,6 +387,15 @@ function boardCoord(ev, canvas) {
   return { x: ev.clientX - r.left, y: ev.clientY - r.top };
 }
 
+function boardCoordClamped(ev, canvas) {
+  const r = canvas.getBoundingClientRect();
+  let x = ev.clientX - r.left;
+  let y = ev.clientY - r.top;
+  x = Math.max(0, Math.min(r.width, x));
+  y = Math.max(0, Math.min(r.height, y));
+  return { x, y };
+}
+
 function drawBoardSegment(x0, y0, x1, y1, color, width, skipBroadcast) {
   const { canvas, ctx } = getBoardCanvasAndCtx();
   if (!ctx) return;
@@ -408,6 +418,27 @@ function drawBoardSegment(x0, y0, x1, y1, color, width, skipBroadcast) {
         .send({ type: 'broadcast', event: WHITE_EVENT, payload })
         .catch(() => {});
     }
+  }
+}
+
+function drawBoardText(x, y, text, color, fontSize, skipBroadcast) {
+  const { canvas, ctx } = getBoardCanvasAndCtx();
+  if (!ctx || !canvas) return;
+  const t = String(text || '').trim().slice(0, 500);
+  if (!t) return;
+  const fsRaw = Number(fontSize);
+  const fs = Number.isFinite(fsRaw) ? Math.max(8, Math.min(96, fsRaw)) : 22;
+  ctx.save();
+  ctx.fillStyle = color || '#00a99d';
+  ctx.font = `${fs}px system-ui, -apple-system, Segoe UI, sans-serif`;
+  ctx.textBaseline = 'top';
+  ctx.fillText(t, x, y);
+  ctx.restore();
+  if (!skipBroadcast && whiteboardChannel) {
+    const payload = { type: 'text', x, y, text: t, color: color || '#00a99d', fontSize: fs };
+    void whiteboardChannel
+      .send({ type: 'broadcast', event: WHITE_EVENT, payload })
+      .catch(() => {});
   }
 }
 
@@ -434,12 +465,20 @@ function applyRemoteBoardPayload(payload) {
   }
   if (payload.type === 'line') {
     drawBoardSegment(payload.x0, payload.y0, payload.x1, payload.y1, payload.color, payload.width, true);
+    return;
+  }
+  if (payload.type === 'text') {
+    drawBoardText(payload.x, payload.y, payload.text, payload.color, payload.fontSize, true);
   }
 }
 
 function teardownWhiteboardCanvasOnly() {
   boardDrawing = false;
   boardLast = null;
+  const overlay = document.getElementById('whiteboardTextOverlay');
+  const input = document.getElementById('whiteboardTextInput');
+  if (overlay) overlay.classList.add('hidden');
+  if (input) input.value = '';
   const { canvas } = getBoardCanvasAndCtx();
   if (canvas) {
     canvas.replaceWith(canvas.cloneNode(true));
@@ -447,6 +486,8 @@ function teardownWhiteboardCanvasOnly() {
 }
 
 async function teardownWhiteboardUi() {
+  whiteboardUiAbort?.abort();
+  whiteboardUiAbort = null;
   const ch = whiteboardChannel;
   whiteboardChannel = null;
   if (ch && trainingState.supabase) {
@@ -463,17 +504,39 @@ async function teardownWhiteboardUi() {
   teardownWhiteboardCanvasOnly();
 }
 
+function syncWhiteboardToolUi() {
+  const modeEl = document.getElementById('whiteboardMode');
+  const strokeWrap = document.getElementById('whiteboardStrokeWidthWrap');
+  const textWrap = document.getElementById('whiteboardTextSizeWrap');
+  const mode = modeEl ? modeEl.value : 'pen';
+  const isText = mode === 'text';
+  strokeWrap?.classList.toggle('hidden', isText);
+  textWrap?.classList.toggle('hidden', !isText);
+}
+
 function initWhiteboardUi() {
   teardownWhiteboardCanvasOnly();
   const canvas = document.getElementById('trainingWhiteboard');
   if (!canvas) return;
+  whiteboardUiAbort?.abort();
+  whiteboardUiAbort = new AbortController();
+  const sig = whiteboardUiAbort.signal;
   resizeBoardToDisplay();
-  window.addEventListener('resize', resizeBoardToDisplay);
+  window.addEventListener('resize', resizeBoardToDisplay, { signal: sig });
 
   const colorEl = document.getElementById('whiteboardColor');
   const widthEl = document.getElementById('whiteboardWidth');
+  const textSizeEl = document.getElementById('whiteboardTextSize');
   const modeEl = document.getElementById('whiteboardMode');
   const clearBtn = document.getElementById('whiteboardClearAll');
+  const textOverlay = document.getElementById('whiteboardTextOverlay');
+  const textInput = document.getElementById('whiteboardTextInput');
+  const textPlaceBtn = document.getElementById('whiteboardTextPlace');
+  const textCancelBtn = document.getElementById('whiteboardTextCancel');
+
+  let lineStart = null;
+  let activeStrokeMode = null;
+  let textAnchor = { x: 0, y: 0 };
 
   function currentColor() {
     return (colorEl && colorEl.value) || '#00a99d';
@@ -482,16 +545,64 @@ function initWhiteboardUi() {
     const w = widthEl ? Number(widthEl.value) : 3;
     return Number.isFinite(w) && w > 0 ? w : 3;
   }
+  function currentTextSize() {
+    const w = textSizeEl ? Number(textSizeEl.value) : 22;
+    return Number.isFinite(w) ? Math.max(8, Math.min(96, w)) : 22;
+  }
+
+  function hideTextOverlay() {
+    textOverlay?.classList.add('hidden');
+    if (textInput) textInput.value = '';
+  }
+
+  function showTextOverlayAtCanvasPoint(p) {
+    if (!textOverlay || !textInput || !canvas) return;
+    const shell = textOverlay.parentElement;
+    if (!shell) return;
+    textAnchor = { x: p.x, y: p.y };
+    const canvasRect = canvas.getBoundingClientRect();
+    const shellRect = shell.getBoundingClientRect();
+    const left = p.x + (canvasRect.left - shellRect.left);
+    const top = p.y + (canvasRect.top - shellRect.top);
+    textOverlay.style.left = `${Math.max(0, left)}px`;
+    textOverlay.style.top = `${Math.max(0, top)}px`;
+    textOverlay.classList.remove('hidden');
+    textInput.focus();
+  }
+
+  function commitTextOverlay() {
+    const raw = textInput ? String(textInput.value || '').trim() : '';
+    if (!raw) {
+      hideTextOverlay();
+      return;
+    }
+    drawBoardText(textAnchor.x, textAnchor.y, raw, currentColor(), currentTextSize(), false);
+    hideTextOverlay();
+  }
 
   function startDraw(ev) {
+    const mode = modeEl ? modeEl.value : 'pen';
+    const p = boardCoordClamped(ev, canvas);
+    if (mode === 'text') {
+      showTextOverlayAtCanvasPoint(p);
+      return;
+    }
+    activeStrokeMode = mode;
+    if (mode === 'line') {
+      lineStart = p;
+      boardDrawing = true;
+      boardLast = null;
+      return;
+    }
+    lineStart = null;
     boardDrawing = true;
-    boardLast = boardCoord(ev, canvas);
+    boardLast = p;
   }
   function moveDraw(ev) {
-    if (!boardDrawing || !boardLast) return;
-    boardCoord(ev, canvas);
-    const p = boardCoord(ev, canvas);
-    const mode = modeEl ? modeEl.value : 'pen';
+    if (!boardDrawing || activeStrokeMode === 'line') return;
+    if (!boardLast) return;
+    const p = boardCoordClamped(ev, canvas);
+    const mode = activeStrokeMode || 'pen';
     const col =
       mode === 'eraser'
         ? getComputedStyle(document.documentElement).getPropertyValue('--brand-surface').trim() || '#161a4f'
@@ -500,25 +611,69 @@ function initWhiteboardUi() {
     drawBoardSegment(boardLast.x, boardLast.y, p.x, p.y, col, lw, false);
     boardLast = p;
   }
-  function endDraw() {
+  function endDraw(ev) {
+    if (activeStrokeMode === 'line' && lineStart && boardDrawing && ev) {
+      const p = boardCoordClamped(ev, canvas);
+      const col = currentColor();
+      const lw = currentWidth();
+      drawBoardSegment(lineStart.x, lineStart.y, p.x, p.y, col, lw, false);
+    }
+    lineStart = null;
+    activeStrokeMode = null;
     boardDrawing = false;
     boardLast = null;
   }
 
-  canvas.addEventListener('mousedown', startDraw);
-  canvas.addEventListener('mousemove', moveDraw);
-  window.addEventListener('mouseup', endDraw);
-  canvas.addEventListener('touchstart', (e) => {
-    e.preventDefault();
-    if (e.touches[0]) startDraw(e.touches[0]);
-  });
-  canvas.addEventListener('touchmove', (e) => {
-    e.preventDefault();
-    if (e.touches[0]) moveDraw(e.touches[0]);
-  });
-  canvas.addEventListener('touchend', endDraw);
+  canvas.addEventListener('mousedown', startDraw, { signal: sig });
+  canvas.addEventListener('mousemove', moveDraw, { signal: sig });
+  window.addEventListener('mouseup', endDraw, { signal: sig });
+  canvas.addEventListener(
+    'touchstart',
+    (e) => {
+      e.preventDefault();
+      if (e.touches[0]) startDraw(e.touches[0]);
+    },
+    { signal: sig, passive: false },
+  );
+  canvas.addEventListener(
+    'touchmove',
+    (e) => {
+      e.preventDefault();
+      if (e.touches[0]) moveDraw(e.touches[0]);
+    },
+    { signal: sig, passive: false },
+  );
+  canvas.addEventListener(
+    'touchend',
+    (e) => {
+      e.preventDefault();
+      const t = e.changedTouches[0];
+      if (t) endDraw(t);
+      else endDraw();
+    },
+    { signal: sig, passive: false },
+  );
 
-  clearBtn?.addEventListener('click', () => clearBoardLocal(true));
+  modeEl?.addEventListener('change', syncWhiteboardToolUi, { signal: sig });
+  syncWhiteboardToolUi();
+
+  textInput?.addEventListener(
+    'keydown',
+    (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        commitTextOverlay();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        hideTextOverlay();
+      }
+    },
+    { signal: sig },
+  );
+  textPlaceBtn?.addEventListener('click', () => commitTextOverlay(), { signal: sig });
+  textCancelBtn?.addEventListener('click', () => hideTextOverlay(), { signal: sig });
+
+  clearBtn?.addEventListener('click', () => clearBoardLocal(true), { signal: sig });
 }
 
 async function attachWhiteboardRealtime() {

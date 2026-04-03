@@ -600,20 +600,33 @@
                   <div class="whiteboard-toolbar" role="toolbar" aria-label="Shared whiteboard">
                     <select id="whiteboardMode" class="whiteboard-tool-select" aria-label="Drawing tool">
                       <option value="pen">Pen</option>
+                      <option value="line">Straight line</option>
+                      <option value="text">Text</option>
                       <option value="eraser">Eraser</option>
                     </select>
                     <label class="whiteboard-toolbar-label">
                       <span class="wb-label-text">Color</span>
                       <input type="color" id="whiteboardColor" value="#00a99d" />
                     </label>
-                    <label class="whiteboard-toolbar-label whiteboard-width-label">
-                      <span class="wb-label-text">Width</span>
-                      <input type="range" id="whiteboardWidth" min="1" max="12" value="3" />
+                    <label class="whiteboard-toolbar-label whiteboard-width-label" id="whiteboardStrokeWidthWrap">
+                      <span class="wb-label-text">Stroke</span>
+                      <input type="range" id="whiteboardWidth" min="1" max="12" value="3" aria-label="Pen and line width" />
+                    </label>
+                    <label class="whiteboard-toolbar-label whiteboard-text-size-wrap hidden" id="whiteboardTextSizeWrap">
+                      <span class="wb-label-text">Text size</span>
+                      <input type="range" id="whiteboardTextSize" min="14" max="44" value="22" aria-label="Text size" />
                     </label>
                     <button type="button" class="whiteboard-clear" id="whiteboardClearAll">Clear all</button>
                   </div>
-                  <div class="whiteboard-canvas-shell">
+                  <div class="whiteboard-canvas-shell whiteboard-canvas-with-overlay">
                     <canvas id="trainingWhiteboard" class="training-whiteboard" width="800" height="200" aria-label="Session whiteboard"></canvas>
+                    <div id="whiteboardTextOverlay" class="whiteboard-text-overlay hidden" role="dialog" aria-label="Place text on board">
+                      <input type="text" id="whiteboardTextInput" class="whiteboard-text-input" maxlength="500" placeholder="Type text, then Place or Enter" autocomplete="off" />
+                      <div class="whiteboard-text-overlay-actions">
+                        <button type="button" class="btn btn-primary btn-sm" id="whiteboardTextPlace">Place</button>
+                        <button type="button" class="btn btn-secondary btn-sm" id="whiteboardTextCancel">Cancel</button>
+                      </div>
+                    </div>
                   </div>
                   <p id="whiteboardNote" class="muted whiteboard-note hidden"></p>
                 </div>

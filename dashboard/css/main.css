@@ -881,6 +881,48 @@ body.participant-join .chat-panel {
   background: var(--brand-surface);
   line-height: 0;
 }
+.whiteboard-canvas-with-overlay {
+  position: relative;
+}
+.whiteboard-text-overlay {
+  position: absolute;
+  z-index: 3;
+  min-width: 12rem;
+  max-width: min(90%, 20rem);
+  padding: 4px;
+  border-radius: var(--brand-radius-dense);
+  background: color-mix(in oklab, var(--brand-surface-2) 92%, #000);
+  border: 1px solid var(--brand-primary);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+.whiteboard-text-overlay.hidden {
+  display: none !important;
+}
+.whiteboard-text-input {
+  width: 100%;
+  margin-bottom: 8px;
+  font-size: 14px;
+  border-radius: 8px;
+}
+.whiteboard-text-overlay-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.whiteboard-text-overlay-actions .btn-sm {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+.whiteboard-text-size-wrap {
+  flex: 1 1 120px;
+  min-width: 100px;
+}
+.whiteboard-text-size-wrap input[type='range'] {
+  width: 100%;
+  max-width: 140px;
+  margin-bottom: 0;
+}
 .training-whiteboard {
   display: block;
   width: 100%;
