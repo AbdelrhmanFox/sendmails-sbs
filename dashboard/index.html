@@ -537,7 +537,7 @@
                 placeholder="Leave blank for auto Jitsi room, or paste Meet / Zoom / Jitsi"
               />
               <p class="muted field-hint">
-                If you leave this blank, a dedicated Jitsi Meet room is created for the session (same link for chat, whiteboard, and voice). Or paste your own https link.
+                If you leave this blank, a Jitsi Meet room is created for the session — participants see voice and video inside the session page (like Discord). You can also paste another https link (Meet/Zoom open in a new tab for students).
               </p>
             </div>
           </form>
@@ -565,7 +565,7 @@
           <h3 id="joinHeading">Join Group</h3>
           <form id="joinForm" class="row">
             <input id="joinName" placeholder="Your display name" required />
-            <button class="btn btn-primary" type="submit">Join chat</button>
+            <button class="btn btn-primary" type="submit">Enter session</button>
           </form>
           <p id="joinMsg" class="inline-note"></p>
         </div>
@@ -584,6 +584,19 @@
               <span class="muted chat-voice-muted hidden" id="chatVoiceMuted">No voice link set for this session. The trainer can add a Meet or Jitsi URL when creating the session.</span>
               <p class="inline-note chat-voice-copy-msg" id="chatVoiceCopyMsg" aria-live="polite"></p>
             </div>
+            <div id="chatVoiceEmbedWrap" class="chat-voice-embed-wrap hidden" aria-label="Voice and video room">
+              <iframe
+                id="chatVoiceEmbed"
+                class="chat-voice-embed"
+                title="Session voice room"
+                allow="camera; microphone; fullscreen; display-capture; autoplay"
+                allowfullscreen
+                loading="lazy"
+              ></iframe>
+            </div>
+            <p id="chatVoiceExternalNote" class="muted chat-voice-external-note hidden">
+              This session uses an external voice link. Open it in a new tab to join audio or video.
+            </p>
           </div>
           <div class="chat-panel-mobile-tabs hidden" id="chatPanelMobileTabs" role="tablist" aria-label="Chat or whiteboard">
             <button type="button" class="btn btn-secondary chat-mobile-tab active" role="tab" id="chatTabChat" aria-selected="true" aria-controls="chatPaneChat">Chat</button>

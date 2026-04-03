@@ -188,22 +188,73 @@ const trainingState = {
   voiceRoomUrl: null,
 };
 
+/** Jitsi Meet (and typical jitsi hostnames) can load in an iframe; Meet/Zoom/etc. cannot. */
+function jitsiVoiceEmbedSrc(roomUrl, displayName) {
+  try {
+    const u = new URL(String(roomUrl).trim());
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
+    const host = u.hostname.toLowerCase();
+    const isJitsi = host === 'meet.jit.si' || host.endsWith('.jit.si') || host.includes('jitsi');
+    if (!isJitsi) return null;
+    const path = u.pathname.replace(/\/+$/, '');
+    if (!path || path === '/') return null;
+    const base = `${u.origin}${path}`;
+    const name = String(displayName || '').trim().slice(0, 100);
+    if (name) return `${base}#userInfo.displayName=${encodeURIComponent(name)}`;
+    return base;
+  } catch (_) {
+    return null;
+  }
+}
+
 function updateVoiceRoomUi() {
   const url = trainingState.voiceRoomUrl;
   const link = document.getElementById('chatVoiceRoomLink');
   const copyBtn = document.getElementById('btnCopyVoiceLink');
   const muted = document.getElementById('chatVoiceMuted');
+  const embedWrap = document.getElementById('chatVoiceEmbedWrap');
+  const iframe = document.getElementById('chatVoiceEmbed');
+  const extNote = document.getElementById('chatVoiceExternalNote');
   if (!link || !copyBtn || !muted) return;
+  const displayName = trainingState.senderName || '';
+  const embedSrc = url ? jitsiVoiceEmbedSrc(url, displayName) : null;
+
+  extNote?.classList.add('hidden');
+
   if (url) {
     link.href = url;
     link.classList.remove('hidden');
     copyBtn.classList.remove('hidden');
     muted.classList.add('hidden');
+
+    if (embedWrap && iframe && embedSrc) {
+      embedWrap.classList.remove('hidden');
+      link.textContent = 'Open voice in new tab';
+      const prev = iframe.getAttribute('data-src');
+      if (prev !== embedSrc) {
+        iframe.setAttribute('data-src', embedSrc);
+        iframe.src = embedSrc;
+      }
+    } else {
+      embedWrap?.classList.add('hidden');
+      if (iframe) {
+        iframe.removeAttribute('src');
+        iframe.removeAttribute('data-src');
+      }
+      link.textContent = 'Open voice room';
+      extNote?.classList.remove('hidden');
+    }
   } else {
     link.removeAttribute('href');
     link.classList.add('hidden');
     copyBtn.classList.add('hidden');
     muted.classList.remove('hidden');
+    embedWrap?.classList.add('hidden');
+    if (iframe) {
+      iframe.removeAttribute('src');
+      iframe.removeAttribute('data-src');
+    }
+    link.textContent = 'Open voice room';
   }
 }
 
@@ -775,8 +826,8 @@ async function showSessionGroupPickerFlow(sessionId) {
   try {
     const data = await jsonFetch(`/.netlify/functions/public-training-session?sessionId=${encodeURIComponent(sessionId)}`);
     const subHint = data.voiceRoomUrl
-      ? 'Choose a group below. You will enter your display name on the next step. A voice room link will appear in the chat header.'
-      : 'Choose a group below. You will enter your display name on the next step.';
+      ? 'Choose a group below. Then enter your display name once — chat, board, and voice open in the same page when the room uses Jitsi.'
+      : 'Choose a group below. Then enter your display name to open the session.';
     setTrainingParticipantHero(data.title || 'Live session', subHint);
     if (picker) picker.classList.remove('hidden');
     if (buttonsEl) {
@@ -807,53 +858,43 @@ async function joinByTokenFlow(token) {
   const trainerPanel = document.getElementById('trainerPanel');
   if (trainerPanel) trainerPanel.classList.add('hidden');
   document.getElementById('trainerSessionsCard')?.classList.add('hidden');
-  const landing = document.getElementById('participantLanding');
+  document.getElementById('participantLanding')?.classList.add('hidden');
   const panel = document.getElementById('joinPanel');
   const joinData = await jsonFetch(`/.netlify/functions/training-join?token=${encodeURIComponent(token)}`);
   trainingState.whiteboardAllowed = joinData.whiteboardEnabled !== false;
   trainingState.voiceRoomUrl = joinData.voiceRoomUrl || null;
   setTrainingParticipantHero(
     joinData.sessionTitle || 'Live session',
-    `Group ${joinData.groupNumber} — continue to enter your display name and open the chat.`,
+    `Group ${joinData.groupNumber}. Enter your display name below — then chat, board, and voice stay on this page${joinData.voiceRoomUrl ? ' (Jitsi rooms load inline).' : '.'}`,
   );
-  document.getElementById('participantLandingTitle').textContent = joinData.sessionTitle || 'Live session';
-  document.getElementById('participantLandingSubtitle').textContent = `Group ${joinData.groupNumber} — continue to enter your display name and open the chat.`;
-  if (landing) landing.classList.remove('hidden');
-  if (panel) panel.classList.add('hidden');
+  if (panel) panel.classList.remove('hidden');
   document.getElementById('chatPanel').classList.add('hidden');
-
-  const startJoin = () => {
-    if (landing) landing.classList.add('hidden');
-    if (panel) panel.classList.remove('hidden');
-    document.getElementById('joinHeading').textContent = `${joinData.sessionTitle} — Group ${joinData.groupNumber}`;
-    document.getElementById('joinForm').onsubmit = async (e) => {
-      e.preventDefault();
-      const displayName = String(document.getElementById('joinName').value || '').trim();
-      if (!displayName) return;
-      const joined = await jsonFetch(`/.netlify/functions/training-join?token=${encodeURIComponent(token)}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ displayName }),
-      });
-      trainingState.groupId = joined.groupId;
-      trainingState.participantId = joined.participant.id;
-      trainingState.senderName = joined.participant.display_name;
-      trainingState.whiteboardAllowed = joined.whiteboardEnabled !== false;
-      trainingState.voiceRoomUrl = joined.voiceRoomUrl || joinData.voiceRoomUrl || null;
-      panel.classList.add('hidden');
-      document.getElementById('chatPanel').classList.remove('hidden');
-      const sub = document.getElementById('chatPanelSub');
-      if (sub) {
-        sub.textContent = `${joined.sessionTitle || joinData.sessionTitle || 'Live session'} · Group ${joined.groupNumber ?? joinData.groupNumber}`;
-      }
-      applyWhiteboardPolicyToChatUi();
-      loadRecentMessages();
-      initRealtime();
-      setInterval(loadRecentMessages, 10000);
-    };
+  document.getElementById('joinHeading').textContent = `${joinData.sessionTitle || 'Live session'} — Group ${joinData.groupNumber}`;
+  document.getElementById('joinForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const displayName = String(document.getElementById('joinName').value || '').trim();
+    if (!displayName) return;
+    const joined = await jsonFetch(`/.netlify/functions/training-join?token=${encodeURIComponent(token)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ displayName }),
+    });
+    trainingState.groupId = joined.groupId;
+    trainingState.participantId = joined.participant.id;
+    trainingState.senderName = joined.participant.display_name;
+    trainingState.whiteboardAllowed = joined.whiteboardEnabled !== false;
+    trainingState.voiceRoomUrl = joined.voiceRoomUrl || joinData.voiceRoomUrl || null;
+    panel.classList.add('hidden');
+    document.getElementById('chatPanel').classList.remove('hidden');
+    const sub = document.getElementById('chatPanelSub');
+    if (sub) {
+      sub.textContent = `${joined.sessionTitle || joinData.sessionTitle || 'Live session'} · Group ${joined.groupNumber ?? joinData.groupNumber}`;
+    }
+    applyWhiteboardPolicyToChatUi();
+    loadRecentMessages();
+    initRealtime();
+    setInterval(loadRecentMessages, 10000);
   };
-
-  document.getElementById('btnParticipantContinue').onclick = startJoin;
 }
 
 function switchToTrainingView() {
@@ -987,7 +1028,7 @@ export async function initTraining() {
               voiceHref
                 ? `<h4>Voice room</h4><p class="share-link-wrap"><a href="${escV(voiceHref)}" target="_blank" rel="noopener noreferrer">${escV(
                     voiceHref,
-                  )}</a></p><p class="muted small-margin">Also available in the group chat header after join (Open voice room).</p>`
+                  )}</a></p><p class="muted small-margin">Jitsi links load inside the student session page; other providers open in a new tab from the chat header.</p>`
                 : ''
             }`
           : '';
