@@ -38,7 +38,7 @@ Internal staff dashboard for **SBS** (educational and training services). The ap
 | `supabase/` | One-off SQL helpers (e.g. `fix-login-database-error.sql`) as needed. |
 | `scripts/` | Seed, workbook export/import, data model build. |
 | `automation/workflow.json` | n8n campaign workflow (import into your n8n instance). |
-| `docs/` | Long-form docs, workbook source notes, CSV exports under `docs/excel-export/`. |
+| `docs/` | Long-form docs, CSV exports under `docs/excel-export/`, sample import under `docs/sample-import/`. |
 | `brand/` | Brand README, `palette.json`, `Main Logo/`, `Color Palette/ColorPalette.pdf`, `exports/logo.png`. |
 | `CLAUDE.md` | Cursor/agent rules for this repo. |
 
@@ -63,6 +63,7 @@ For asset layout and syncing rules, see [`brand/README.md`](brand/README.md).
 | [`docs/PROJECT_BREAKDOWN.md`](docs/PROJECT_BREAKDOWN.md) | Structured extraction from the project brief. |
 | [`docs/PROJECT_PROMPT.md`](docs/PROJECT_PROMPT.md) | Full project brief. |
 | [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md) | Workbook-driven data model and CSV mapping. |
+| [`docs/sample-import/README.md`](docs/sample-import/README.md) | **Required columns** for Excel import and sample workbook `SBS_operations_sample.xlsx`. |
 | [`docs/WORKBOOK_SOURCE.md`](docs/WORKBOOK_SOURCE.md) | Canonical workbook path and export commands. |
 | [`VERCEL_DEPLOY.md`](VERCEL_DEPLOY.md) | Vercel project settings, env vars, and `/api/*` behaviour. |
 | [`NETLIFY_SUPABASE.md`](NETLIFY_SUPABASE.md) | Netlify + Supabase integration notes. |
@@ -99,6 +100,7 @@ Redeploy after changing variables.
 | Export workbook → CSV | `npm run workbook:export` |
 | Regenerate data model doc | `npm run data-model:build` |
 | Import CSV sample data | `npm run import:workbook` |
+| Regenerate sample Excel for Operations import | `npm run sample-import:xlsx` |
 | Legacy enrollments CSV import | `npm run import:enrollments` |
 
 ---
@@ -144,7 +146,7 @@ Import `automation/workflow.json`, attach Google Sheets + SMTP credentials, acti
 
 In **Operations Data**, choose the entity (trainees, courses, batches, enrollments), then use **Import from Excel** and select a `.xlsx` file:
 
-- The **first row** must be column headers. Headers can match the **workbook export** (e.g. `Trainee_ID`, `Full_Name`) or snake_case field names; see [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md) and [`docs/excel-export/`](docs/excel-export/) for the expected columns per sheet.
+- The **first row** must be column headers. Headers must match the **workbook export** names (e.g. `Trainee_ID`, `Full_Name`) or snake_case; see **[`docs/sample-import/README.md`](docs/sample-import/README.md)** for required columns per entity and **[`docs/sample-import/SBS_operations_sample.xlsx`](docs/sample-import/SBS_operations_sample.xlsx)** as a ready-made example (four sheets). [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md) lists export columns by sheet.
 - The importer picks a sheet whose name matches the selected entity (case-insensitive), or **falls back to the first sheet**.
 - Rows are **upserted** on the business key (`trainee_id`, `course_id`, `batch_id`, or `enrollment_id`), same as `npm run import:workbook` for CSV.
 - The browser loads [SheetJS](https://sheetjs.com/) from a CDN; the API accepts `POST` with query `bulk=1` and body `{ "items": [ ... ] }` (see API section).

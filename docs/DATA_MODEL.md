@@ -6,7 +6,7 @@ This document is generated from workbook source and exported CSV sheets.
 
 - Locked workbook source: `docs/DataBase(SBS)v01.xlsm` (fallback: `DataBase(SBS)v01.xlsm` at repo root)
 - CSV export folder: `docs/excel-export`
-- Dashboard **Operations Data** can import **`.xlsx`** files with the same column headers (see repository `README.md`).
+- Dashboard **Operations Data** can import **`.xlsx`** files with the same column headers (see [`sample-import/README.md`](sample-import/README.md) for required columns and [`sample-import/SBS_operations_sample.xlsx`](sample-import/SBS_operations_sample.xlsx)).
 
 ## Workbook Inventory
 

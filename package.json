@@ -10,7 +10,8 @@
     "import:enrollments": "node scripts/import-enrollments.js",
     "import:workbook": "node scripts/import-workbook-data.js",
     "workbook:export": "node scripts/export-workbook.js",
-    "data-model:build": "node scripts/build-data-model.js"
+    "data-model:build": "node scripts/build-data-model.js",
+    "sample-import:xlsx": "node scripts/generate-sample-import-xlsx.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
