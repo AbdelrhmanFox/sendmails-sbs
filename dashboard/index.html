@@ -1072,15 +1072,15 @@
         </div>
       </section>
 
-      <section id="view-training-course-library" class="view">
+      <section id="view-training-course-library" class="view view-course-library">
         <div class="view-hero">
           <div class="view-hero-text">
             <h2>Course library</h2>
-            <p class="subtitle">Chapters and shared materials for each course. Reused by every batch; participants see this content from the classroom link together with batch-specific materials.</p>
+            <p class="subtitle view-course-library__lede">One place for shared chapters and files per course. It applies to all batches; the classroom link shows this together with batch-only items.</p>
           </div>
         </div>
         <p id="courseLibraryMsg" class="inline-note" role="status"></p>
-        <div class="card course-library-picker">
+        <div class="course-library-course-strip">
           <label class="course-library-course-label">Course
             <select id="courseLibrarySelect" aria-label="Select course">
               <option value="">— Select a course —</option>
@@ -1088,50 +1088,49 @@
           </label>
         </div>
         <div id="courseLibraryShell" class="course-library-shell hidden">
-          <div class="card course-library-add-chapter">
-            <h4>Add chapter</h4>
-            <form id="courseLibraryChapterForm" class="form-grid form-grid--two">
-              <label class="full">Chapter title <input type="text" id="courseLibraryChapterTitle" required maxlength="200" placeholder="e.g. Week 1 · Foundations" /></label>
-              <div class="form-actions full">
-                <button type="submit" class="btn btn-primary">Add chapter</button>
-              </div>
-            </form>
-          </div>
-          <div id="courseLibraryRenamePanel" class="card course-library-rename hidden">
-            <h4>Rename chapter</h4>
-            <form id="courseLibraryRenameChapterForm" class="form-grid form-grid--two">
-              <input type="hidden" id="courseLibraryRenameChapterId" value="" />
-              <label class="full">Title <input type="text" id="courseLibraryRenameChapterTitle" required maxlength="200" /></label>
-              <div class="form-actions full">
-                <button type="submit" class="btn btn-primary">Save</button>
-                <button type="button" class="btn btn-secondary" id="courseLibraryRenameCancel">Cancel</button>
-              </div>
-            </form>
-          </div>
-          <div id="courseLibraryTree" class="course-library-tree"></div>
-          <div class="card course-library-material-card">
-            <h4 id="courseLibraryMatHeading">Add resource link</h4>
-            <form id="courseLibraryMaterialForm" class="form-grid form-grid--two">
-              <input type="hidden" id="courseLibraryMatEditId" value="" />
-              <label>Chapter
-                <select id="courseLibraryMatChapter" aria-label="Material chapter">
-                  <option value="">Uncategorized</option>
-                </select>
-              </label>
-              <label>Title <input type="text" id="courseLibraryMatTitle" required maxlength="200" /></label>
-              <label class="full">URL <input type="url" id="courseLibraryMatUrl" required placeholder="https://..." /></label>
-              <label class="full">Description <input type="text" id="courseLibraryMatDesc" maxlength="500" /></label>
-              <div class="full course-library-upload-row" id="courseLibraryUploadRow">
-                <label class="course-library-file-label">Or upload a file
-                  <input type="file" id="courseLibraryMatFile" />
+          <div class="course-library-panel">
+            <div class="course-library-panel__toolbar">
+              <p class="course-library-eyebrow">New chapter</p>
+              <form id="courseLibraryChapterForm" class="course-library-quick-add">
+                <input type="text" id="courseLibraryChapterTitle" required maxlength="200" placeholder="e.g. Week 1 · Foundations" aria-label="Chapter title" />
+                <button type="submit" class="btn btn-primary">Add</button>
+              </form>
+            </div>
+            <div id="courseLibraryRenamePanel" class="course-library-rename-banner hidden">
+              <form id="courseLibraryRenameChapterForm" class="course-library-rename-banner__form">
+                <input type="hidden" id="courseLibraryRenameChapterId" value="" />
+                <label class="course-library-rename-banner__label">Rename chapter</label>
+                <input type="text" id="courseLibraryRenameChapterTitle" required maxlength="200" aria-label="New chapter title" />
+                <button type="submit" class="btn btn-primary btn-sm">Save</button>
+                <button type="button" class="btn btn-ghost btn-sm" id="courseLibraryRenameCancel">Cancel</button>
+              </form>
+            </div>
+            <div id="courseLibraryTree" class="course-library-tree" role="region" aria-label="Chapters and links"></div>
+            <div class="course-library-panel__divider" aria-hidden="true"></div>
+            <div class="course-library-panel__form">
+              <p class="course-library-eyebrow" id="courseLibraryMatHeading">Add resource link</p>
+              <form id="courseLibraryMaterialForm" class="form-grid form-grid--two course-library-material-form">
+                <input type="hidden" id="courseLibraryMatEditId" value="" />
+                <label>Chapter
+                  <select id="courseLibraryMatChapter" aria-label="Material chapter">
+                    <option value="">Uncategorized</option>
+                  </select>
                 </label>
-                <p class="muted small-margin" id="courseLibraryUploadHint">Uploads go to secure storage; the link is filled in automatically after upload.</p>
-              </div>
-              <div class="form-actions full">
-                <button type="submit" class="btn btn-primary" id="courseLibraryMatSubmit">Add link</button>
-                <button type="button" class="btn btn-secondary hidden" id="courseLibraryMatCancelEdit">Cancel edit</button>
-              </div>
-            </form>
+                <label>Title <input type="text" id="courseLibraryMatTitle" required maxlength="200" /></label>
+                <label class="full">URL <input type="url" id="courseLibraryMatUrl" required placeholder="https://..." /></label>
+                <label class="full">Description <input type="text" id="courseLibraryMatDesc" maxlength="500" /></label>
+                <div class="full course-library-upload-row" id="courseLibraryUploadRow">
+                  <label class="course-library-file-label">Or upload a file
+                    <input type="file" id="courseLibraryMatFile" />
+                  </label>
+                  <p class="muted small-margin" id="courseLibraryUploadHint">Uploads use secure storage; the URL is filled in automatically.</p>
+                </div>
+                <div class="form-actions full">
+                  <button type="submit" class="btn btn-primary" id="courseLibraryMatSubmit">Add link</button>
+                  <button type="button" class="btn btn-ghost hidden" id="courseLibraryMatCancelEdit">Cancel edit</button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       </section>

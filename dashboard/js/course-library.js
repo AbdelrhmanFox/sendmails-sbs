@@ -97,24 +97,24 @@ function renderTree(data) {
         const desc = m.description ? ` <span class="muted">— ${escapeHtml(m.description)}</span>` : '';
         return `<li class="course-library-mat-row">
           <div class="course-library-mat-main">
-            <a href="${escapeHtml(m.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(m.title)}</a>${desc}
+            <a href="${escapeHtml(m.url)}" target="_blank" rel="noopener noreferrer" class="course-library-link">${escapeHtml(m.title)}</a>${desc}
           </div>
-          <div class="classroom-inline-actions">
-            <button type="button" class="btn btn-secondary btn-sm course-lib-edit-mat" data-id="${escapeHtml(m.id)}">Edit</button>
-            <button type="button" class="btn btn-secondary btn-sm course-lib-del-mat" data-id="${escapeHtml(m.id)}">Remove</button>
+          <div class="course-library-mat-actions">
+            <button type="button" class="btn btn-ghost btn-sm course-lib-edit-mat" data-id="${escapeHtml(m.id)}">Edit</button>
+            <button type="button" class="btn btn-ghost btn-sm course-lib-del-mat" data-id="${escapeHtml(m.id)}">Remove</button>
           </div>
         </li>`;
       })
       .join('');
-    parts.push(`<div class="card course-library-chapter-card" data-chapter-id="${escapeHtml(ch.id)}">
-      <div class="course-library-chapter-head">
-        <h4 class="course-library-chapter-title">${escapeHtml(ch.title)}</h4>
-        <div class="classroom-inline-actions">
-          <button type="button" class="btn btn-secondary btn-sm course-lib-rename-ch" data-id="${escapeHtml(ch.id)}" data-title="${escapeHtml(ch.title)}">Rename</button>
-          <button type="button" class="btn btn-secondary btn-sm course-lib-del-ch" data-id="${escapeHtml(ch.id)}">Remove chapter</button>
+    parts.push(`<div class="course-library-chapter" data-chapter-id="${escapeHtml(ch.id)}">
+      <div class="course-library-chapter__head">
+        <h3 class="course-library-chapter__title">${escapeHtml(ch.title)}</h3>
+        <div class="course-library-chapter__actions">
+          <button type="button" class="btn btn-ghost btn-sm course-lib-rename-ch" data-id="${escapeHtml(ch.id)}" data-title="${escapeHtml(ch.title)}">Rename</button>
+          <button type="button" class="btn btn-ghost btn-sm course-lib-del-ch" data-id="${escapeHtml(ch.id)}">Remove</button>
         </div>
       </div>
-      <ul class="course-library-mat-list">${mats || '<li class="muted">No links in this chapter yet.</li>'}</ul>
+      <ul class="course-library-mat-list">${mats || '<li class="course-library-empty">No links in this chapter yet.</li>'}</ul>
     </div>`);
   });
 
@@ -123,19 +123,19 @@ function renderTree(data) {
       const desc = m.description ? ` <span class="muted">— ${escapeHtml(m.description)}</span>` : '';
       return `<li class="course-library-mat-row">
         <div class="course-library-mat-main">
-          <a href="${escapeHtml(m.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(m.title)}</a>${desc}
+          <a href="${escapeHtml(m.url)}" target="_blank" rel="noopener noreferrer" class="course-library-link">${escapeHtml(m.title)}</a>${desc}
         </div>
-        <div class="classroom-inline-actions">
-          <button type="button" class="btn btn-secondary btn-sm course-lib-edit-mat" data-id="${escapeHtml(m.id)}">Edit</button>
-          <button type="button" class="btn btn-secondary btn-sm course-lib-del-mat" data-id="${escapeHtml(m.id)}">Remove</button>
+        <div class="course-library-mat-actions">
+          <button type="button" class="btn btn-ghost btn-sm course-lib-edit-mat" data-id="${escapeHtml(m.id)}">Edit</button>
+          <button type="button" class="btn btn-ghost btn-sm course-lib-del-mat" data-id="${escapeHtml(m.id)}">Remove</button>
         </div>
       </li>`;
     })
     .join('');
 
-  parts.push(`<div class="card course-library-chapter-card course-library-uncategorized">
-    <h4 class="course-library-chapter-title">Uncategorized</h4>
-    <ul class="course-library-mat-list">${unc || '<li class="muted">No uncategorized links.</li>'}</ul>
+  parts.push(`<div class="course-library-chapter course-library-chapter--muted">
+    <h3 class="course-library-chapter__title course-library-chapter__title--subtle">Uncategorized</h3>
+    <ul class="course-library-mat-list">${unc || '<li class="course-library-empty">No uncategorized links.</li>'}</ul>
   </div>`);
 
   host.innerHTML = parts.join('');
