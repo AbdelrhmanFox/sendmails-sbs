@@ -20,6 +20,7 @@ const HANDLERS = {
   'delete-user': require('../netlify/functions/delete-user').handler,
   'reset-password': require('../netlify/functions/reset-password').handler,
   'health-supabase': require('../netlify/functions/health-supabase').handler,
+  'classroom-data': require('../netlify/functions/classroom-data').handler,
 };
 
 function routeName(req) {

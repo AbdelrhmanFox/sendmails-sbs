@@ -1071,6 +1071,9 @@ input:focus, select:focus, textarea:focus {
   gap: 12px;
 }
 .form-grid .full { grid-column: 1 / -1; }
+.form-grid--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
 .form-actions { display: flex; gap: 10px; }
 
 .table-wrap {
@@ -2507,5 +2510,169 @@ body.participant-join .app-top-bar__burger {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 6px;
+  }
+}
+
+/* Trainer Classroom (batch = class) */
+.classroom-list-panel {
+  margin-bottom: 16px;
+}
+
+.classroom-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 12px;
+}
+
+@media (max-width: 1100px) {
+  .classroom-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .classroom-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.classroom-card .classroom-card-meta {
+  margin: 8px 0 12px;
+  font-size: 14px;
+}
+
+.classroom-room-panel {
+  margin-top: 8px;
+}
+
+.classroom-room-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.classroom-room-title {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  font-size: 1.2rem;
+}
+
+.classroom-room-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.classroom-tab.active {
+  border-color: var(--brand-primary);
+  background: color-mix(in oklab, var(--brand-primary) 18%, transparent);
+}
+
+.classroom-pane {
+  min-height: 120px;
+}
+
+.classroom-form-card {
+  margin-top: 16px;
+}
+
+.classroom-form-card h4 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 0.95rem;
+}
+
+.classroom-assignments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.classroom-assignment-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  border-radius: var(--brand-radius-dense);
+  border: 1px solid color-mix(in oklab, var(--brand-border) 50%, transparent);
+  background: var(--brand-surface-2);
+}
+
+.classroom-materials-list {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+}
+
+.classroom-material-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid color-mix(in oklab, var(--brand-border) 40%, transparent);
+}
+
+.classroom-grade-select-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--brand-muted);
+}
+
+.classroom-grade-select {
+  width: 100%;
+  max-width: 32rem;
+  margin-bottom: 12px;
+}
+
+.classroom-grades-wrap {
+  max-height: min(60vh, 520px);
+}
+
+.grades-table th,
+.grades-table td {
+  white-space: normal;
+  vertical-align: top;
+}
+
+.grades-table th:first-child,
+.grades-table td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--brand-surface);
+  box-shadow: 2px 0 0 color-mix(in oklab, var(--brand-border) 35%, transparent);
+}
+
+.grades-table thead th:first-child {
+  background: var(--brand-surface-2);
+  z-index: 2;
+}
+
+.classroom-grade-input {
+  width: 6rem;
+  max-width: 100%;
+  margin-bottom: 0;
+}
+
+.classroom-feedback-input {
+  min-width: 8rem;
+  width: 100%;
+  max-width: 20rem;
+  margin-bottom: 0;
+}
+
+@media (max-width: 900px) {
+  .form-grid--two {
+    grid-template-columns: 1fr;
   }
 }

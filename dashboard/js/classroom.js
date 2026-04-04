@@ -1,0 +1,356 @@
+import { jsonFetch, getAuthHeaders } from './shared.js';
+
+const CLASSROOM = '/.netlify/functions/classroom-data';
+
+let currentBatchId = '';
+let currentBatchLabel = '';
+let assignmentsCache = [];
+
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function $(id) {
+  return document.getElementById(id);
+}
+
+function showPanel(listVisible) {
+  $('classroomListPanel')?.classList.toggle('hidden', !listVisible);
+  $('classroomRoomPanel')?.classList.toggle('hidden', listVisible);
+}
+
+export async function loadClassrooms() {
+  const grid = $('classroomGrid');
+  const msg = $('classroomListMsg');
+  if (!grid) return;
+  if (msg) msg.textContent = 'Loading…';
+  try {
+    const data = await jsonFetch(`${CLASSROOM}?resource=classrooms`, { headers: getAuthHeaders() });
+    const items = data.items || [];
+    if (!items.length) {
+      grid.innerHTML = '<p class="muted">No batches assigned to you yet. Ask an admin to set your username as the trainer on a batch in Operations.</p>';
+      if (msg) msg.textContent = '';
+      return;
+    }
+    grid.innerHTML = items
+      .map((b) => {
+        const title = [escapeHtml(b.course_name || ''), escapeHtml(b.batch_name || b.batch_id)].filter(Boolean).join(' · ');
+        const label = `${b.course_name || ''} · ${b.batch_name || b.batch_id}`.trim() || b.batch_id;
+        return `<article class="card classroom-card" role="listitem">
+          <h4>${title || escapeHtml(b.batch_id)}</h4>
+          <p class="muted small-margin">${escapeHtml(b.batch_id)}${b.trainer ? ` · Trainer: ${escapeHtml(b.trainer)}` : ''}</p>
+          <p class="classroom-card-meta"><strong>${Number(b.enrolled_count) || 0}</strong> enrolled</p>
+          <button type="button" class="btn btn-primary classroom-open-btn" data-batch-id="${escapeHtml(b.batch_id)}" data-label="${escapeHtml(label)}">Open classroom</button>
+        </article>`;
+      })
+      .join('');
+    grid.querySelectorAll('.classroom-open-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const bid = btn.getAttribute('data-batch-id');
+        const lab = btn.getAttribute('data-label') || bid;
+        void openClassroom(bid, lab);
+      });
+    });
+    if (msg) msg.textContent = '';
+  } catch (e) {
+    grid.innerHTML = '';
+    if (msg) msg.textContent = e.message || 'Could not load classrooms.';
+  }
+}
+
+async function openClassroom(batchId, label) {
+  currentBatchId = String(batchId || '').trim();
+  currentBatchLabel = label || currentBatchId;
+  const titleEl = $('classroomRoomTitle');
+  if (titleEl) titleEl.textContent = currentBatchLabel;
+  showPanel(false);
+  $('classroomAssignmentForm')?.reset();
+  $('classroomMaterialForm')?.reset();
+  await refreshClassroomData();
+  switchClassroomTab('classwork');
+}
+
+function closeClassroomRoom() {
+  currentBatchId = '';
+  currentBatchLabel = '';
+  assignmentsCache = [];
+  showPanel(true);
+}
+
+async function refreshClassroomData() {
+  if (!currentBatchId) return;
+  await Promise.all([loadAssignmentsList(), loadMaterialsList()]);
+  updateGradeAssignmentSelect();
+  const sel = $('classroomGradeAssignmentSelect');
+  const aid = sel && sel.value;
+  if (aid) await loadGradesTable(aid);
+  else {
+    const tbody = $('classroomGradesBody');
+    if (tbody) tbody.innerHTML = '';
+  }
+}
+
+function updateGradeAssignmentSelect() {
+  const sel = $('classroomGradeAssignmentSelect');
+  if (!sel) return;
+  const prev = sel.value;
+  sel.innerHTML =
+    '<option value="">— Select an assignment —</option>' +
+    assignmentsCache
+      .map((a) => `<option value="${escapeHtml(a.id)}">${escapeHtml(a.title)}</option>`)
+      .join('');
+  if (prev && assignmentsCache.some((a) => a.id === prev)) sel.value = prev;
+  else if (assignmentsCache.length === 1) sel.value = assignmentsCache[0].id;
+  sel.dispatchEvent(new Event('change'));
+}
+
+async function loadAssignmentsList() {
+  const host = $('classroomAssignmentsList');
+  const msg = $('classroomClassworkMsg');
+  if (!host || !currentBatchId) return;
+  try {
+    const data = await jsonFetch(`${CLASSROOM}?resource=assignments&batch_id=${encodeURIComponent(currentBatchId)}`, {
+      headers: getAuthHeaders(),
+    });
+    assignmentsCache = data.items || [];
+    if (!assignmentsCache.length) {
+      host.innerHTML = '<p class="muted">No assignments yet. Add one below.</p>';
+      if (msg) msg.textContent = '';
+      return;
+    }
+    host.innerHTML = assignmentsCache
+      .map((a) => {
+        const due = a.due_date ? ` · Due ${escapeHtml(a.due_date)}` : '';
+        return `<div class="classroom-assignment-row">
+          <div>
+            <strong>${escapeHtml(a.title)}</strong>${due}
+            ${a.instructions ? `<p class="muted small-margin">${escapeHtml(a.instructions)}</p>` : ''}
+          </div>
+          <button type="button" class="btn btn-secondary btn-sm classroom-del-asg" data-id="${escapeHtml(a.id)}">Remove</button>
+        </div>`;
+      })
+      .join('');
+    host.querySelectorAll('.classroom-del-asg').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-id');
+        if (!id || !confirm('Remove this assignment and its grades?')) return;
+        try {
+          await jsonFetch(`${CLASSROOM}?resource=assignments&id=${encodeURIComponent(id)}`, {
+            method: 'DELETE',
+            headers: getAuthHeaders(),
+          });
+          await refreshClassroomData();
+        } catch (e) {
+          alert(e.message);
+        }
+      });
+    });
+    if (msg) msg.textContent = '';
+  } catch (e) {
+    host.innerHTML = '';
+    if (msg) msg.textContent = e.message || 'Could not load assignments.';
+  }
+}
+
+async function loadMaterialsList() {
+  const host = $('classroomMaterialsList');
+  const msg = $('classroomMaterialsMsg');
+  if (!host || !currentBatchId) return;
+  try {
+    const data = await jsonFetch(`${CLASSROOM}?resource=materials&batch_id=${encodeURIComponent(currentBatchId)}`, {
+      headers: getAuthHeaders(),
+    });
+    const items = data.items || [];
+    if (!items.length) {
+      host.innerHTML = '<li class="muted">No resource links yet.</li>';
+      if (msg) msg.textContent = '';
+      return;
+    }
+    host.innerHTML = items
+      .map(
+        (m) =>
+          `<li class="classroom-material-row">
+            <a href="${escapeHtml(m.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(m.title)}</a>
+            ${m.description ? `<span class="muted"> — ${escapeHtml(m.description)}</span>` : ''}
+            <button type="button" class="btn btn-secondary btn-sm classroom-del-mat" data-id="${escapeHtml(m.id)}">Remove</button>
+          </li>`,
+      )
+      .join('');
+    host.querySelectorAll('.classroom-del-mat').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-id');
+        if (!id) return;
+        try {
+          await jsonFetch(`${CLASSROOM}?resource=materials&id=${encodeURIComponent(id)}`, {
+            method: 'DELETE',
+            headers: getAuthHeaders(),
+          });
+          await loadMaterialsList();
+        } catch (e) {
+          alert(e.message);
+        }
+      });
+    });
+    if (msg) msg.textContent = '';
+  } catch (e) {
+    host.innerHTML = '';
+    if (msg) msg.textContent = e.message || 'Could not load materials.';
+  }
+}
+
+async function loadGradesTable(assignmentId) {
+  const tbody = $('classroomGradesBody');
+  const msg = $('classroomGradesMsg');
+  if (!tbody || !assignmentId) {
+    if (tbody) tbody.innerHTML = '';
+    return;
+  }
+  try {
+    const data = await jsonFetch(`${CLASSROOM}?resource=grades&assignment_id=${encodeURIComponent(assignmentId)}`, {
+      headers: getAuthHeaders(),
+    });
+    const roster = data.roster || [];
+    if (!roster.length) {
+      tbody.innerHTML = '<tr><td colspan="4" class="muted">No enrollments in this batch yet.</td></tr>';
+      if (msg) msg.textContent = '';
+      return;
+    }
+    tbody.innerHTML = roster
+      .map((r) => {
+        const g = r.grade != null && r.grade !== '' ? String(r.grade) : '';
+        const fb = r.feedback != null ? escapeHtml(String(r.feedback).replace(/\r?\n/g, ' ')) : '';
+        return `<tr data-trainee-id="${escapeHtml(r.trainee_id)}">
+          <td>${escapeHtml(r.full_name)}</td>
+          <td><input type="number" class="classroom-grade-input" step="0.01" min="0" max="9999" value="${escapeHtml(g)}" aria-label="Grade for ${escapeHtml(r.full_name)}" /></td>
+          <td><input type="text" class="classroom-feedback-input" value="${fb}" maxlength="2000" aria-label="Feedback for ${escapeHtml(r.full_name)}" /></td>
+          <td><button type="button" class="btn btn-primary btn-sm classroom-save-grade">Save</button></td>
+        </tr>`;
+      })
+      .join('');
+    tbody.querySelectorAll('.classroom-save-grade').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const tr = btn.closest('tr');
+        const tid = tr && tr.getAttribute('data-trainee-id');
+        if (!tid || !assignmentId) return;
+        const gradeInput = tr.querySelector('.classroom-grade-input');
+        const fbInput = tr.querySelector('.classroom-feedback-input');
+        void saveGrade(assignmentId, tid, gradeInput && gradeInput.value, fbInput && fbInput.value);
+      });
+    });
+    if (msg) msg.textContent = '';
+  } catch (e) {
+    tbody.innerHTML = '';
+    if (msg) msg.textContent = e.message || 'Could not load grades.';
+  }
+}
+
+async function saveGrade(assignmentId, traineeId, gradeVal, feedback) {
+  const msg = $('classroomGradesMsg');
+  try {
+    await jsonFetch(`${CLASSROOM}?resource=grades`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        assignment_id: assignmentId,
+        trainee_id: traineeId,
+        grade: gradeVal === '' ? null : gradeVal,
+        feedback: feedback || null,
+      }),
+    });
+    if (msg) msg.textContent = 'Saved.';
+    setTimeout(() => {
+      if (msg) msg.textContent = '';
+    }, 2000);
+  } catch (e) {
+    if (msg) msg.textContent = e.message || 'Save failed.';
+  }
+}
+
+function switchClassroomTab(which) {
+  const tabs = [
+    { id: 'classroomTabClasswork', pane: 'classroomPaneClasswork' },
+    { id: 'classroomTabMaterials', pane: 'classroomPaneMaterials' },
+    { id: 'classroomTabGrades', pane: 'classroomPaneGrades' },
+  ];
+  tabs.forEach(({ id, pane }) => {
+    const t = $(id);
+    const p = $(pane);
+    const on = (which === 'classwork' && id === 'classroomTabClasswork') || (which === 'materials' && id === 'classroomTabMaterials') || (which === 'grades' && id === 'classroomTabGrades');
+    if (t) {
+      t.classList.toggle('active', on);
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+    }
+    if (p) {
+      p.classList.toggle('hidden', !on);
+      p.hidden = !on;
+    }
+  });
+}
+
+export function initClassroom() {
+  $('classroomBackBtn')?.addEventListener('click', () => closeClassroomRoom());
+
+  $('classroomTabClasswork')?.addEventListener('click', () => switchClassroomTab('classwork'));
+  $('classroomTabMaterials')?.addEventListener('click', () => switchClassroomTab('materials'));
+  $('classroomTabGrades')?.addEventListener('click', () => switchClassroomTab('grades'));
+
+  $('classroomAssignmentForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!currentBatchId) return;
+    const title = String($('classroomAsgTitle')?.value || '').trim();
+    const instructions = String($('classroomAsgInstructions')?.value || '');
+    const due = String($('classroomAsgDue')?.value || '').trim();
+    if (!title) return;
+    try {
+      await jsonFetch(`${CLASSROOM}?resource=assignments`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          batch_id: currentBatchId,
+          title,
+          instructions: instructions || null,
+          due_date: due || null,
+        }),
+      });
+      e.target.reset();
+      await refreshClassroomData();
+    } catch (err) {
+      $('classroomClassworkMsg').textContent = err.message || 'Failed to add assignment.';
+    }
+  });
+
+  $('classroomMaterialForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!currentBatchId) return;
+    const title = String($('classroomMatTitle')?.value || '').trim();
+    const url = String($('classroomMatUrl')?.value || '').trim();
+    const description = String($('classroomMatDesc')?.value || '').trim();
+    if (!title || !url) return;
+    try {
+      await jsonFetch(`${CLASSROOM}?resource=materials`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          batch_id: currentBatchId,
+          title,
+          url,
+          description: description || null,
+        }),
+      });
+      e.target.reset();
+      await loadMaterialsList();
+      $('classroomMaterialsMsg').textContent = '';
+    } catch (err) {
+      $('classroomMaterialsMsg').textContent = err.message || 'Failed to add link.';
+    }
+  });
+
+  $('classroomGradeAssignmentSelect')?.addEventListener('change', (ev) => {
+    const aid = String(ev.target.value || '').trim();
+    void loadGradesTable(aid);
+  });
+}

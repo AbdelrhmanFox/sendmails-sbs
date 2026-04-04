@@ -153,6 +153,12 @@
                 <span class="subnav-item__label">Attendance &amp; materials</span>
               </button>
             </li>
+            <li>
+              <button type="button" class="subnav-item" data-view="training-classroom">
+                <svg class="subnav-item__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2"/><path d="M8 7h8"/><path d="M8 11h8"/></svg>
+                <span class="subnav-item__label">Classroom</span>
+              </button>
+            </li>
           </ul>
         </div>
       </div>
@@ -950,6 +956,80 @@
           </div>
           <ul id="toolsMaterialsList" class="tools-materials-list"></ul>
           <p id="toolsMatMsg" class="inline-note"></p>
+        </div>
+      </section>
+
+      <section id="view-training-classroom" class="view">
+        <div class="view-hero">
+          <div class="view-hero-text">
+            <h2>My classrooms</h2>
+            <p class="subtitle">Each batch you train is a classroom: assign work, share links, and record grades.</p>
+          </div>
+        </div>
+        <div id="classroomListPanel" class="classroom-list-panel">
+          <p id="classroomListMsg" class="inline-note" role="status"></p>
+          <div id="classroomGrid" class="classroom-grid" role="list"></div>
+        </div>
+        <div id="classroomRoomPanel" class="classroom-room-panel hidden">
+          <div class="classroom-room-head">
+            <button type="button" class="btn btn-secondary" id="classroomBackBtn">Back to list</button>
+            <h3 id="classroomRoomTitle" class="classroom-room-title">Classroom</h3>
+          </div>
+          <div class="classroom-room-tabs" role="tablist" aria-label="Classroom sections">
+            <button type="button" class="btn btn-secondary classroom-tab active" id="classroomTabClasswork" role="tab" aria-selected="true" aria-controls="classroomPaneClasswork">Classwork</button>
+            <button type="button" class="btn btn-secondary classroom-tab" id="classroomTabMaterials" role="tab" aria-selected="false" aria-controls="classroomPaneMaterials">Materials</button>
+            <button type="button" class="btn btn-secondary classroom-tab" id="classroomTabGrades" role="tab" aria-selected="false" aria-controls="classroomPaneGrades">Grades</button>
+          </div>
+          <div id="classroomPaneClasswork" class="classroom-pane" role="tabpanel" aria-labelledby="classroomTabClasswork">
+            <div id="classroomAssignmentsList" class="classroom-assignments-list"></div>
+            <div class="card classroom-form-card">
+              <h4>New assignment</h4>
+              <form id="classroomAssignmentForm" class="form-grid form-grid--two">
+                <label class="full">Title <input type="text" id="classroomAsgTitle" required maxlength="200" /></label>
+                <label class="full">Instructions <textarea id="classroomAsgInstructions" rows="3" maxlength="4000"></textarea></label>
+                <label>Due date <input type="date" id="classroomAsgDue" /></label>
+                <div class="form-actions full">
+                  <button type="submit" class="btn btn-primary" id="classroomAsgSubmit">Add assignment</button>
+                </div>
+              </form>
+            </div>
+            <p id="classroomClassworkMsg" class="inline-note"></p>
+          </div>
+          <div id="classroomPaneMaterials" class="classroom-pane hidden" role="tabpanel" aria-labelledby="classroomTabMaterials" hidden>
+            <ul id="classroomMaterialsList" class="classroom-materials-list"></ul>
+            <div class="card classroom-form-card">
+              <h4>Add resource link</h4>
+              <form id="classroomMaterialForm" class="form-grid form-grid--two">
+                <label>Title <input type="text" id="classroomMatTitle" required maxlength="200" /></label>
+                <label>URL <input type="url" id="classroomMatUrl" required placeholder="https://..." /></label>
+                <label class="full">Description <input type="text" id="classroomMatDesc" maxlength="500" /></label>
+                <div class="form-actions full">
+                  <button type="submit" class="btn btn-primary">Add link</button>
+                </div>
+              </form>
+            </div>
+            <p id="classroomMaterialsMsg" class="inline-note"></p>
+          </div>
+          <div id="classroomPaneGrades" class="classroom-pane hidden" role="tabpanel" aria-labelledby="classroomTabGrades" hidden>
+            <label for="classroomGradeAssignmentSelect" class="classroom-grade-select-label">Assignment</label>
+            <select id="classroomGradeAssignmentSelect" class="classroom-grade-select" aria-label="Pick assignment for grading">
+              <option value="">— Create an assignment in Classwork first —</option>
+            </select>
+            <div class="table-wrap classroom-grades-wrap">
+              <table class="grades-table">
+                <thead>
+                  <tr>
+                    <th>Trainee</th>
+                    <th>Grade</th>
+                    <th>Feedback</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="classroomGradesBody"></tbody>
+              </table>
+            </div>
+            <p id="classroomGradesMsg" class="inline-note"></p>
+          </div>
         </div>
       </section>
 

@@ -9,6 +9,7 @@ Internal staff dashboard for **SBS** (educational and training services). The ap
 | **Operations Data** | Workbook-driven CRUD for trainees, courses, batches, and enrollments; **Excel (.xlsx) import** in the UI and bulk upsert via `operations-data` (see below). |
 | **Email Campaigns** | n8n-powered preview, send, and status; webhook + Google Sheets integration. |
 | **Live Session Groups** | Trainers create sessions and groups; participants join with links; realtime chat (Supabase); optional **shared whiteboard** per session (Realtime broadcast, not persisted). |
+| **Trainer Classroom** | Each Operations **batch** where you are the trainer is a classroom: **assignments**, **resource links**, and **grades** per enrolled trainee (`classroom-data`; apply migration `20260407_classroom_tables.sql`). |
 | **Finance** | KPIs, Chart.js visuals (revenue, payment mix, AR aging), ledger, invoices, and exports via `finance-data`. |
 | **User management** | Admin flows for listing, creating, resetting, and deleting users. |
 | **Authentication** | JWT-based login; same contracts for Netlify Functions and Vercel. |
@@ -30,7 +31,7 @@ Internal staff dashboard for **SBS** (educational and training services). The ap
 | `dashboard/` | Staff UI: login, home, operations, campaigns, training, admin. |
 | `dashboard/css/tokens.css` | Theme variables; keep aligned with `brand/palette.json`. |
 | `dashboard/assets/` | Runtime assets: `logo.png`, `stickers/sticker-*.jpg`. |
-| `netlify/functions/` | API handlers (login, seed, operations-data, training-*, users, public-config, health-supabase, …). |
+| `netlify/functions/` | API handlers (login, seed, operations-data, training-*, classroom-data, users, public-config, health-supabase, …). |
 | `netlify/lib/` | Shared server code (not deployed as its own function). |
 | `api/[name].js` | Vercel router: maps `/api/<name>` to the matching Netlify handler. |
 | `vercel.json` | Static output `dashboard/`, rewrites `/.netlify/functions/:name` → `/api/:name`. |
@@ -38,7 +39,7 @@ Internal staff dashboard for **SBS** (educational and training services). The ap
 | `supabase/schema.sql` | Tables, policies, and training realtime setup (full baseline for new projects). |
 | `supabase/migrations/` | Timestamped SQL for existing databases (run after baseline schema when listed in release notes). |
 | `supabase/` | One-off SQL helpers (e.g. `fix-login-database-error.sql`) as needed. |
-| `dashboard/js/` | `app.js` (entry) plus `shared.js`, `nav.js`, `config.js`, `operations.js`, `finance.js`, `training.js`, `campaigns.js`, `admin.js`. |
+| `dashboard/js/` | `app.js` (entry) plus `shared.js`, `nav.js`, `config.js`, `operations.js`, `finance.js`, `training.js`, `classroom.js`, `campaigns.js`, `admin.js`. |
 | `scripts/` | Seed, workbook export/import, data model build. |
 | `automation/workflow.json` | n8n campaign workflow (import into your n8n instance). |
 | `docs/` | Long-form docs, CSV exports under `docs/excel-export/`, sample import under `docs/sample-import/`. |

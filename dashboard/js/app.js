@@ -11,6 +11,7 @@ import { showLogin, showApp, applyRoleVisibility, initShell } from './nav.js';
 import { initCampaigns } from './campaigns.js';
 import { initOperations, initOpsInsights, initBulkEnrollment } from './operations.js';
 import { initTraining, initTrainingTools } from './training.js';
+import { initClassroom } from './classroom.js';
 import { initAdmin } from './admin.js';
 import { initFinance } from './finance.js';
 
@@ -71,6 +72,7 @@ async function bootAuth() {
   initFinance();
   initOpsInsights();
   initTrainingTools();
+  initClassroom();
   initBulkEnrollment();
   dismissAppPreloader();
 }
