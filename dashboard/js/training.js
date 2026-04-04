@@ -583,6 +583,9 @@ function updateVoiceControlsUi() {
       muteBtn.querySelector('.btn-voice__icon--mic-off')?.classList.toggle('hidden', !voiceMuted);
       muteBtn.setAttribute('data-muted', String(voiceMuted));
       muteBtn.setAttribute('aria-pressed', String(voiceMuted));
+      const muteTitle = voiceMuted ? 'Unmute microphone' : 'Mute microphone';
+      muteBtn.setAttribute('title', muteTitle);
+      muteBtn.setAttribute('aria-label', muteTitle);
     }
   } else {
     joinBtn?.classList.remove('hidden');

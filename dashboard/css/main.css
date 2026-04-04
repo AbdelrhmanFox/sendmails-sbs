@@ -725,25 +725,26 @@ body.participant-join .chat-panel {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 36px;
-  padding: 0 12px;
+  min-height: 40px;
+  padding: 0 14px;
   margin: 0;
   font-family: inherit;
   font-size: 13px;
   font-weight: 500;
   line-height: 1.2;
   color: var(--brand-text);
-  background: color-mix(in oklab, var(--brand-surface) 55%, var(--brand-surface-2));
-  border: 1px solid var(--brand-border);
+  background: color-mix(in oklab, var(--brand-surface) 70%, var(--brand-surface-2));
+  border: 1px solid color-mix(in oklab, var(--brand-border) 88%, var(--brand-surface));
   border-radius: var(--brand-radius-dense);
   cursor: pointer;
-  box-shadow: var(--brand-shadow-soft);
-  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, filter 0.18s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.28), 0 0 0 1px color-mix(in oklab, var(--brand-text) 6%, transparent) inset;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, filter 0.18s ease, box-shadow 0.18s ease;
 }
 .btn-voice:hover {
   filter: brightness(1.08);
   border-color: color-mix(in oklab, var(--brand-primary) 45%, var(--brand-border));
-  background: color-mix(in oklab, var(--brand-surface-2) 75%, var(--brand-surface));
+  background: color-mix(in oklab, var(--brand-surface-2) 82%, var(--brand-surface));
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22), 0 0 0 1px color-mix(in oklab, var(--brand-primary) 18%, transparent) inset;
 }
 .btn-voice:focus-visible {
   outline: 2px solid color-mix(in oklab, var(--brand-primary) 55%, transparent);
@@ -761,6 +762,38 @@ body.participant-join .chat-panel {
 }
 .btn-voice__label {
   white-space: nowrap;
+}
+/* Uiverse-style compact bar: icon-first, label expands on hover; always visible on focus / touch / reduced motion */
+.chat-voice-controls--compact .btn-voice__label {
+  display: inline-block;
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: max-width 0.22s ease, opacity 0.16s ease, transform 0.2s ease;
+}
+.chat-voice-controls--compact .btn-voice:hover .btn-voice__label,
+.chat-voice-controls--compact .btn-voice:focus-visible .btn-voice__label {
+  max-width: 12em;
+  opacity: 1;
+  transform: scaleX(1);
+}
+@media (hover: none) {
+  .chat-voice-controls--compact .btn-voice__label {
+    max-width: none;
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chat-voice-controls--compact .btn-voice__label {
+    max-width: none;
+    opacity: 1;
+    transform: none;
+    transition: opacity 0.15s ease;
+  }
 }
 .btn-voice--join {
   color: #fff;

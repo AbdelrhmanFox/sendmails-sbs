@@ -570,23 +570,23 @@
               </div>
               <button type="button" class="btn btn-secondary chat-whiteboard-toggle hidden" id="btnToggleWhiteboard" aria-expanded="false" aria-controls="whiteboardWrap">Show whiteboard</button>
             </div>
-            <div class="chat-voice-controls hidden" id="chatVoiceControls">
-              <button type="button" class="btn-voice btn-voice--join hidden" id="btnJoinVoice" title="Join voice">
+            <div class="chat-voice-controls chat-voice-controls--compact hidden" id="chatVoiceControls">
+              <button type="button" class="btn-voice btn-voice--join hidden" id="btnJoinVoice" title="Join voice" aria-label="Join voice">
                 <span class="btn-voice__icon-wrap" aria-hidden="true">
-                  <svg class="btn-voice__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <svg class="btn-voice__icon" width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </span>
                 <span class="btn-voice__label">Join voice</span>
               </button>
-              <button type="button" class="btn-voice btn-voice--leave hidden" id="btnLeaveVoice" title="Leave voice">
+              <button type="button" class="btn-voice btn-voice--leave hidden" id="btnLeaveVoice" title="Leave voice" aria-label="Leave voice">
                 <span class="btn-voice__icon-wrap" aria-hidden="true">
-                  <svg class="btn-voice__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.94 2 2 0 0 1 1.72 2.11l-.11 1.18a2 2 0 0 1-2 2.18 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.63 2 2 0 0 1 2.18-2.18l1.18-.11a2 2 0 0 1 2.11 1.72c.22.96.53 1.88.94 2.81a2 2 0 0 1-.45 2.11L8.09 13.34" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M22 2 2 22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                  <svg class="btn-voice__icon" width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.94 2 2 0 0 1 1.72 2.11l-.11 1.18a2 2 0 0 1-2 2.18 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.63 2 2 0 0 1 2.18-2.18l1.18-.11a2 2 0 0 1 2.11 1.72c.22.96.53 1.88.94 2.81a2 2 0 0 1-.45 2.11L8.09 13.34" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M22 2 2 22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
                 </span>
                 <span class="btn-voice__label">Leave</span>
               </button>
-              <button type="button" class="btn-voice btn-voice--mute hidden" id="btnToggleMute" aria-pressed="false" title="Mute microphone">
+              <button type="button" class="btn-voice btn-voice--mute hidden" id="btnToggleMute" aria-pressed="false" title="Mute microphone" aria-label="Mute microphone">
                 <span class="btn-voice__icon-wrap" aria-hidden="true">
-                  <svg class="btn-voice__icon btn-voice__icon--mic" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                  <svg class="btn-voice__icon btn-voice__icon--mic-off hidden" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="m2 2 20 20M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 16.95A7 7 0 0 1 5 12v-2M12 19v4M8 23h8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <svg class="btn-voice__icon btn-voice__icon--mic" width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <svg class="btn-voice__icon btn-voice__icon--mic-off hidden" width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="m2 2 20 20M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 16.95A7 7 0 0 1 5 12v-2M12 19v4M8 23h8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </span>
                 <span class="btn-voice__label">Mute</span>
               </button>
