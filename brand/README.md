@@ -15,10 +15,27 @@ This folder holds the **source of truth** for brand colors and marks used by the
 
 Raster stickers for the app UI live under `dashboard/assets/stickers/` (`sticker-1.jpg` … `sticker-3.jpg`), copied from the visual identity **Stickers** exports.
 
+## Exports for web (Elements, Patterns, Characters)
+
+Raster copies used by the live dashboard live under **`dashboard/assets/brand/`** (deployed with the static site).
+
+| Dashboard path | Source (repo) |
+| --- | --- |
+| `dashboard/assets/brand/elements/main.png` | `visual-identity/Elements & Patterns/Elements/All/Main.png` |
+| `dashboard/assets/brand/elements/advisory.png` | `…/Elements/All/Advisory.png` |
+| `dashboard/assets/brand/elements/skills-factory.png` | `…/Elements/All/Skills Factory.png` |
+| `dashboard/assets/brand/patterns/inside-out.png` | `…/Patterns/Inside Out.png` (login / light texture) |
+| `dashboard/assets/brand/patterns/cultura.png` | `…/Patterns/Cultura.png` (app shell texture) |
+
+When marketing updates the **Elements** or **Patterns** PNGs, recopy the files into `dashboard/assets/brand/` (or adjust paths in `dashboard/css/brand-surfaces.css`).
+
+**Characters:** export from `source/Characters.ai` into `dashboard/assets/brand/characters/` — see `dashboard/assets/brand/characters/README.md`.
+
 ## Dashboard wiring
 
 - **`dashboard/assets/logo.png`** — copy of `Main Logo/Colored (White Text).png` for static hosting.
 - **`dashboard/assets/stickers/`** — decorative sticker JPGs on login and each main view header (Home, Operations, Campaigns, Training, Admin); images use `alt=""` as decoration only.
+- **`dashboard/css/brand-surfaces.css`** — optional pattern and hero watermark layers using `dashboard/assets/brand/` (loaded after `tokens.css`).
 - **`dashboard/css/tokens.css`** — maps `--brand-*` from **`palette.json`**. Plain CSS cannot import JSON; keep them aligned when colors change.
 - **Typography:** the dashboard loads **Montserrat** (see PDF font list) from Google Fonts.
 - **Finance charts:** the Finance tab uses **Chart.js** (CDN); series colors follow `--brand-*` tokens from `tokens.css` for visual consistency with the rest of the UI.
