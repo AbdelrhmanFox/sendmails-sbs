@@ -51,34 +51,127 @@
           <p>Educational Operations</p>
         </div>
       </div>
-      <div id="subnavOperations" class="subnav" data-for-area="operations">
+      <div id="subnavOperations" class="subnav subnav--card" data-for-area="operations">
         <span class="subnav-label">In this area</span>
-        <button type="button" class="subnav-item active" data-view="operations-home">Overview</button>
-        <button type="button" class="subnav-item" data-view="operations-trainees">Trainees</button>
-        <button type="button" class="subnav-item" data-view="operations-courses">Courses</button>
-        <button type="button" class="subnav-item" data-view="operations-batches">Batches</button>
-        <button type="button" class="subnav-item" data-view="operations-enrollments">Enrollments</button>
-        <button type="button" class="subnav-item" data-view="operations-bulk">Import / Bulk</button>
-        <button type="button" class="subnav-item" data-view="operations-pipeline">Pipeline</button>
-        <button type="button" class="subnav-item" data-view="operations-capacity">Capacity</button>
-        <button type="button" class="subnav-item" data-view="operations-quality">Data quality</button>
+        <div class="subnav-card">
+          <ul class="subnav-list" role="list">
+            <li>
+              <button type="button" class="subnav-item active" data-view="operations-home">
+                <svg class="subnav-item__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+                <span class="subnav-item__label">Overview</span>
+              </button>
+            </li>
+            <li>
+              <button type="button" class="subnav-item" data-view="operations-trainees">
+                <svg class="subnav-item__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                <span class="subnav-item__label">Trainees</span>
+              </button>
+            </li>
+            <li>
+              <button type="button" class="subnav-item" data-view="operations-courses">
+                <svg class="subnav-item__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M8 7h8"/><path d="M8 11h6"/></svg>
+                <span class="subnav-item__label">Courses</span>
+              </button>
+            </li>
+            <li>
+              <button type="button" class="subnav-item" data-view="operations-batches">
+                <svg class="subnav-item__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="M22 17.65 12.83 21.82a2 2 0 0 1-1.66 0L2 17.65"/><path d="M22 12.65 12.83 16.82a2 2 0 0 1-1.66 0L2 12.65"/></svg>
+                <span class="subnav-item__label">Batches</span>
+              </button>
+            </li>
+            <li>
+              <button type="button" class="subnav-item" data-view="operations-enrollments">
+                <svg class="subnav-item__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>
+                <span class="subnav-item__label">Enrollments</span>
+              </button>
+            </li>
+            <li>
+              <button type="button" class="subnav-item" data-view="operations-bulk">
+                <svg class="subnav-item__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+                <span class="subnav-item__label">Import / Bulk</span>
+              </button>
+            </li>
+          </ul>
+          <hr class="subnav-separator" role="presentation" />
+          <ul class="subnav-list subnav-list--accent" role="list">
+            <li>
+              <button type="button" class="subnav-item" data-view="operations-pipeline">
+                <svg class="subnav-item__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+                <span class="subnav-item__label">Pipeline</span>
+              </button>
+            </li>
+            <li>
+              <button type="button" class="subnav-item" data-view="operations-capacity">
+                <svg class="subnav-item__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                <span class="subnav-item__label">Capacity</span>
+              </button>
+            </li>
+            <li>
+              <button type="button" class="subnav-item" data-view="operations-quality">
+                <svg class="subnav-item__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="m9 12 2 2 4-4"/></svg>
+                <span class="subnav-item__label">Data quality</span>
+              </button>
+            </li>
+          </ul>
+        </div>
       </div>
-      <div id="subnavTraining" class="subnav hidden" data-for-area="training">
+      <div id="subnavTraining" class="subnav subnav--card hidden" data-for-area="training">
         <span class="subnav-label">In this area</span>
-        <button type="button" class="subnav-item active" data-view="training">Session groups</button>
-        <button type="button" class="subnav-item" data-view="training-tools">Attendance &amp; materials</button>
+        <div class="subnav-card">
+          <ul class="subnav-list" role="list">
+            <li>
+              <button type="button" class="subnav-item active" data-view="training">
+                <svg class="subnav-item__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"/><rect x="2" y="6" width="14" height="12" rx="2"/></svg>
+                <span class="subnav-item__label">Session groups</span>
+              </button>
+            </li>
+            <li>
+              <button type="button" class="subnav-item" data-view="training-tools">
+                <svg class="subnav-item__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><path d="M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v0a2 2 0 0 1-2 2H11a2 2 0 0 1-2-2z"/><path d="m9 12 2 2 4-4"/></svg>
+                <span class="subnav-item__label">Attendance &amp; materials</span>
+              </button>
+            </li>
+          </ul>
+        </div>
       </div>
-      <div id="subnavFinance" class="subnav hidden" data-for-area="finance">
+      <div id="subnavFinance" class="subnav subnav--card hidden" data-for-area="finance">
         <span class="subnav-label">In this area</span>
-        <button type="button" class="subnav-item active" data-view="finance">Finance dashboard</button>
+        <div class="subnav-card">
+          <ul class="subnav-list" role="list">
+            <li>
+              <button type="button" class="subnav-item active" data-view="finance">
+                <svg class="subnav-item__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15v-2"/></svg>
+                <span class="subnav-item__label">Finance dashboard</span>
+              </button>
+            </li>
+          </ul>
+        </div>
       </div>
-      <div id="subnavAutomation" class="subnav hidden" data-for-area="automation">
+      <div id="subnavAutomation" class="subnav subnav--card hidden" data-for-area="automation">
         <span class="subnav-label">In this area</span>
-        <button type="button" class="subnav-item active" data-view="campaigns">Email campaigns</button>
+        <div class="subnav-card">
+          <ul class="subnav-list" role="list">
+            <li>
+              <button type="button" class="subnav-item active" data-view="campaigns">
+                <svg class="subnav-item__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                <span class="subnav-item__label">Email campaigns</span>
+              </button>
+            </li>
+          </ul>
+        </div>
       </div>
-      <div id="subnavAdmin" class="subnav hidden" data-for-area="admin">
+      <div id="subnavAdmin" class="subnav subnav--card hidden" data-for-area="admin">
         <span class="subnav-label">In this area</span>
-        <button type="button" class="subnav-item active" data-view="admin">Users</button>
+        <div class="subnav-card">
+          <ul class="subnav-list" role="list">
+            <li>
+              <button type="button" class="subnav-item active" data-view="admin">
+                <svg class="subnav-item__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                <span class="subnav-item__label">Users</span>
+              </button>
+            </li>
+          </ul>
+        </div>
       </div>
       <div class="sidebar-footer">
         <div id="loggedInUser" class="muted"></div>
@@ -90,13 +183,24 @@
       <div id="operationsGlobalBar" class="operations-global-bar hidden" aria-hidden="true">
         <div class="operations-global-bar-inner card card--compact card--plain">
           <label class="visually-hidden" for="opsGlobalSearchInput">Search trainees</label>
-          <input
-            type="search"
-            id="opsGlobalSearchInput"
-            class="ops-global-search-input"
-            placeholder="Search trainees by name, phone, email, or ID…"
-            autocomplete="off"
-          />
+          <div class="search-field-brand search-field-brand--global">
+            <div class="search-field-brand__layers" aria-hidden="true">
+              <span class="search-field-brand__glow"></span>
+              <span class="search-field-brand__ring"></span>
+            </div>
+            <div class="search-field-brand__main">
+              <span class="search-field-brand__icon" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              </span>
+              <input
+                type="search"
+                id="opsGlobalSearchInput"
+                class="ops-global-search-input search-field-brand__input"
+                placeholder="Search trainees by name, phone, email, or ID…"
+                autocomplete="off"
+              />
+            </div>
+          </div>
           <div id="opsGlobalSearchResults" class="ops-search-results hidden" role="listbox"></div>
         </div>
       </div>
@@ -130,7 +234,18 @@
         </div>
         <div class="card card--plain ops-list-toolbar">
           <div class="ops-toolbar-row">
-            <input type="search" id="traineesListQ" class="ops-filter-search" placeholder="Search list…" autocomplete="off" />
+            <div class="search-field-brand search-field-brand--compact">
+              <div class="search-field-brand__layers" aria-hidden="true">
+                <span class="search-field-brand__glow"></span>
+                <span class="search-field-brand__ring"></span>
+              </div>
+              <div class="search-field-brand__main">
+                <span class="search-field-brand__icon" aria-hidden="true">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                </span>
+                <input type="search" id="traineesListQ" class="ops-filter-search search-field-brand__input" placeholder="Search list…" autocomplete="off" />
+              </div>
+            </div>
             <select id="traineesFilterType" class="ops-filter-select" aria-label="Filter by type">
               <option value="">All types</option>
             </select>
@@ -270,7 +385,18 @@
       <section id="view-operations-courses" class="view">
         <div class="view-hero"><div class="view-hero-text"><div class="view-header"><h2>Courses</h2><button type="button" class="btn btn-primary" id="btnNewCourse">+ New course</button></div><p class="subtitle">Course IDs are generated as SBS-CO-######.</p></div></div>
         <div class="card card--plain ops-list-toolbar">
-          <input type="search" id="coursesListQ" class="ops-filter-search" placeholder="Search…" />
+          <div class="search-field-brand search-field-brand--compact">
+            <div class="search-field-brand__layers" aria-hidden="true">
+              <span class="search-field-brand__glow"></span>
+              <span class="search-field-brand__ring"></span>
+            </div>
+            <div class="search-field-brand__main">
+              <span class="search-field-brand__icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              </span>
+              <input type="search" id="coursesListQ" class="ops-filter-search search-field-brand__input" placeholder="Search…" />
+            </div>
+          </div>
           <button type="button" class="btn btn-secondary" id="btnCoursesRefresh">Refresh</button>
         </div>
         <div class="table-wrap"><table class="ops-data-table"><thead>
@@ -299,7 +425,18 @@
       <section id="view-operations-batches" class="view">
         <div class="view-hero"><div class="view-hero-text"><div class="view-header"><h2>Batches</h2><button type="button" class="btn btn-primary" id="btnNewBatch">+ New batch</button></div><p class="subtitle">Link each batch to a course. Batch IDs use form SBS-BA- plus course ID plus a sequence (e.g. SBS-BA-SBS-CO-000001-01).</p></div></div>
         <div class="card card--plain ops-list-toolbar">
-          <input type="search" id="batchesListQ" class="ops-filter-search" placeholder="Search…" />
+          <div class="search-field-brand search-field-brand--compact">
+            <div class="search-field-brand__layers" aria-hidden="true">
+              <span class="search-field-brand__glow"></span>
+              <span class="search-field-brand__ring"></span>
+            </div>
+            <div class="search-field-brand__main">
+              <span class="search-field-brand__icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              </span>
+              <input type="search" id="batchesListQ" class="ops-filter-search search-field-brand__input" placeholder="Search…" />
+            </div>
+          </div>
           <label class="visually-hidden" for="batchesFilterCourse">Course</label>
           <select id="batchesFilterCourse" class="ops-filter-select"><option value="">All courses</option></select>
           <button type="button" class="btn btn-secondary" id="btnBatchesRefresh">Refresh</button>
@@ -375,7 +512,18 @@
           <button type="button" class="btn btn-secondary" id="btnWizCancel">Close wizard</button>
         </div>
         <div class="card card--plain ops-list-toolbar">
-          <input type="search" id="enrollmentsListQ" class="ops-filter-search" placeholder="Search…" />
+          <div class="search-field-brand search-field-brand--compact">
+            <div class="search-field-brand__layers" aria-hidden="true">
+              <span class="search-field-brand__glow"></span>
+              <span class="search-field-brand__ring"></span>
+            </div>
+            <div class="search-field-brand__main">
+              <span class="search-field-brand__icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              </span>
+              <input type="search" id="enrollmentsListQ" class="ops-filter-search search-field-brand__input" placeholder="Search…" />
+            </div>
+          </div>
           <select id="enrollmentsFilterStatus" class="ops-filter-select"><option value="">All enrollment statuses</option></select>
           <select id="enrollmentsFilterPay" class="ops-filter-select"><option value="">All payment statuses</option></select>
           <button type="button" class="btn btn-secondary" id="btnEnrollmentsRefresh">Refresh</button>
