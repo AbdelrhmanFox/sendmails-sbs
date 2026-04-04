@@ -237,6 +237,63 @@
             <img src="assets/stickers/sticker-2.jpg" alt="" class="view-sticker" />
           </div>
         </div>
+
+        <div class="ops-home-overview">
+          <article class="ops-analytics-card" aria-labelledby="ops-analytics-heading">
+            <div class="ops-analytics-card__glow" aria-hidden="true"></div>
+            <div class="ops-analytics-card__inner">
+              <div class="ops-analytics-card__head">
+                <div class="ops-analytics-card__title-row">
+                  <div class="ops-analytics-card__icon" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                    </svg>
+                  </div>
+                  <h3 id="ops-analytics-heading">Pipeline analytics</h3>
+                </div>
+                <span class="ops-analytics-card__pill" id="opsHomeAnalyticsLive" title="Data from live enrollments">
+                  <span class="ops-analytics-card__pill-dot" aria-hidden="true"></span>
+                  Live
+                </span>
+              </div>
+              <div class="ops-analytics-card__kpis">
+                <div class="ops-analytics-kpi">
+                  <p class="ops-analytics-kpi__label">Total enrollments</p>
+                  <p class="ops-analytics-kpi__value" id="opsHomeKpiTotal">—</p>
+                  <span class="ops-analytics-kpi__hint muted" id="opsHomeKpiTotalHint">All records</span>
+                </div>
+                <div class="ops-analytics-kpi">
+                  <p class="ops-analytics-kpi__label">Completed</p>
+                  <p class="ops-analytics-kpi__value" id="opsHomeKpiCompleted">—</p>
+                  <span class="ops-analytics-kpi__hint" id="opsHomeKpiShare">—</span>
+                </div>
+              </div>
+              <div class="ops-analytics-card__chart" aria-hidden="true">
+                <p class="ops-analytics-card__chart-label muted">Enrollment mix (top statuses)</p>
+                <div class="ops-analytics-bars" id="opsHomeBarStrip"></div>
+              </div>
+              <p class="ops-analytics-card__msg inline-error" id="opsHomeAnalyticsMsg" hidden></p>
+              <div class="ops-analytics-card__foot">
+                <span class="muted ops-analytics-card__period" id="opsHomeAnalyticsPeriod">By enrollment status</span>
+                <button type="button" class="btn btn-primary ops-analytics-card__details" id="opsHomeAnalyticsDetails">
+                  View details
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </article>
+
+          <div class="ops-home-character" data-character-src="assets/brand/characters/ops-overview-character.png">
+            <img id="opsHomeCharacterImg" class="ops-home-character__img hidden" alt="" loading="lazy" width="280" height="280" />
+            <div class="ops-home-character__fallback" aria-hidden="true">
+              <div class="ops-home-character__deco"></div>
+              <p class="muted ops-home-character__note">Export <code>ops-overview-character.png</code> to <code>assets/brand/characters/</code> for a custom illustration.</p>
+            </div>
+          </div>
+        </div>
+
         <div class="grid-three">
           <article class="card"><h3>Trainees &amp; enrollments</h3><p>Use <strong>Trainees</strong> and <strong>Enrollments</strong> for day-to-day data entry with server-generated SBS IDs.</p></article>
           <article class="card"><h3>Pipeline &amp; capacity</h3><p>Review enrollment status distribution and batch utilization.</p></article>

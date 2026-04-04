@@ -95,6 +95,7 @@ export function onOperationsViewChange(viewId) {
   if (viewId === 'operations-bulk') {
     /* bulk import entity select only */
   }
+  if (viewId === 'operations-home') void loadOperationsHomeAnalytics();
 }
 
 function fillFilterSelects() {
@@ -1446,6 +1447,8 @@ export function initOperations() {
     const entity = document.getElementById('bulkEntitySelect')?.value || 'enrollments';
     await runExcelImport(await f.arrayBuffer(), entity);
   });
+
+  initOpsHomeCharacter();
 }
 
 export function initBulkEnrollment() {
@@ -1484,6 +1487,77 @@ export function initBulkEnrollment() {
       if (msg) msg.textContent = err.message;
     }
   });
+}
+
+function initOpsHomeCharacter() {
+  const wrap = document.querySelector('.ops-home-character');
+  const img = document.getElementById('opsHomeCharacterImg');
+  if (!wrap || !img) return;
+  const src = wrap.getAttribute('data-character-src');
+  if (!src) return;
+  const probe = new Image();
+  probe.onload = () => {
+    img.src = src;
+    img.classList.remove('hidden');
+    wrap.classList.add('ops-home-character--has-art');
+  };
+  probe.onerror = () => {};
+  probe.src = src;
+}
+
+async function loadOperationsHomeAnalytics() {
+  const totalEl = document.getElementById('opsHomeKpiTotal');
+  const completedEl = document.getElementById('opsHomeKpiCompleted');
+  const shareEl = document.getElementById('opsHomeKpiShare');
+  const barsEl = document.getElementById('opsHomeBarStrip');
+  const msgEl = document.getElementById('opsHomeAnalyticsMsg');
+  if (!totalEl || !completedEl || !shareEl || !barsEl) return;
+  if (msgEl) {
+    msgEl.hidden = true;
+    msgEl.textContent = '';
+  }
+  try {
+    const data = await jsonFetch(`${OPS}?resource=pipeline`, { headers: getAuthHeaders() });
+    const pipeline = data.pipeline || {};
+    const total = Number(data.total) || 0;
+    const completed = Number(pipeline.Completed) || 0;
+    totalEl.textContent = total.toLocaleString('en-US');
+    completedEl.textContent = completed.toLocaleString('en-US');
+    if (total > 0) {
+      const pct = Math.round((completed / total) * 100);
+      shareEl.textContent = `${pct}% of total`;
+      shareEl.classList.remove('muted');
+      shareEl.style.color = 'var(--brand-success)';
+    } else {
+      shareEl.textContent = '—';
+      shareEl.classList.add('muted');
+      shareEl.style.color = '';
+    }
+    const entries = Object.entries(pipeline).map(([k, v]) => [k, Number(v) || 0]);
+    entries.sort((a, b) => b[1] - a[1]);
+    const top = entries.slice(0, 7);
+    const max = Math.max(...top.map(([, v]) => v), 1);
+    barsEl.innerHTML = top
+      .map(
+        ([, v]) =>
+          `<div class="ops-analytics-bar"><div class="ops-analytics-bar__track"><div class="ops-analytics-bar__fill" style="height:${Math.round((v / max) * 100)}%"></div></div></div>`,
+      )
+      .join('');
+    if (!top.length) {
+      barsEl.innerHTML = '<span class="muted" style="align-self:center;font-size:0.8rem;">No enrollment data yet.</span>';
+    }
+  } catch (err) {
+    if (msgEl) {
+      msgEl.textContent = err.message || 'Could not load pipeline.';
+      msgEl.hidden = false;
+    }
+    totalEl.textContent = '—';
+    completedEl.textContent = '—';
+    shareEl.textContent = '—';
+    shareEl.classList.add('muted');
+    shareEl.style.color = '';
+    barsEl.innerHTML = '';
+  }
 }
 
 export async function loadPipeline() {
@@ -1544,4 +1618,7 @@ export function initOpsInsights() {
   document.getElementById('btnRefreshPipeline')?.addEventListener('click', loadPipeline);
   document.getElementById('btnRefreshCapacity')?.addEventListener('click', loadCapacity);
   document.getElementById('btnRefreshQuality')?.addEventListener('click', loadQuality);
+  document.getElementById('opsHomeAnalyticsDetails')?.addEventListener('click', () => {
+    document.dispatchEvent(new CustomEvent('sbs:goto-view', { detail: { viewId: 'operations-pipeline' } }));
+  });
 }
