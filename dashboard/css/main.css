@@ -2844,3 +2844,141 @@ body.participant-join .app-top-bar__burger {
 .classroom-share-course-lib-hint {
   display: inline;
 }
+
+/* Circular download control (vanilla port of icon + tooltip pattern) */
+.dl-btn-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.dl-btn-row__label {
+  font-size: 14px;
+}
+
+.dl-btn {
+  position: relative;
+  width: 50px;
+  height: 50px;
+  border: none;
+  border-radius: 50%;
+  background-color: rgb(27, 27, 27);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition-duration: 0.3s;
+  box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.11);
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.dl-btn:focus-visible {
+  outline: 2px solid var(--brand-accent, rgb(150, 94, 255));
+  outline-offset: 3px;
+}
+
+.dl-btn__svg {
+  fill: rgb(214, 178, 255);
+}
+
+.dl-btn__tray {
+  width: 18px;
+  height: 5px;
+  border-bottom: 2px solid rgb(182, 143, 255);
+  border-left: 2px solid rgb(182, 143, 255);
+  border-right: 2px solid rgb(182, 143, 255);
+}
+
+.dl-btn__tooltip {
+  position: absolute;
+  right: -105px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0;
+  background-color: rgb(12, 12, 12);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition-duration: 0.2s;
+  pointer-events: none;
+  letter-spacing: 0.5px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 2;
+}
+
+.dl-btn__tooltip::before {
+  position: absolute;
+  content: '';
+  width: 10px;
+  height: 10px;
+  background-color: rgb(12, 12, 12);
+  transform: rotate(45deg);
+  left: -4px;
+  top: 50%;
+  margin-top: -5px;
+}
+
+.dl-btn:hover .dl-btn__tooltip,
+.dl-btn:focus-visible .dl-btn__tooltip {
+  opacity: 1;
+  transition-duration: 0.3s;
+}
+
+.dl-btn:hover,
+.dl-btn:focus-visible {
+  background-color: rgb(150, 94, 255);
+  transition-duration: 0.3s;
+}
+
+.dl-btn:hover .dl-btn__tray,
+.dl-btn:focus-visible .dl-btn__tray {
+  border-bottom-color: rgb(235, 235, 235);
+  border-left-color: rgb(235, 235, 235);
+  border-right-color: rgb(235, 235, 235);
+}
+
+.dl-btn:hover .dl-btn__svg,
+.dl-btn:focus-visible .dl-btn__svg {
+  fill: rgb(255, 255, 255);
+  animation: dl-btn-slide-in-top 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+@keyframes dl-btn-slide-in-top {
+  0% {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 600px) {
+  .dl-btn__tooltip {
+    right: auto;
+    left: 50%;
+    top: calc(100% + 10px);
+    transform: translateX(-50%);
+  }
+
+  .dl-btn__tooltip::before {
+    left: 50%;
+    top: -4px;
+    margin-left: -5px;
+    margin-top: 0;
+  }
+}
+
+.import-row--download {
+  align-items: center;
+  gap: 16px;
+}
