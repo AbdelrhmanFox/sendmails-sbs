@@ -369,6 +369,25 @@ async function handleOpsInsight(event, auth, supabase) {
     return json({ pipeline, total: enrollments?.length || 0 });
   }
 
+  if (resource === 'operations-overview') {
+    const [tr, co, ba, en, comp] = await Promise.all([
+      supabase.from('trainees').select('*', { count: 'exact', head: true }),
+      supabase.from('courses').select('*', { count: 'exact', head: true }),
+      supabase.from('batches').select('*', { count: 'exact', head: true }),
+      supabase.from('enrollments').select('*', { count: 'exact', head: true }),
+      supabase.from('enrollments').select('*', { count: 'exact', head: true }).eq('enrollment_status', 'Completed'),
+    ]);
+    const err = tr.error || co.error || ba.error || en.error || comp.error;
+    if (err) return json({ error: err.message || 'Overview query failed' }, 500);
+    return json({
+      trainees: tr.count ?? 0,
+      courses: co.count ?? 0,
+      batches: ba.count ?? 0,
+      enrollments: en.count ?? 0,
+      completed: comp.count ?? 0,
+    });
+  }
+
   if (resource === 'capacity') {
     const { data: batches, error: bErr } = await supabase.from('batches').select('batch_id, capacity, course_id, batch_name');
     if (bErr) return json({ error: bErr.message || 'Capacity query failed' }, 500);
@@ -508,7 +527,12 @@ exports.handler = async (event) => {
   if (qResource === 'search') {
     return handleSearch(event, auth, supabase);
   }
-  if (qResource === 'pipeline' || qResource === 'capacity' || qResource === 'data-quality') {
+  if (
+    qResource === 'pipeline' ||
+    qResource === 'operations-overview' ||
+    qResource === 'capacity' ||
+    qResource === 'data-quality'
+  ) {
     return handleOpsInsight(event, auth, supabase);
   }
   if (qResource) {

@@ -747,6 +747,16 @@ body.participant-join .main {
   margin-bottom: 14px;
 }
 
+.ops-analytics-card__kpis--four {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 420px) {
+  .ops-analytics-card__kpis--four {
+    grid-template-columns: 1fr;
+  }
+}
+
 .ops-analytics-kpi {
   padding: 12px;
   border-radius: var(--brand-radius-dense);
@@ -779,63 +789,6 @@ body.participant-join .main {
 .ops-analytics-kpi__hint.muted {
   color: var(--brand-muted);
   font-weight: 500;
-}
-
-.ops-analytics-card__chart {
-  margin-bottom: 12px;
-}
-
-.ops-analytics-card__chart-label {
-  margin: 0 0 8px;
-  font-size: 0.7rem;
-  font-weight: 600;
-}
-
-.ops-analytics-bars {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 6px;
-  height: 96px;
-  padding: 10px 8px;
-  border-radius: var(--brand-radius-dense);
-  background: color-mix(in oklab, var(--brand-navy) 25%, var(--brand-surface-2));
-  border: 1px solid color-mix(in oklab, var(--brand-border) 25%, transparent);
-}
-
-.ops-analytics-bar {
-  flex: 1;
-  min-width: 0;
-  max-width: 36px;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  align-items: stretch;
-}
-
-.ops-analytics-bar__track {
-  position: relative;
-  flex: 1;
-  min-height: 8px;
-  border-radius: 4px;
-  background: color-mix(in oklab, var(--brand-indigo) 25%, transparent);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-}
-
-.ops-analytics-bar__fill {
-  width: 100%;
-  border-radius: 4px;
-  background: linear-gradient(180deg, var(--brand-primary-2), var(--brand-primary));
-  min-height: 4px;
-  transition: height 0.3s ease;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .ops-analytics-bar__fill { transition: none; }
 }
 
 .ops-analytics-card__msg {

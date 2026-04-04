@@ -249,32 +249,38 @@
                       <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                     </svg>
                   </div>
-                  <h3 id="ops-analytics-heading">Pipeline analytics</h3>
+                  <h3 id="ops-analytics-heading">Operations overview</h3>
                 </div>
-                <span class="ops-analytics-card__pill" id="opsHomeAnalyticsLive" title="Data from live enrollments">
+                <span class="ops-analytics-card__pill" id="opsHomeAnalyticsLive" title="Counts from live Operations data">
                   <span class="ops-analytics-card__pill-dot" aria-hidden="true"></span>
                   Live
                 </span>
               </div>
-              <div class="ops-analytics-card__kpis">
+              <div class="ops-analytics-card__kpis ops-analytics-card__kpis--four">
                 <div class="ops-analytics-kpi">
-                  <p class="ops-analytics-kpi__label">Total enrollments</p>
-                  <p class="ops-analytics-kpi__value" id="opsHomeKpiTotal">—</p>
-                  <span class="ops-analytics-kpi__hint muted" id="opsHomeKpiTotalHint">All records</span>
+                  <p class="ops-analytics-kpi__label">Trainees</p>
+                  <p class="ops-analytics-kpi__value" id="opsHomeKpiTrainees">—</p>
+                  <span class="ops-analytics-kpi__hint muted">Profiles</span>
                 </div>
                 <div class="ops-analytics-kpi">
-                  <p class="ops-analytics-kpi__label">Completed</p>
-                  <p class="ops-analytics-kpi__value" id="opsHomeKpiCompleted">—</p>
-                  <span class="ops-analytics-kpi__hint" id="opsHomeKpiShare">—</span>
+                  <p class="ops-analytics-kpi__label">Courses</p>
+                  <p class="ops-analytics-kpi__value" id="opsHomeKpiCourses">—</p>
+                  <span class="ops-analytics-kpi__hint muted">Catalog</span>
                 </div>
-              </div>
-              <div class="ops-analytics-card__chart" aria-hidden="true">
-                <p class="ops-analytics-card__chart-label muted">Enrollment mix (top statuses)</p>
-                <div class="ops-analytics-bars" id="opsHomeBarStrip"></div>
+                <div class="ops-analytics-kpi">
+                  <p class="ops-analytics-kpi__label">Batches</p>
+                  <p class="ops-analytics-kpi__value" id="opsHomeKpiBatches">—</p>
+                  <span class="ops-analytics-kpi__hint muted">Scheduled runs</span>
+                </div>
+                <div class="ops-analytics-kpi">
+                  <p class="ops-analytics-kpi__label">Enrollments</p>
+                  <p class="ops-analytics-kpi__value" id="opsHomeKpiEnrollments">—</p>
+                  <span class="ops-analytics-kpi__hint" id="opsHomeKpiCompletedHint">—</span>
+                </div>
               </div>
               <p class="ops-analytics-card__msg inline-error" id="opsHomeAnalyticsMsg" hidden></p>
               <div class="ops-analytics-card__foot">
-                <span class="muted ops-analytics-card__period" id="opsHomeAnalyticsPeriod">By enrollment status</span>
+                <span class="muted ops-analytics-card__period" id="opsHomeAnalyticsPeriod">Live counts from workbook-backed tables</span>
                 <button type="button" class="btn btn-primary ops-analytics-card__details" id="opsHomeAnalyticsDetails">
                   View details
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">

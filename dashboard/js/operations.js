@@ -1506,57 +1506,50 @@ function initOpsHomeCharacter() {
 }
 
 async function loadOperationsHomeAnalytics() {
-  const totalEl = document.getElementById('opsHomeKpiTotal');
-  const completedEl = document.getElementById('opsHomeKpiCompleted');
-  const shareEl = document.getElementById('opsHomeKpiShare');
-  const barsEl = document.getElementById('opsHomeBarStrip');
+  const traineesEl = document.getElementById('opsHomeKpiTrainees');
+  const coursesEl = document.getElementById('opsHomeKpiCourses');
+  const batchesEl = document.getElementById('opsHomeKpiBatches');
+  const enrollmentsEl = document.getElementById('opsHomeKpiEnrollments');
+  const completedHintEl = document.getElementById('opsHomeKpiCompletedHint');
   const msgEl = document.getElementById('opsHomeAnalyticsMsg');
-  if (!totalEl || !completedEl || !shareEl || !barsEl) return;
+  if (!traineesEl || !coursesEl || !batchesEl || !enrollmentsEl || !completedHintEl) return;
   if (msgEl) {
     msgEl.hidden = true;
     msgEl.textContent = '';
   }
+  const dash = '—';
   try {
-    const data = await jsonFetch(`${OPS}?resource=pipeline`, { headers: getAuthHeaders() });
-    const pipeline = data.pipeline || {};
-    const total = Number(data.total) || 0;
-    const completed = Number(pipeline.Completed) || 0;
-    totalEl.textContent = total.toLocaleString('en-US');
-    completedEl.textContent = completed.toLocaleString('en-US');
-    if (total > 0) {
-      const pct = Math.round((completed / total) * 100);
-      shareEl.textContent = `${pct}% of total`;
-      shareEl.classList.remove('muted');
-      shareEl.style.color = 'var(--brand-success)';
+    const data = await jsonFetch(`${OPS}?resource=operations-overview`, { headers: getAuthHeaders() });
+    const trainees = Number(data.trainees) || 0;
+    const courses = Number(data.courses) || 0;
+    const batches = Number(data.batches) || 0;
+    const enrollments = Number(data.enrollments) || 0;
+    const completed = Number(data.completed) || 0;
+    traineesEl.textContent = trainees.toLocaleString('en-US');
+    coursesEl.textContent = courses.toLocaleString('en-US');
+    batchesEl.textContent = batches.toLocaleString('en-US');
+    enrollmentsEl.textContent = enrollments.toLocaleString('en-US');
+    if (enrollments > 0) {
+      const pct = Math.round((completed / enrollments) * 100);
+      completedHintEl.textContent = `${completed.toLocaleString('en-US')} completed (${pct}% of enrollments)`;
+      completedHintEl.classList.remove('muted');
+      completedHintEl.style.color = 'var(--brand-success)';
     } else {
-      shareEl.textContent = '—';
-      shareEl.classList.add('muted');
-      shareEl.style.color = '';
-    }
-    const entries = Object.entries(pipeline).map(([k, v]) => [k, Number(v) || 0]);
-    entries.sort((a, b) => b[1] - a[1]);
-    const top = entries.slice(0, 7);
-    const max = Math.max(...top.map(([, v]) => v), 1);
-    barsEl.innerHTML = top
-      .map(
-        ([, v]) =>
-          `<div class="ops-analytics-bar"><div class="ops-analytics-bar__track"><div class="ops-analytics-bar__fill" style="height:${Math.round((v / max) * 100)}%"></div></div></div>`,
-      )
-      .join('');
-    if (!top.length) {
-      barsEl.innerHTML = '<span class="muted" style="align-self:center;font-size:0.8rem;">No enrollment data yet.</span>';
+      completedHintEl.textContent = 'No enrollments yet';
+      completedHintEl.classList.add('muted');
+      completedHintEl.style.color = '';
     }
   } catch (err) {
     if (msgEl) {
-      msgEl.textContent = err.message || 'Could not load pipeline.';
+      msgEl.textContent = err.message || 'Could not load overview.';
       msgEl.hidden = false;
     }
-    totalEl.textContent = '—';
-    completedEl.textContent = '—';
-    shareEl.textContent = '—';
-    shareEl.classList.add('muted');
-    shareEl.style.color = '';
-    barsEl.innerHTML = '';
+    [traineesEl, coursesEl, batchesEl, enrollmentsEl].forEach((el) => {
+      el.textContent = dash;
+    });
+    completedHintEl.textContent = dash;
+    completedHintEl.classList.add('muted');
+    completedHintEl.style.color = '';
   }
 }
 
