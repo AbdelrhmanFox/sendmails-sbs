@@ -171,18 +171,22 @@ h1, h2, h3, h4, p { margin-top: 0; }
 }
 
 body.public-training-guest .app-top-bar,
+body.public-classroom-guest .app-top-bar,
 body.participant-join .app-top-bar {
   display: none !important;
 }
 
 /* Public training join (students open ?session= / ?group= without staff login) */
-body.public-training-guest .app {
+body.public-training-guest .app,
+body.public-classroom-guest .app {
   grid-template-columns: 1fr;
 }
-body.public-training-guest .sidebar {
+body.public-training-guest .sidebar,
+body.public-classroom-guest .sidebar {
   display: none !important;
 }
-body.public-training-guest .main {
+body.public-training-guest .main,
+body.public-classroom-guest .main {
   grid-column: 1 / -1;
   max-width: 100%;
 }
@@ -2025,6 +2029,7 @@ body.participant-join .chat-scroll {
 }
 
 body.public-training-guest .app-top-bar__burger,
+body.public-classroom-guest .app-top-bar__burger,
 body.participant-join .app-top-bar__burger {
   display: none !important;
 }
@@ -2546,6 +2551,30 @@ body.participant-join .app-top-bar__burger {
   margin-top: 8px;
 }
 
+.classroom-share-card {
+  margin-bottom: 16px;
+}
+
+.classroom-share-card h4 {
+  margin: 0 0 6px;
+  font-size: 0.95rem;
+}
+
+.classroom-share-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: stretch;
+  margin-top: 10px;
+}
+
+.classroom-share-url {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 0;
+  font-size: 13px;
+}
+
 .classroom-room-head {
   display: flex;
   flex-wrap: wrap;
@@ -2675,4 +2704,38 @@ body.participant-join .app-top-bar__burger {
   .form-grid--two {
     grid-template-columns: 1fr;
   }
+}
+
+/* Public participant classroom (?classroom= token, no login) */
+.public-classroom-block h3 {
+  margin-top: 0;
+}
+
+.public-classroom-body {
+  margin-top: 8px;
+}
+
+.public-classroom-item {
+  padding: 12px 0;
+  border-bottom: 1px solid color-mix(in oklab, var(--brand-border) 45%, transparent);
+}
+
+.public-classroom-item:last-child {
+  border-bottom: none;
+}
+
+.public-classroom-instructions {
+  margin-top: 8px;
+  font-size: 14px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.public-classroom-materials-ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.public-classroom-materials-ul li {
+  margin-bottom: 8px;
 }

@@ -12,6 +12,7 @@ import { initCampaigns } from './campaigns.js';
 import { initOperations, initOpsInsights, initBulkEnrollment } from './operations.js';
 import { initTraining, initTrainingTools } from './training.js';
 import { initClassroom } from './classroom.js';
+import { initPublicClassroom } from './public-classroom.js';
 import { initAdmin } from './admin.js';
 import { initFinance } from './finance.js';
 
@@ -19,6 +20,16 @@ const loginError = document.getElementById('loginError');
 
 const loggedInUserEl = document.getElementById('loggedInUser');
 if (loggedInUserEl && authUsername) loggedInUserEl.textContent = `${authUsername} (${authRole || 'user'})`;
+
+/** Participant classroom link (?classroom=<token>) works without staff login. */
+function hasPublicClassroomQuery() {
+  try {
+    const q = new URLSearchParams(window.location.search);
+    return Boolean(String(q.get('classroom') || '').trim());
+  } catch (_) {
+    return false;
+  }
+}
 
 /** Student share links (?session= or ?=group) work without staff login. */
 function hasPublicTrainingJoinQuery() {
@@ -43,6 +54,21 @@ function dismissAppPreloader() {
   });
 }
 
+function bootPublicClassroomGuest() {
+  try {
+    const q = new URLSearchParams(window.location.search);
+    const token = String(q.get('classroom') || '').trim();
+    document.body.classList.add('public-classroom-guest');
+    showApp();
+    document.querySelectorAll('.view').forEach((v) => v.classList.remove('active'));
+    document.getElementById('view-public-classroom')?.classList.add('active');
+    void initPublicClassroom(token);
+  } catch (_) {
+    /* ignore */
+  }
+  dismissAppPreloader();
+}
+
 function bootPublicTrainingGuest() {
   document.body.classList.add('public-training-guest');
   showApp();
@@ -54,6 +80,10 @@ function bootPublicTrainingGuest() {
 
 async function bootAuth() {
   if (!authToken || !authRole) {
+    if (hasPublicClassroomQuery()) {
+      bootPublicClassroomGuest();
+      return;
+    }
     if (hasPublicTrainingJoinQuery()) {
       bootPublicTrainingGuest();
       return;

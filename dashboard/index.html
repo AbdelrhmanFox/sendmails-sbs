@@ -975,6 +975,14 @@
             <button type="button" class="btn btn-secondary" id="classroomBackBtn">Back to list</button>
             <h3 id="classroomRoomTitle" class="classroom-room-title">Classroom</h3>
           </div>
+          <div class="card classroom-share-card" id="classroomShareCard">
+            <h4>Participant link</h4>
+            <p class="muted small-margin">Share this URL with trainees. They can view classwork and resource links here without signing in (same idea as the live session group link).</p>
+            <div class="classroom-share-row">
+              <input type="text" readonly id="classroomShareUrl" class="classroom-share-url" aria-label="Participant link URL" />
+              <button type="button" class="btn btn-secondary" id="classroomCopyShareUrl">Copy</button>
+            </div>
+          </div>
           <div class="classroom-room-tabs" role="tablist" aria-label="Classroom sections">
             <button type="button" class="btn btn-secondary classroom-tab active" id="classroomTabClasswork" role="tab" aria-selected="true" aria-controls="classroomPaneClasswork">Classwork</button>
             <button type="button" class="btn btn-secondary classroom-tab" id="classroomTabMaterials" role="tab" aria-selected="false" aria-controls="classroomPaneMaterials">Materials</button>
@@ -1030,6 +1038,24 @@
             </div>
             <p id="classroomGradesMsg" class="inline-note"></p>
           </div>
+        </div>
+      </section>
+
+      <section id="view-public-classroom" class="view">
+        <div class="view-hero">
+          <div class="view-hero-text">
+            <h2 id="publicClassroomHeading">Classroom</h2>
+            <p class="subtitle" id="publicClassroomSub">Participant view · no sign-in required</p>
+          </div>
+        </div>
+        <p id="publicClassroomMsg" class="inline-error" role="alert" hidden></p>
+        <div class="card public-classroom-block">
+          <h3>Classwork</h3>
+          <div id="publicClassroomAssignments" class="public-classroom-body"></div>
+        </div>
+        <div class="card public-classroom-block">
+          <h3>Materials</h3>
+          <div id="publicClassroomMaterials" class="public-classroom-body"></div>
         </div>
       </section>
 

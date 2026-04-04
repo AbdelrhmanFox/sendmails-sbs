@@ -17,6 +17,7 @@ const HANDLERS = {
   'list-users': require('../netlify/functions/list-users').handler,
   'public-config': require('../netlify/functions/public-config').handler,
   'public-training-session': require('../netlify/functions/public-training-session').handler,
+  'public-classroom': require('../netlify/functions/public-classroom').handler,
   'delete-user': require('../netlify/functions/delete-user').handler,
   'reset-password': require('../netlify/functions/reset-password').handler,
   'health-supabase': require('../netlify/functions/health-supabase').handler,

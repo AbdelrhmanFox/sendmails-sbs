@@ -65,6 +65,20 @@ exports.handler = async (event) => {
     return json({ items });
   }
 
+  if (resource === 'share-link' && event.httpMethod === 'GET') {
+    const batchId = String(event.queryStringParameters?.batch_id || '').trim();
+    const gate = await assertBatchAccess(supabase, auth, batchId);
+    if (!gate.ok) return json({ error: gate.error }, gate.status);
+    const { data: existing } = await supabase.from('classroom_public_links').select('token').eq('batch_id', batchId).maybeSingle();
+    let token = existing && existing.token;
+    if (!token) {
+      const ins = await supabase.from('classroom_public_links').insert({ batch_id: batchId }).select('token').single();
+      if (ins.error) return json({ error: ins.error.message || 'Could not create share link' }, 500);
+      token = ins.data.token;
+    }
+    return json({ token, batch_id: batchId });
+  }
+
   if (resource === 'assignments') {
     const batchId = String(event.queryStringParameters?.batch_id || '').trim();
 

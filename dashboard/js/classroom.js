@@ -62,6 +62,29 @@ export async function loadClassrooms() {
   }
 }
 
+function buildParticipantShareUrl(token) {
+  const base = `${window.location.origin}${window.location.pathname}`;
+  return `${base}?classroom=${token}`;
+}
+
+async function loadShareLink() {
+  const input = $('classroomShareUrl');
+  if (!input || !currentBatchId) return;
+  input.value = '';
+  input.placeholder = 'Loading…';
+  try {
+    const data = await jsonFetch(`${CLASSROOM}?resource=share-link&batch_id=${encodeURIComponent(currentBatchId)}`, {
+      headers: getAuthHeaders(),
+    });
+    input.placeholder = '';
+    input.value = buildParticipantShareUrl(data.token);
+  } catch (e) {
+    input.placeholder = '';
+    input.value = '';
+    input.placeholder = e.message || 'Could not load link';
+  }
+}
+
 async function openClassroom(batchId, label) {
   currentBatchId = String(batchId || '').trim();
   currentBatchLabel = label || currentBatchId;
@@ -71,6 +94,7 @@ async function openClassroom(batchId, label) {
   $('classroomAssignmentForm')?.reset();
   $('classroomMaterialForm')?.reset();
   await refreshClassroomData();
+  await loadShareLink();
   switchClassroomTab('classwork');
 }
 
@@ -352,5 +376,16 @@ export function initClassroom() {
   $('classroomGradeAssignmentSelect')?.addEventListener('change', (ev) => {
     const aid = String(ev.target.value || '').trim();
     void loadGradesTable(aid);
+  });
+
+  $('classroomCopyShareUrl')?.addEventListener('click', async () => {
+    const input = $('classroomShareUrl');
+    if (!input || !input.value) return;
+    try {
+      await navigator.clipboard.writeText(input.value);
+    } catch (_) {
+      input.select();
+      document.execCommand('copy');
+    }
   });
 }
