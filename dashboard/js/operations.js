@@ -363,6 +363,10 @@ function renderTraineeProfile() {
       <span class="status-pill">${escapeHtml(item.status || '')}</span>
     </div>
   </div>`;
+  head.querySelector('.profile-action-enroll')?.addEventListener('click', () => openEnrollmentWizardFromProfile());
+  head.querySelector('.profile-action-edit')?.addEventListener('click', () => {
+    if (item.id) void openTraineeFormEdit(item.id);
+  });
   const ov = document.getElementById('profileTabOverview');
   if (ov) {
     ov.innerHTML = `<p><strong>Total enrollments:</strong> ${summary?.enrollment_count ?? 0} · <strong>Total paid (EGP):</strong> ${summary?.total_paid ?? 0}</p>
@@ -828,6 +832,25 @@ async function loadWizardBatchSelect(courseId) {
   } catch (_) {
     sel.innerHTML = '<option value="">Could not load batches</option>';
   }
+}
+
+/** Open enrollment wizard from trainee profile with trainee pre-selected (skips step 1). */
+function openEnrollmentWizardFromProfile() {
+  const item = profileDetail?.item;
+  if (!item?.id || !item.trainee_id) return;
+  resetWizard();
+  wizard.trainee = {
+    id: item.id,
+    trainee_id: item.trainee_id,
+    full_name: item.full_name || '',
+  };
+  const sel = document.getElementById('wiz_trainee_selected');
+  if (sel) sel.textContent = `Selected: ${wizard.trainee.full_name} (${wizard.trainee.trainee_id})`;
+  const next1 = document.getElementById('btnWizNext1');
+  if (next1) next1.disabled = false;
+  goToView('operations-enrollments');
+  document.getElementById('enrollmentWizardCard')?.classList.remove('hidden');
+  setWizardStep(2);
 }
 
 function resetWizard() {
