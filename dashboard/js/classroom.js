@@ -5,6 +5,68 @@ const CLASSROOM = '/.netlify/functions/classroom-data';
 let currentBatchId = '';
 let currentBatchLabel = '';
 let assignmentsCache = [];
+let materialsCache = [];
+
+function clearMaterialEditing() {
+  const hid = $('classroomMatEditId');
+  if (hid) hid.value = '';
+  $('classroomMaterialForm')?.reset();
+  const sub = $('classroomMatSubmit');
+  if (sub) sub.textContent = 'Add link';
+  $('classroomMatCancelEdit')?.classList.add('hidden');
+  const h = $('classroomMatFormHeading');
+  if (h) h.textContent = 'Add resource link';
+}
+
+function clearAssignmentEditing() {
+  const hid = $('classroomAsgEditId');
+  if (hid) hid.value = '';
+  $('classroomAssignmentForm')?.reset();
+  const sub = $('classroomAsgSubmit');
+  if (sub) sub.textContent = 'Add assignment';
+  $('classroomAsgCancelEdit')?.classList.add('hidden');
+  const h = $('classroomAsgFormHeading');
+  if (h) h.textContent = 'New assignment';
+}
+
+function beginMaterialEdit(m) {
+  const hid = $('classroomMatEditId');
+  if (hid) hid.value = m.id || '';
+  const t = $('classroomMatTitle');
+  const u = $('classroomMatUrl');
+  const d = $('classroomMatDesc');
+  if (t) t.value = m.title || '';
+  if (u) u.value = m.url || '';
+  if (d) d.value = m.description || '';
+  const sub = $('classroomMatSubmit');
+  if (sub) sub.textContent = 'Save changes';
+  $('classroomMatCancelEdit')?.classList.remove('hidden');
+  const h = $('classroomMatFormHeading');
+  if (h) h.textContent = 'Edit resource link';
+  t?.focus();
+  switchClassroomTab('materials');
+}
+
+function beginAssignmentEdit(a) {
+  const hid = $('classroomAsgEditId');
+  if (hid) hid.value = a.id || '';
+  const title = $('classroomAsgTitle');
+  const inst = $('classroomAsgInstructions');
+  const due = $('classroomAsgDue');
+  if (title) title.value = a.title || '';
+  if (inst) inst.value = a.instructions || '';
+  if (due) {
+    const raw = a.due_date != null ? String(a.due_date).trim() : '';
+    due.value = raw.length >= 10 ? raw.slice(0, 10) : raw;
+  }
+  const sub = $('classroomAsgSubmit');
+  if (sub) sub.textContent = 'Save changes';
+  $('classroomAsgCancelEdit')?.classList.remove('hidden');
+  const h = $('classroomAsgFormHeading');
+  if (h) h.textContent = 'Edit assignment';
+  title?.focus();
+  switchClassroomTab('classwork');
+}
 
 function escapeHtml(s) {
   return String(s)
@@ -93,6 +155,8 @@ async function openClassroom(batchId, label) {
   showPanel(false);
   $('classroomAssignmentForm')?.reset();
   $('classroomMaterialForm')?.reset();
+  clearAssignmentEditing();
+  clearMaterialEditing();
   await refreshClassroomData();
   await loadShareLink();
   switchClassroomTab('classwork');
@@ -102,6 +166,9 @@ function closeClassroomRoom() {
   currentBatchId = '';
   currentBatchLabel = '';
   assignmentsCache = [];
+  materialsCache = [];
+  clearAssignmentEditing();
+  clearMaterialEditing();
   showPanel(true);
 }
 
@@ -154,10 +221,20 @@ async function loadAssignmentsList() {
             <strong>${escapeHtml(a.title)}</strong>${due}
             ${a.instructions ? `<p class="muted small-margin">${escapeHtml(a.instructions)}</p>` : ''}
           </div>
-          <button type="button" class="btn btn-secondary btn-sm classroom-del-asg" data-id="${escapeHtml(a.id)}">Remove</button>
+          <div class="classroom-inline-actions">
+            <button type="button" class="btn btn-secondary btn-sm classroom-edit-asg" data-id="${escapeHtml(a.id)}">Edit</button>
+            <button type="button" class="btn btn-secondary btn-sm classroom-del-asg" data-id="${escapeHtml(a.id)}">Remove</button>
+          </div>
         </div>`;
       })
       .join('');
+    host.querySelectorAll('.classroom-edit-asg').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        const a = assignmentsCache.find((x) => x.id === id);
+        if (a) beginAssignmentEdit(a);
+      });
+    });
     host.querySelectorAll('.classroom-del-asg').forEach((btn) => {
       btn.addEventListener('click', async () => {
         const id = btn.getAttribute('data-id');
@@ -167,6 +244,7 @@ async function loadAssignmentsList() {
             method: 'DELETE',
             headers: getAuthHeaders(),
           });
+          if (String($('classroomAsgEditId')?.value || '') === id) clearAssignmentEditing();
           await refreshClassroomData();
         } catch (e) {
           alert(e.message);
@@ -189,6 +267,7 @@ async function loadMaterialsList() {
       headers: getAuthHeaders(),
     });
     const items = data.items || [];
+    materialsCache = items;
     if (!items.length) {
       host.innerHTML = '<li class="muted">No resource links yet.</li>';
       if (msg) msg.textContent = '';
@@ -198,12 +277,24 @@ async function loadMaterialsList() {
       .map(
         (m) =>
           `<li class="classroom-material-row">
-            <a href="${escapeHtml(m.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(m.title)}</a>
-            ${m.description ? `<span class="muted"> — ${escapeHtml(m.description)}</span>` : ''}
-            <button type="button" class="btn btn-secondary btn-sm classroom-del-mat" data-id="${escapeHtml(m.id)}">Remove</button>
+            <div class="classroom-material-main">
+              <a href="${escapeHtml(m.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(m.title)}</a>
+              ${m.description ? `<span class="muted"> — ${escapeHtml(m.description)}</span>` : ''}
+            </div>
+            <div class="classroom-inline-actions">
+              <button type="button" class="btn btn-secondary btn-sm classroom-edit-mat" data-id="${escapeHtml(m.id)}">Edit</button>
+              <button type="button" class="btn btn-secondary btn-sm classroom-del-mat" data-id="${escapeHtml(m.id)}">Remove</button>
+            </div>
           </li>`,
       )
       .join('');
+    host.querySelectorAll('.classroom-edit-mat').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        const m = materialsCache.find((x) => x.id === id);
+        if (m) beginMaterialEdit(m);
+      });
+    });
     host.querySelectorAll('.classroom-del-mat').forEach((btn) => {
       btn.addEventListener('click', async () => {
         const id = btn.getAttribute('data-id');
@@ -213,6 +304,7 @@ async function loadMaterialsList() {
             method: 'DELETE',
             headers: getAuthHeaders(),
           });
+          if (String($('classroomMatEditId')?.value || '') === id) clearMaterialEditing();
           await loadMaterialsList();
         } catch (e) {
           alert(e.message);
@@ -329,23 +421,39 @@ export function initClassroom() {
     const instructions = String($('classroomAsgInstructions')?.value || '');
     const due = String($('classroomAsgDue')?.value || '').trim();
     if (!title) return;
+    const editId = String($('classroomAsgEditId')?.value || '').trim();
     try {
-      await jsonFetch(`${CLASSROOM}?resource=assignments`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({
-          batch_id: currentBatchId,
-          title,
-          instructions: instructions || null,
-          due_date: due || null,
-        }),
-      });
-      e.target.reset();
+      if (editId) {
+        await jsonFetch(`${CLASSROOM}?resource=assignments&id=${encodeURIComponent(editId)}`, {
+          method: 'PATCH',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            title,
+            instructions: instructions || null,
+            due_date: due || null,
+          }),
+        });
+        clearAssignmentEditing();
+      } else {
+        await jsonFetch(`${CLASSROOM}?resource=assignments`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            batch_id: currentBatchId,
+            title,
+            instructions: instructions || null,
+            due_date: due || null,
+          }),
+        });
+        clearAssignmentEditing();
+      }
       await refreshClassroomData();
     } catch (err) {
-      $('classroomClassworkMsg').textContent = err.message || 'Failed to add assignment.';
+      $('classroomClassworkMsg').textContent = err.message || 'Failed to save assignment.';
     }
   });
+
+  $('classroomAsgCancelEdit')?.addEventListener('click', () => clearAssignmentEditing());
 
   $('classroomMaterialForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -354,24 +462,40 @@ export function initClassroom() {
     const url = String($('classroomMatUrl')?.value || '').trim();
     const description = String($('classroomMatDesc')?.value || '').trim();
     if (!title || !url) return;
+    const editId = String($('classroomMatEditId')?.value || '').trim();
     try {
-      await jsonFetch(`${CLASSROOM}?resource=materials`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({
-          batch_id: currentBatchId,
-          title,
-          url,
-          description: description || null,
-        }),
-      });
-      e.target.reset();
+      if (editId) {
+        await jsonFetch(`${CLASSROOM}?resource=materials&id=${encodeURIComponent(editId)}`, {
+          method: 'PATCH',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            title,
+            url,
+            description: description || null,
+          }),
+        });
+        clearMaterialEditing();
+      } else {
+        await jsonFetch(`${CLASSROOM}?resource=materials`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            batch_id: currentBatchId,
+            title,
+            url,
+            description: description || null,
+          }),
+        });
+        clearMaterialEditing();
+      }
       await loadMaterialsList();
       $('classroomMaterialsMsg').textContent = '';
     } catch (err) {
-      $('classroomMaterialsMsg').textContent = err.message || 'Failed to add link.';
+      $('classroomMaterialsMsg').textContent = err.message || 'Failed to save link.';
     }
   });
+
+  $('classroomMatCancelEdit')?.addEventListener('click', () => clearMaterialEditing());
 
   $('classroomGradeAssignmentSelect')?.addEventListener('change', (ev) => {
     const aid = String(ev.target.value || '').trim();

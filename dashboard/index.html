@@ -977,7 +977,7 @@
           </div>
           <div class="card classroom-share-card" id="classroomShareCard">
             <h4>Participant link</h4>
-            <p class="muted small-margin">Share this URL with trainees. They can view classwork and resource links here without signing in (same idea as the live session group link).</p>
+            <p class="muted small-margin">Share this URL with trainees. They can view classwork and resource links here without signing in (same idea as the live session group link). The link does not change when you add or edit items—participants always see the latest classwork and materials.</p>
             <div class="classroom-share-row">
               <input type="text" readonly id="classroomShareUrl" class="classroom-share-url" aria-label="Participant link URL" />
               <button type="button" class="btn btn-secondary" id="classroomCopyShareUrl">Copy</button>
@@ -991,13 +991,15 @@
           <div id="classroomPaneClasswork" class="classroom-pane" role="tabpanel" aria-labelledby="classroomTabClasswork">
             <div id="classroomAssignmentsList" class="classroom-assignments-list"></div>
             <div class="card classroom-form-card">
-              <h4>New assignment</h4>
+              <h4 id="classroomAsgFormHeading">New assignment</h4>
               <form id="classroomAssignmentForm" class="form-grid form-grid--two">
+                <input type="hidden" id="classroomAsgEditId" value="" />
                 <label class="full">Title <input type="text" id="classroomAsgTitle" required maxlength="200" /></label>
                 <label class="full">Instructions <textarea id="classroomAsgInstructions" rows="3" maxlength="4000"></textarea></label>
                 <label>Due date <input type="date" id="classroomAsgDue" /></label>
                 <div class="form-actions full">
                   <button type="submit" class="btn btn-primary" id="classroomAsgSubmit">Add assignment</button>
+                  <button type="button" class="btn btn-secondary hidden" id="classroomAsgCancelEdit">Cancel edit</button>
                 </div>
               </form>
             </div>
@@ -1006,13 +1008,15 @@
           <div id="classroomPaneMaterials" class="classroom-pane hidden" role="tabpanel" aria-labelledby="classroomTabMaterials" hidden>
             <ul id="classroomMaterialsList" class="classroom-materials-list"></ul>
             <div class="card classroom-form-card">
-              <h4>Add resource link</h4>
+              <h4 id="classroomMatFormHeading">Add resource link</h4>
               <form id="classroomMaterialForm" class="form-grid form-grid--two">
+                <input type="hidden" id="classroomMatEditId" value="" />
                 <label>Title <input type="text" id="classroomMatTitle" required maxlength="200" /></label>
                 <label>URL <input type="url" id="classroomMatUrl" required placeholder="https://..." /></label>
                 <label class="full">Description <input type="text" id="classroomMatDesc" maxlength="500" /></label>
                 <div class="form-actions full">
-                  <button type="submit" class="btn btn-primary">Add link</button>
+                  <button type="submit" class="btn btn-primary" id="classroomMatSubmit">Add link</button>
+                  <button type="button" class="btn btn-secondary hidden" id="classroomMatCancelEdit">Cancel edit</button>
                 </div>
               </form>
             </div>

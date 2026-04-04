@@ -2643,10 +2643,23 @@ body.participant-join .app-top-bar__burger {
 .classroom-material-row {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: 8px 12px;
   padding: 8px 0;
   border-bottom: 1px solid color-mix(in oklab, var(--brand-border) 40%, transparent);
+}
+
+.classroom-material-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.classroom-inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .classroom-grade-select-label {

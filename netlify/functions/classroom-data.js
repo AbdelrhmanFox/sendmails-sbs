@@ -118,6 +118,31 @@ exports.handler = async (event) => {
       return json({ ok: true, item: data });
     }
 
+    if (event.httpMethod === 'PATCH') {
+      const id = String(event.queryStringParameters?.id || '').trim();
+      if (!id) return json({ error: 'id required' }, 400);
+      let body;
+      try {
+        body = JSON.parse(event.body || '{}');
+      } catch (_) {
+        return json({ error: 'Invalid JSON' }, 400);
+      }
+      const { data: row, error: fe } = await supabase.from('classroom_assignments').select('batch_id').eq('id', id).maybeSingle();
+      if (fe || !row) return json({ error: 'Assignment not found' }, 404);
+      const gate = await assertBatchAccess(supabase, auth, row.batch_id);
+      if (!gate.ok) return json({ error: gate.error }, gate.status);
+      const title = String(body.title || '').trim();
+      if (!title) return json({ error: 'title required' }, 400);
+      const updates = {
+        title,
+        instructions: body.instructions != null ? String(body.instructions) : null,
+        due_date: normalizeDate(body.due_date),
+      };
+      const { data, error } = await supabase.from('classroom_assignments').update(updates).eq('id', id).select('*').single();
+      if (error) return json({ error: error.message || 'Update failed' }, 500);
+      return json({ ok: true, item: data });
+    }
+
     if (event.httpMethod === 'DELETE') {
       const id = String(event.queryStringParameters?.id || '').trim();
       if (!id) return json({ error: 'id required' }, 400);
@@ -250,6 +275,35 @@ exports.handler = async (event) => {
       };
       const { data, error } = await supabase.from('classroom_materials').insert(row).select('*').single();
       if (error) return json({ error: error.message || 'Insert failed' }, 500);
+      return json({ ok: true, item: data });
+    }
+
+    if (event.httpMethod === 'PATCH') {
+      const id = String(event.queryStringParameters?.id || '').trim();
+      if (!id) return json({ error: 'id required' }, 400);
+      let body;
+      try {
+        body = JSON.parse(event.body || '{}');
+      } catch (_) {
+        return json({ error: 'Invalid JSON' }, 400);
+      }
+      const { data: row, error: fe } = await supabase.from('classroom_materials').select('batch_id').eq('id', id).maybeSingle();
+      if (fe || !row) return json({ error: 'Material not found' }, 404);
+      const gate = await assertBatchAccess(supabase, auth, row.batch_id);
+      if (!gate.ok) return json({ error: gate.error }, gate.status);
+      const title = String(body.title || '').trim();
+      const url = String(body.url || '').trim();
+      if (!title || !url) return json({ error: 'title and url required' }, 400);
+      const updates = {
+        title,
+        url,
+        description: body.description != null ? String(body.description) : null,
+      };
+      if (body.sort_order != null && !Number.isNaN(Number(body.sort_order))) {
+        updates.sort_order = Number(body.sort_order);
+      }
+      const { data, error } = await supabase.from('classroom_materials').update(updates).eq('id', id).select('*').single();
+      if (error) return json({ error: error.message || 'Update failed' }, 500);
       return json({ ok: true, item: data });
     }
 
