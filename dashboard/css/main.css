@@ -1252,31 +1252,17 @@ body.participant-join .chat-panel {
   display: none !important;
 }
 
+/* Voice row: same .btn / .btn-primary / .btn-secondary as dashboard; layout + icons only */
 .btn-voice {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 40px;
-  padding: 0 14px;
   margin: 0;
   font-family: inherit;
   font-size: 13px;
   font-weight: 500;
   line-height: 1.2;
-  color: var(--brand-text);
-  background: color-mix(in oklab, var(--brand-surface) 70%, var(--brand-surface-2));
-  border: 1px solid color-mix(in oklab, var(--brand-border) 88%, var(--brand-surface));
-  border-radius: var(--brand-radius-dense);
-  cursor: pointer;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.28), 0 0 0 1px color-mix(in oklab, var(--brand-text) 6%, transparent) inset;
-  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, filter 0.18s ease, box-shadow 0.18s ease;
-}
-.btn-voice:hover {
-  filter: brightness(1.08);
-  border-color: color-mix(in oklab, var(--brand-primary) 45%, var(--brand-border));
-  background: color-mix(in oklab, var(--brand-surface-2) 82%, var(--brand-surface));
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22), 0 0 0 1px color-mix(in oklab, var(--brand-primary) 18%, transparent) inset;
 }
 .btn-voice:focus-visible {
   outline: 2px solid color-mix(in oklab, var(--brand-primary) 55%, transparent);
@@ -1327,18 +1313,8 @@ body.participant-join .chat-panel {
     transition: opacity 0.15s ease;
   }
 }
-.btn-voice--join {
-  color: #fff;
-  background: var(--brand-primary);
-  border-color: color-mix(in oklab, var(--brand-primary) 72%, #0a3030);
-}
 .btn-voice--join .btn-voice__icon {
   color: #fff;
-}
-.btn-voice--join:hover {
-  filter: brightness(1.06);
-  background: color-mix(in oklab, var(--brand-primary) 90%, #fff);
-  border-color: color-mix(in oklab, var(--brand-primary) 55%, var(--brand-border));
 }
 .btn-voice--leave .btn-voice__icon {
   color: var(--brand-primary-2);
@@ -1352,7 +1328,7 @@ body.participant-join .chat-panel {
 .btn-voice--mute:hover .btn-voice__icon {
   color: var(--brand-primary);
 }
-#btnToggleMute[data-muted='true'] {
+#btnToggleMute[data-muted='true'].btn-secondary {
   background: color-mix(in oklab, var(--brand-danger) 22%, var(--brand-surface-2));
   border-color: color-mix(in oklab, var(--brand-danger) 55%, var(--brand-border));
   color: color-mix(in oklab, var(--brand-danger) 92%, #fff);
@@ -1360,7 +1336,7 @@ body.participant-join .chat-panel {
 #btnToggleMute[data-muted='true'] .btn-voice__icon {
   color: var(--brand-danger);
 }
-#btnToggleMute[data-muted='true']:hover {
+#btnToggleMute[data-muted='true'].btn-secondary:hover {
   filter: brightness(1.06);
   border-color: color-mix(in oklab, var(--brand-danger) 70%, var(--brand-border));
 }
@@ -1680,18 +1656,14 @@ body.participant-join .chat-panel {
 .whiteboard-clear {
   margin-left: auto;
   margin-bottom: 0;
-  padding: 6px 10px;
-  font-size: 12px;
-  line-height: 1.2;
-  border-radius: 8px;
-  border: 1px solid color-mix(in oklab, var(--brand-danger) 55%, var(--brand-border));
-  background: transparent;
-  color: color-mix(in oklab, var(--brand-danger) 35%, var(--brand-text));
-  cursor: pointer;
   flex-shrink: 0;
+  border-color: color-mix(in oklab, var(--brand-danger) 50%, var(--brand-border));
+  color: color-mix(in oklab, var(--brand-danger) 88%, #fff);
+  background: color-mix(in oklab, var(--brand-danger) 10%, var(--brand-surface-2));
 }
 .whiteboard-clear:hover {
-  background: color-mix(in oklab, var(--brand-danger) 16%, transparent);
+  filter: brightness(1.08);
+  background: color-mix(in oklab, var(--brand-danger) 18%, var(--brand-surface-2));
 }
 .whiteboard-canvas-shell {
   overflow: hidden;
@@ -1900,25 +1872,6 @@ body.participant-join .chat-scroll {
 }
 .chat-composer .chat-send {
   flex-shrink: 0;
-  border-radius: 50%;
-  width: 46px;
-  height: 46px;
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0;
-  background: linear-gradient(145deg, var(--brand-primary), color-mix(in oklab, var(--brand-primary-2) 55%, var(--brand-primary)));
-  box-shadow: 0 2px 8px color-mix(in oklab, var(--brand-primary) 35%, transparent);
-}
-.chat-composer .chat-send::after {
-  content: '';
-  width: 0;
-  height: 0;
-  border-style: solid;
-  border-width: 7px 0 7px 12px;
-  border-color: transparent transparent transparent #fff;
-  margin-left: 3px;
 }
 
 @media (max-width: 520px) {
