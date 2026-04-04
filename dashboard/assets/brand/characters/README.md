@@ -8,6 +8,6 @@
 
 **Enable on login**
 
-Add class `login-screen--with-character` to the `#login-screen` element in `dashboard/index.html` after the file exists. Styles live in `dashboard/css/brand-surfaces.css` (`.login-screen.login-screen--with-character::after`).
+Styles live in `dashboard/css/brand-surfaces.css` (`.login-screen.login-screen--with-character::after`). `dashboard/js/app.js` adds class `login-screen--with-character` to `#login-screen` when `hero-login.png` loads successfully, so you do not need to edit HTML after export.
 
 If the file is missing, omit that class to avoid a broken image request.

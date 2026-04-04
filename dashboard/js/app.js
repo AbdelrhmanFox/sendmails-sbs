@@ -90,4 +90,14 @@ document.getElementById('btnLogout')?.addEventListener('click', () => {
   window.location.reload();
 });
 
+/** Enable login character deco when `assets/brand/characters/hero-login.png` is deployed. */
+function initLoginCharacterHero() {
+  const el = document.getElementById('login-screen');
+  if (!el) return;
+  const img = new Image();
+  img.onload = () => el.classList.add('login-screen--with-character');
+  img.src = 'assets/brand/characters/hero-login.png';
+}
+initLoginCharacterHero();
+
 bootAuth();

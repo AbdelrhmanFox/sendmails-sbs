@@ -75,7 +75,48 @@ h1, h2, h3, h4, p { margin-top: 0; }
 }
 .small-note { color: var(--brand-muted); font-size: 12px; margin-top: 12px; }
 
-.app { min-height: 100vh; display: grid; grid-template-columns: 270px 1fr; }
+.app {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 270px 1fr;
+  grid-template-rows: auto 1fr;
+}
+
+.app-top-bar {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  position: relative;
+  isolation: isolate;
+  padding: 10px 20px 10px 14px;
+  border-bottom: 1px solid color-mix(in oklab, var(--brand-border) 75%, var(--brand-navy));
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--brand-navy) 38%, var(--brand-surface)) 0%,
+    var(--brand-surface) 100%
+  );
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.app-top-bar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image: var(--brand-pattern-app);
+  background-size: 320px;
+  background-repeat: repeat;
+  opacity: var(--brand-decor-opacity-topbar, 0.09);
+  pointer-events: none;
+}
+.app-top-bar .area-nav {
+  position: relative;
+  z-index: 1;
+}
+
+body.public-training-guest .app-top-bar,
+body.participant-join .app-top-bar {
+  display: none !important;
+}
 
 /* Public training join (students open ?session= / ?group= without staff login) */
 body.public-training-guest .app {
@@ -90,6 +131,8 @@ body.public-training-guest .main {
 }
 
 .sidebar {
+  grid-column: 1;
+  grid-row: 2;
   border-right: 1px solid color-mix(in oklab, var(--brand-border) 75%, var(--brand-navy));
   background: linear-gradient(
     180deg,
@@ -114,26 +157,39 @@ body.public-training-guest .main {
 
 .area-nav {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-bottom: 10px;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 0;
+  min-height: 40px;
 }
 .area-tab {
-  width: 100%;
-  text-align: left;
-  border: 1px solid transparent;
-  background: transparent;
+  flex: 0 0 auto;
+  width: auto;
+  white-space: nowrap;
+  text-align: center;
+  border: 1px solid color-mix(in oklab, var(--brand-border) 65%, transparent);
+  background: color-mix(in oklab, var(--brand-surface-2) 55%, transparent);
   color: var(--brand-text);
-  padding: 10px 12px;
-  border-radius: 10px;
+  padding: 8px 14px;
+  border-radius: 999px;
   cursor: pointer;
   font-weight: 600;
   font-size: 13px;
 }
-.area-tab:hover { background: var(--brand-surface-2); }
+.area-tab:hover {
+  background: color-mix(in oklab, var(--brand-surface-2) 92%, var(--brand-primary) 8%);
+  border-color: color-mix(in oklab, var(--brand-border) 80%, var(--brand-primary));
+}
+.area-tab:focus-visible {
+  outline: 2px solid var(--brand-primary-2);
+  outline-offset: 2px;
+}
 .area-tab.active {
-  background: var(--brand-surface-2);
-  border-color: var(--brand-border);
+  background: color-mix(in oklab, var(--brand-primary) 24%, var(--brand-surface-2));
+  border-color: color-mix(in oklab, var(--brand-primary) 50%, var(--brand-border));
+  box-shadow: 0 1px 0 color-mix(in oklab, var(--brand-primary) 28%, transparent);
 }
 
 .subnav {
@@ -320,6 +376,7 @@ body.participant-join .sidebar {
   display: none;
 }
 body.participant-join .main {
+  grid-column: 1 / -1;
   max-width: min(1200px, 100%);
   margin: 0 auto;
   padding-left: 16px;
@@ -388,6 +445,8 @@ body.participant-join .main {
 .sidebar-footer { margin-top: auto; display: grid; gap: 10px; }
 
 .main {
+  grid-column: 2;
+  grid-row: 2;
   padding: 24px;
   max-width: 1300px;
   min-width: 0;
@@ -1428,8 +1487,20 @@ body.participant-join .chat-scroll {
 }
 
 @media (max-width: 1040px) {
-  .app { grid-template-columns: 1fr; }
-  .sidebar { border-right: none; border-bottom: 1px solid var(--brand-border); }
+  .app {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto 1fr;
+  }
+  .sidebar {
+    grid-column: 1;
+    grid-row: 2;
+    border-right: none;
+    border-bottom: 1px solid var(--brand-border);
+  }
+  .main {
+    grid-column: 1;
+    grid-row: 3;
+  }
   .grid-three { grid-template-columns: 1fr; }
   .form-grid { grid-template-columns: 1fr; }
   .status-grid { grid-template-columns: 1fr 1fr; }

@@ -34,6 +34,15 @@
   </div>
 
   <div id="app" class="app hidden">
+    <header class="app-top-bar" role="banner">
+      <nav id="areaNav" class="area-nav" aria-label="Primary">
+        <button type="button" class="area-tab active" data-area="operations" id="areaOperations">Operations</button>
+        <button type="button" class="area-tab" data-area="training" id="areaTraining">Training</button>
+        <button type="button" class="area-tab" data-area="finance" id="areaFinance">Finance</button>
+        <button type="button" class="area-tab" data-area="automation" id="areaAutomation">Automation</button>
+        <button type="button" class="area-tab" data-area="admin" id="areaAdmin">Admin</button>
+      </nav>
+    </header>
     <aside class="sidebar">
       <div class="brand">
         <img class="brand-logo" src="assets/logo.png" width="140" height="62" alt="SBS" />
@@ -42,13 +51,6 @@
           <p>Educational Operations</p>
         </div>
       </div>
-      <nav id="areaNav" class="area-nav" aria-label="Primary">
-        <button type="button" class="area-tab active" data-area="operations" id="areaOperations">Operations</button>
-        <button type="button" class="area-tab" data-area="training" id="areaTraining">Training</button>
-        <button type="button" class="area-tab" data-area="finance" id="areaFinance">Finance</button>
-        <button type="button" class="area-tab" data-area="automation" id="areaAutomation">Automation</button>
-        <button type="button" class="area-tab" data-area="admin" id="areaAdmin">Admin</button>
-      </nav>
       <div id="subnavOperations" class="subnav" data-for-area="operations">
         <span class="subnav-label">In this area</span>
         <button type="button" class="subnav-item active" data-view="operations-home">Overview</button>
