@@ -10,9 +10,24 @@
   <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet" />
   <link rel="stylesheet" href="css/tokens.css" />
   <link rel="stylesheet" href="css/brand-surfaces.css" />
+  <link rel="stylesheet" href="css/preloader.css" />
   <link rel="stylesheet" href="css/main.css" />
 </head>
 <body>
+  <div id="app-preloader" class="app-preloader" aria-busy="true" aria-live="polite">
+    <div class="app-preloader__inner">
+      <div class="book-preloader">
+        <div class="book-preloader__pg-shadow" aria-hidden="true"></div>
+        <div class="book-preloader__pg" aria-hidden="true"></div>
+        <div class="book-preloader__pg book-preloader__pg--2" aria-hidden="true"></div>
+        <div class="book-preloader__pg book-preloader__pg--3" aria-hidden="true"></div>
+        <div class="book-preloader__pg book-preloader__pg--4" aria-hidden="true"></div>
+        <div class="book-preloader__pg book-preloader__pg--5" aria-hidden="true"></div>
+      </div>
+      <span class="visually-hidden">Loading</span>
+    </div>
+  </div>
+
   <div id="login-screen" class="login-screen visible">
     <div class="login-decor" aria-hidden="true">
       <img src="assets/stickers/sticker-1.jpg" alt="" class="login-sticker login-sticker--left" />
@@ -34,7 +49,14 @@
   </div>
 
   <div id="app" class="app hidden">
+    <div id="sidebarDrawerBackdrop" class="sidebar-drawer-backdrop" aria-hidden="true"></div>
     <header class="app-top-bar" role="banner">
+      <input type="checkbox" id="sidebar-nav-toggle" class="sidebar-nav-toggle visually-hidden" />
+      <label for="sidebar-nav-toggle" class="app-top-bar__burger" aria-label="Open navigation menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </label>
       <nav id="areaNav" class="area-nav" aria-label="Primary">
         <button type="button" class="area-tab active" data-area="operations" id="areaOperations">Operations</button>
         <button type="button" class="area-tab" data-area="training" id="areaTraining">Training</button>
@@ -43,7 +65,7 @@
         <button type="button" class="area-tab" data-area="admin" id="areaAdmin">Admin</button>
       </nav>
     </header>
-    <aside class="sidebar">
+    <aside id="app-sidebar" class="sidebar">
       <div class="brand">
         <img class="brand-logo" src="assets/logo.png" width="140" height="62" alt="SBS" />
         <div>

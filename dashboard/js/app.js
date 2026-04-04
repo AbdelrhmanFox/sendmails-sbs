@@ -31,12 +31,24 @@ function hasPublicTrainingJoinQuery() {
   }
 }
 
+function dismissAppPreloader() {
+  const el = document.getElementById('app-preloader');
+  if (!el) return;
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      el.classList.add('app-preloader--done');
+      el.setAttribute('aria-busy', 'false');
+    });
+  });
+}
+
 function bootPublicTrainingGuest() {
   document.body.classList.add('public-training-guest');
   showApp();
   document.querySelectorAll('.view').forEach((v) => v.classList.remove('active'));
   document.getElementById('view-training')?.classList.add('active');
   void initTraining();
+  dismissAppPreloader();
 }
 
 async function bootAuth() {
@@ -46,6 +58,7 @@ async function bootAuth() {
       return;
     }
     showLogin();
+    dismissAppPreloader();
     return;
   }
   showApp();
@@ -59,6 +72,7 @@ async function bootAuth() {
   initOpsInsights();
   initTrainingTools();
   initBulkEnrollment();
+  dismissAppPreloader();
 }
 
 document.getElementById('loginForm')?.addEventListener('submit', async (e) => {

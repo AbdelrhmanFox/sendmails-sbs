@@ -133,4 +133,58 @@ export function initShell() {
     const id = e.detail && e.detail.viewId;
     if (typeof id === 'string') navigateToView(id);
   });
+
+  initSidebarDrawer();
+}
+
+function drawerMediaQuery() {
+  return window.matchMedia('(max-width: 1040px)');
+}
+
+function closeSidebarDrawer() {
+  const toggle = document.getElementById('sidebar-nav-toggle');
+  const backdrop = document.getElementById('sidebarDrawerBackdrop');
+  if (toggle) toggle.checked = false;
+  document.body.classList.remove('sidebar-drawer-open');
+  document.body.style.overflow = '';
+  if (backdrop) backdrop.setAttribute('aria-hidden', 'true');
+}
+
+function initSidebarDrawer() {
+  const toggle = document.getElementById('sidebar-nav-toggle');
+  const backdrop = document.getElementById('sidebarDrawerBackdrop');
+  if (!toggle || !backdrop) return;
+
+  function syncBackdropA11y(open) {
+    backdrop.setAttribute('aria-hidden', open ? 'false' : 'true');
+  }
+
+  toggle.addEventListener('change', () => {
+    if (!drawerMediaQuery().matches) return;
+    const on = toggle.checked;
+    document.body.classList.toggle('sidebar-drawer-open', on);
+    document.body.style.overflow = on ? 'hidden' : '';
+    syncBackdropA11y(on);
+  });
+
+  backdrop.addEventListener('click', closeSidebarDrawer);
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && toggle.checked) closeSidebarDrawer();
+  });
+
+  window.addEventListener('resize', () => {
+    if (!drawerMediaQuery().matches) closeSidebarDrawer();
+  });
+
+  function closeIfMobileNav() {
+    if (drawerMediaQuery().matches) closeSidebarDrawer();
+  }
+
+  document.querySelectorAll('.subnav-item').forEach((btn) => {
+    btn.addEventListener('click', closeIfMobileNav);
+  });
+  document.querySelectorAll('.area-tab').forEach((btn) => {
+    btn.addEventListener('click', closeIfMobileNav);
+  });
 }
