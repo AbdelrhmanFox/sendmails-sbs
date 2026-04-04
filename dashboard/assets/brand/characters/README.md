@@ -8,7 +8,7 @@
 
 **Operations overview**
 
-- `ops-overview-character.png` — optional illustration beside the pipeline analytics card on **Operations → Overview** (`#view-operations-home`). Recommended max width ~280px, transparent PNG or WebP. The dashboard probes this path once at load; if the file is missing, a placeholder is shown instead (no broken image tag).
+- `ops-overview-character.png` — optional mascot or scene illustration (not the word “character” as in letters) shown beside the pipeline analytics card on **Operations → Overview** (`#view-operations-home`). Recommended max width ~280px, transparent PNG or WebP. The dashboard probes this path once at load; if the file is missing, a short user-facing placeholder line is shown instead (no broken image tag).
 
 **Enable on login**
 
