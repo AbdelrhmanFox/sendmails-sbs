@@ -47,6 +47,36 @@ exports.handler = async (event) => {
     .order('created_at', { ascending: true });
   if (me) return json({ error: 'Could not load materials' }, 500);
 
+  let course_library = null;
+  if (batch.course_id) {
+    const cid = batch.course_id;
+    const { data: chRows, error: che } = await supabase
+      .from('course_chapters')
+      .select('id, title, sort_order')
+      .eq('course_id', cid)
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: true });
+    if (che) return json({ error: 'Could not load course content' }, 500);
+    const { data: cmRows, error: cme } = await supabase
+      .from('course_materials')
+      .select('id, chapter_id, title, url, description, sort_order')
+      .eq('course_id', cid)
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: true });
+    if (cme) return json({ error: 'Could not load course content' }, 500);
+    const mats = cmRows || [];
+    const uncategorized = mats.filter((m) => !m.chapter_id).map((m) => ({ id: m.id, title: m.title, url: m.url, description: m.description }));
+    const chapters = (chRows || []).map((ch) => ({
+      id: ch.id,
+      title: ch.title,
+      sort_order: ch.sort_order,
+      materials: mats
+        .filter((m) => m.chapter_id === ch.id)
+        .map((m) => ({ id: m.id, title: m.title, url: m.url, description: m.description })),
+    }));
+    course_library = { chapters, uncategorized };
+  }
+
   return json({
     ok: true,
     batch: {
@@ -60,5 +90,6 @@ exports.handler = async (event) => {
     },
     assignments: assignments || [],
     materials: materials || [],
+    course_library,
   });
 };

@@ -16,11 +16,15 @@ export async function initPublicClassroom(token) {
   const sub = document.getElementById('publicClassroomSub');
   const msg = document.getElementById('publicClassroomMsg');
   const asgHost = document.getElementById('publicClassroomAssignments');
+  const courseLibHost = document.getElementById('publicClassroomCourseLibrary');
+  const courseLibWrap = document.getElementById('publicClassroomCourseLibraryWrap');
   const matHost = document.getElementById('publicClassroomMaterials');
   if (!asgHost || !matHost) return;
   if (!String(token || '').trim()) {
     asgHost.innerHTML = '';
     matHost.innerHTML = '';
+    if (courseLibHost) courseLibHost.innerHTML = '';
+    if (courseLibWrap) courseLibWrap.classList.add('hidden');
     if (msg) {
       msg.textContent = 'Missing classroom link.';
       msg.hidden = false;
@@ -33,6 +37,8 @@ export async function initPublicClassroom(token) {
   }
   asgHost.innerHTML = '<p class="muted">Loading…</p>';
   matHost.innerHTML = '';
+  if (courseLibHost) courseLibHost.innerHTML = '';
+  if (courseLibWrap) courseLibWrap.classList.add('hidden');
   try {
     const data = await jsonFetch(`/.netlify/functions/public-classroom?token=${encodeURIComponent(token)}`);
     const b = data.batch || {};
@@ -58,6 +64,37 @@ export async function initPublicClassroom(token) {
         })
         .join('');
     }
+    const cl = data.course_library;
+    if (cl && courseLibHost && courseLibWrap) {
+      const hasCh = (cl.chapters || []).some((ch) => (ch.materials || []).length);
+      const hasU = (cl.uncategorized || []).length > 0;
+      if (hasCh || hasU) {
+        courseLibWrap.classList.remove('hidden');
+        const blocks = [];
+        (cl.chapters || []).forEach((ch) => {
+          const items = ch.materials || [];
+          if (!items.length) return;
+          const lis = items
+            .map((m) => {
+              const desc = m.description ? ` <span class="muted">— ${escapeHtml(m.description)}</span>` : '';
+              return `<li><a href="${escapeHtml(m.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(m.title)}</a>${desc}</li>`;
+            })
+            .join('');
+          blocks.push(`<div class="public-classroom-course-chapter"><h4 class="public-classroom-course-chapter-title">${escapeHtml(ch.title)}</h4><ul class="public-classroom-materials-ul">${lis}</ul></div>`);
+        });
+        if (cl.uncategorized && cl.uncategorized.length) {
+          const lis = cl.uncategorized
+            .map((m) => {
+              const desc = m.description ? ` <span class="muted">— ${escapeHtml(m.description)}</span>` : '';
+              return `<li><a href="${escapeHtml(m.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(m.title)}</a>${desc}</li>`;
+            })
+            .join('');
+          blocks.push(`<div class="public-classroom-course-chapter"><h4 class="public-classroom-course-chapter-title">Other</h4><ul class="public-classroom-materials-ul">${lis}</ul></div>`);
+        }
+        courseLibHost.innerHTML = blocks.join('');
+      }
+    }
+
     const materials = data.materials || [];
     if (!materials.length) {
       matHost.innerHTML = '<p class="muted">No resource links yet.</p>';
@@ -72,6 +109,8 @@ export async function initPublicClassroom(token) {
   } catch (e) {
     asgHost.innerHTML = '';
     matHost.innerHTML = '';
+    if (courseLibHost) courseLibHost.innerHTML = '';
+    if (courseLibWrap) courseLibWrap.classList.add('hidden');
     if (msg) {
       msg.textContent = e.message || 'Could not load classroom.';
       msg.hidden = false;

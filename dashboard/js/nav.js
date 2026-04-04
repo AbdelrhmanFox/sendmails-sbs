@@ -3,6 +3,7 @@ import { loadUsers, loadFinanceAudit } from './admin.js';
 import { refreshFinanceAll } from './finance.js';
 import { loadPipeline, loadCapacity, loadQuality, onOperationsViewChange } from './operations.js';
 import { loadClassrooms } from './classroom.js';
+import { loadCourseLibrary } from './course-library.js';
 
 const loginScreen = document.getElementById('login-screen');
 const appEl = document.getElementById('app');
@@ -30,6 +31,7 @@ export function showView(viewId) {
   if (viewId === 'operations-capacity') loadCapacity();
   if (viewId === 'operations-quality') loadQuality();
   if (viewId === 'training-classroom') void loadClassrooms();
+  if (viewId === 'training-course-library') void loadCourseLibrary();
   onOperationsViewChange(viewId);
 }
 

@@ -2752,3 +2752,95 @@ body.participant-join .app-top-bar__burger {
 .public-classroom-materials-ul li {
   margin-bottom: 8px;
 }
+
+.public-classroom-course-chapter {
+  margin-bottom: 1rem;
+}
+
+.public-classroom-course-chapter-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+
+.public-classroom-course-hint,
+.public-classroom-batch-hint {
+  margin-top: 0;
+}
+
+/* Course library (training) */
+.course-library-shell {
+  margin-top: 12px;
+}
+
+.course-library-course-label select {
+  min-width: min(100%, 22rem);
+  max-width: 100%;
+}
+
+.course-library-add-chapter,
+.course-library-rename {
+  margin-bottom: 12px;
+}
+
+.course-library-tree {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.course-library-chapter-card {
+  padding: 12px 14px;
+}
+
+.course-library-chapter-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.course-library-chapter-title {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.course-library-mat-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.course-library-mat-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid color-mix(in oklab, var(--brand-border) 40%, transparent);
+}
+
+.course-library-mat-row:last-child {
+  border-bottom: none;
+}
+
+.course-library-mat-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.course-library-upload-row input[type='file'] {
+  max-width: 100%;
+}
+
+.classroom-share-course-lib {
+  margin-top: 10px;
+}
+
+.classroom-share-course-lib-hint {
+  display: inline;
+}

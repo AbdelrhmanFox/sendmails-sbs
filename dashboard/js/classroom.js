@@ -4,6 +4,7 @@ const CLASSROOM = '/.netlify/functions/classroom-data';
 
 let currentBatchId = '';
 let currentBatchLabel = '';
+let currentClassroomCourseId = '';
 let assignmentsCache = [];
 let materialsCache = [];
 
@@ -106,7 +107,7 @@ export async function loadClassrooms() {
           <h4>${title || escapeHtml(b.batch_id)}</h4>
           <p class="muted small-margin">${escapeHtml(b.batch_id)}${b.trainer ? ` · Trainer: ${escapeHtml(b.trainer)}` : ''}</p>
           <p class="classroom-card-meta"><strong>${Number(b.enrolled_count) || 0}</strong> enrolled</p>
-          <button type="button" class="btn btn-primary classroom-open-btn" data-batch-id="${escapeHtml(b.batch_id)}" data-label="${escapeHtml(label)}">Open classroom</button>
+          <button type="button" class="btn btn-primary classroom-open-btn" data-batch-id="${escapeHtml(b.batch_id)}" data-label="${escapeHtml(label)}" data-course-id="${escapeHtml(b.course_id || '')}">Open classroom</button>
         </article>`;
       })
       .join('');
@@ -114,7 +115,8 @@ export async function loadClassrooms() {
       btn.addEventListener('click', () => {
         const bid = btn.getAttribute('data-batch-id');
         const lab = btn.getAttribute('data-label') || bid;
-        void openClassroom(bid, lab);
+        const cid = btn.getAttribute('data-course-id') || '';
+        void openClassroom(bid, lab, cid);
       });
     });
     if (msg) msg.textContent = '';
@@ -147,9 +149,10 @@ async function loadShareLink() {
   }
 }
 
-async function openClassroom(batchId, label) {
+async function openClassroom(batchId, label, courseId) {
   currentBatchId = String(batchId || '').trim();
   currentBatchLabel = label || currentBatchId;
+  currentClassroomCourseId = String(courseId || '').trim();
   const titleEl = $('classroomRoomTitle');
   if (titleEl) titleEl.textContent = currentBatchLabel;
   showPanel(false);
@@ -165,6 +168,7 @@ async function openClassroom(batchId, label) {
 function closeClassroomRoom() {
   currentBatchId = '';
   currentBatchLabel = '';
+  currentClassroomCourseId = '';
   assignmentsCache = [];
   materialsCache = [];
   clearAssignmentEditing();
@@ -500,6 +504,14 @@ export function initClassroom() {
   $('classroomGradeAssignmentSelect')?.addEventListener('change', (ev) => {
     const aid = String(ev.target.value || '').trim();
     void loadGradesTable(aid);
+  });
+
+  $('classroomGotoCourseLibrary')?.addEventListener('click', () => {
+    document.dispatchEvent(
+      new CustomEvent('sbs:open-course-library', {
+        detail: { courseId: currentClassroomCourseId || '' },
+      }),
+    );
   });
 
   $('classroomCopyShareUrl')?.addEventListener('click', async () => {

@@ -22,6 +22,8 @@ const HANDLERS = {
   'reset-password': require('../netlify/functions/reset-password').handler,
   'health-supabase': require('../netlify/functions/health-supabase').handler,
   'classroom-data': require('../netlify/functions/classroom-data').handler,
+  'course-library-data': require('../netlify/functions/course-library-data').handler,
+  'course-library-upload': require('../netlify/functions/course-library-upload').handler,
 };
 
 function routeName(req) {

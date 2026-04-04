@@ -159,6 +159,12 @@
                 <span class="subnav-item__label">Classroom</span>
               </button>
             </li>
+            <li>
+              <button type="button" class="subnav-item" data-view="training-course-library">
+                <svg class="subnav-item__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                <span class="subnav-item__label">Course library</span>
+              </button>
+            </li>
           </ul>
         </div>
       </div>
@@ -982,6 +988,10 @@
               <input type="text" readonly id="classroomShareUrl" class="classroom-share-url" aria-label="Participant link URL" />
               <button type="button" class="btn btn-secondary" id="classroomCopyShareUrl">Copy</button>
             </div>
+            <p class="muted small-margin classroom-share-course-lib">
+              <button type="button" class="btn btn-secondary btn-sm" id="classroomGotoCourseLibrary">Course library</button>
+              <span class="classroom-share-course-lib-hint"> Shared chapters and links for this course (same for all batches).</span>
+            </p>
           </div>
           <div class="classroom-room-tabs" role="tablist" aria-label="Classroom sections">
             <button type="button" class="btn btn-secondary classroom-tab active" id="classroomTabClasswork" role="tab" aria-selected="true" aria-controls="classroomPaneClasswork">Classwork</button>
@@ -1045,6 +1055,70 @@
         </div>
       </section>
 
+      <section id="view-training-course-library" class="view">
+        <div class="view-hero">
+          <div class="view-hero-text">
+            <h2>Course library</h2>
+            <p class="subtitle">Chapters and shared materials for each course. Reused by every batch; participants see this content from the classroom link together with batch-specific materials.</p>
+          </div>
+        </div>
+        <p id="courseLibraryMsg" class="inline-note" role="status"></p>
+        <div class="card course-library-picker">
+          <label class="course-library-course-label">Course
+            <select id="courseLibrarySelect" aria-label="Select course">
+              <option value="">— Select a course —</option>
+            </select>
+          </label>
+        </div>
+        <div id="courseLibraryShell" class="course-library-shell hidden">
+          <div class="card course-library-add-chapter">
+            <h4>Add chapter</h4>
+            <form id="courseLibraryChapterForm" class="form-grid form-grid--two">
+              <label class="full">Chapter title <input type="text" id="courseLibraryChapterTitle" required maxlength="200" placeholder="e.g. Week 1 · Foundations" /></label>
+              <div class="form-actions full">
+                <button type="submit" class="btn btn-primary">Add chapter</button>
+              </div>
+            </form>
+          </div>
+          <div id="courseLibraryRenamePanel" class="card course-library-rename hidden">
+            <h4>Rename chapter</h4>
+            <form id="courseLibraryRenameChapterForm" class="form-grid form-grid--two">
+              <input type="hidden" id="courseLibraryRenameChapterId" value="" />
+              <label class="full">Title <input type="text" id="courseLibraryRenameChapterTitle" required maxlength="200" /></label>
+              <div class="form-actions full">
+                <button type="submit" class="btn btn-primary">Save</button>
+                <button type="button" class="btn btn-secondary" id="courseLibraryRenameCancel">Cancel</button>
+              </div>
+            </form>
+          </div>
+          <div id="courseLibraryTree" class="course-library-tree"></div>
+          <div class="card course-library-material-card">
+            <h4 id="courseLibraryMatHeading">Add resource link</h4>
+            <form id="courseLibraryMaterialForm" class="form-grid form-grid--two">
+              <input type="hidden" id="courseLibraryMatEditId" value="" />
+              <label>Chapter
+                <select id="courseLibraryMatChapter" aria-label="Material chapter">
+                  <option value="">Uncategorized</option>
+                </select>
+              </label>
+              <label>Title <input type="text" id="courseLibraryMatTitle" required maxlength="200" /></label>
+              <label class="full">URL <input type="url" id="courseLibraryMatUrl" required placeholder="https://..." /></label>
+              <label class="full">Description <input type="text" id="courseLibraryMatDesc" maxlength="500" /></label>
+              <div class="full course-library-upload-row" id="courseLibraryUploadRow">
+                <label class="course-library-file-label">Or upload a file
+                  <input type="file" id="courseLibraryMatFile" />
+                </label>
+                <p class="muted small-margin" id="courseLibraryUploadHint">Uploads go to secure storage; the link is filled in automatically after upload.</p>
+              </div>
+              <div class="form-actions full">
+                <button type="submit" class="btn btn-primary" id="courseLibraryMatSubmit">Add link</button>
+                <button type="button" class="btn btn-secondary hidden" id="courseLibraryMatCancelEdit">Cancel edit</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </section>
+
       <section id="view-public-classroom" class="view">
         <div class="view-hero">
           <div class="view-hero-text">
@@ -1057,8 +1131,14 @@
           <h3>Classwork</h3>
           <div id="publicClassroomAssignments" class="public-classroom-body"></div>
         </div>
+        <div class="card public-classroom-block hidden" id="publicClassroomCourseLibraryWrap">
+          <h3>Course content</h3>
+          <p class="muted small-margin public-classroom-course-hint">Shared for this program across all runs.</p>
+          <div id="publicClassroomCourseLibrary" class="public-classroom-body"></div>
+        </div>
         <div class="card public-classroom-block">
-          <h3>Materials</h3>
+          <h3>Batch materials</h3>
+          <p class="muted small-margin public-classroom-batch-hint">Added for this group only.</p>
           <div id="publicClassroomMaterials" class="public-classroom-body"></div>
         </div>
       </section>
