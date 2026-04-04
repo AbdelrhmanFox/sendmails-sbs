@@ -1505,12 +1505,35 @@ function initOpsHomeCharacter() {
   probe.src = src;
 }
 
+function renderOpsHomeMetricBars(barsEl, rows) {
+  if (!barsEl) return;
+  const max = Math.max(...rows.map((r) => r.value), 0);
+  if (max === 0) {
+    barsEl.innerHTML = '<span class="muted ops-analytics-bars-empty">All counts are zero — add trainees, courses, batches, or enrollments to see the chart.</span>';
+    return;
+  }
+  barsEl.innerHTML = rows
+    .map(({ label, value }) => {
+      const h = Math.round((value / max) * 100);
+      const vStr = Number(value).toLocaleString('en-US');
+      return `<div class="ops-analytics-bar ops-analytics-bar--labeled">
+        <div class="ops-analytics-bar__track">
+          <div class="ops-analytics-bar__fill" style="height:${h}%"></div>
+        </div>
+        <span class="ops-analytics-bar__count">${escapeHtml(vStr)}</span>
+        <span class="ops-analytics-bar__label">${escapeHtml(label)}</span>
+      </div>`;
+    })
+    .join('');
+}
+
 async function loadOperationsHomeAnalytics() {
   const traineesEl = document.getElementById('opsHomeKpiTrainees');
   const coursesEl = document.getElementById('opsHomeKpiCourses');
   const batchesEl = document.getElementById('opsHomeKpiBatches');
   const enrollmentsEl = document.getElementById('opsHomeKpiEnrollments');
   const completedHintEl = document.getElementById('opsHomeKpiCompletedHint');
+  const barsEl = document.getElementById('opsHomeBarStrip');
   const msgEl = document.getElementById('opsHomeAnalyticsMsg');
   if (!traineesEl || !coursesEl || !batchesEl || !enrollmentsEl || !completedHintEl) return;
   if (msgEl) {
@@ -1539,6 +1562,12 @@ async function loadOperationsHomeAnalytics() {
       completedHintEl.classList.add('muted');
       completedHintEl.style.color = '';
     }
+    renderOpsHomeMetricBars(barsEl, [
+      { label: 'Trainees', value: trainees },
+      { label: 'Courses', value: courses },
+      { label: 'Batches', value: batches },
+      { label: 'Enrollments', value: enrollments },
+    ]);
   } catch (err) {
     if (msgEl) {
       msgEl.textContent = err.message || 'Could not load overview.';
@@ -1550,6 +1579,7 @@ async function loadOperationsHomeAnalytics() {
     completedHintEl.textContent = dash;
     completedHintEl.classList.add('muted');
     completedHintEl.style.color = '';
+    if (barsEl) barsEl.innerHTML = '';
   }
 }
 

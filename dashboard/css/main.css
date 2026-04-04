@@ -791,6 +791,91 @@ body.participant-join .main {
   font-weight: 500;
 }
 
+.ops-analytics-card__chart {
+  margin-bottom: 12px;
+}
+
+.ops-analytics-card__chart-label {
+  margin: 0 0 8px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.ops-analytics-bars.ops-analytics-bars--labeled {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 112px;
+  padding: 10px 8px 8px;
+  border-radius: var(--brand-radius-dense);
+  background: color-mix(in oklab, var(--brand-navy) 25%, var(--brand-surface-2));
+  border: 1px solid color-mix(in oklab, var(--brand-border) 25%, transparent);
+}
+
+.ops-analytics-bars-empty {
+  align-self: center;
+  text-align: center;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  padding: 8px 4px;
+}
+
+.ops-analytics-bar.ops-analytics-bar--labeled {
+  flex: 1;
+  min-width: 0;
+  max-width: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.ops-analytics-bar--labeled .ops-analytics-bar__track {
+  position: relative;
+  width: 100%;
+  height: 80px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  background: color-mix(in oklab, var(--brand-indigo) 25%, transparent);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.ops-analytics-bar--labeled .ops-analytics-bar__fill {
+  width: 100%;
+  border-radius: 4px;
+  background: linear-gradient(180deg, var(--brand-primary-2), var(--brand-primary));
+  min-height: 4px;
+  transition: height 0.3s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ops-analytics-bar--labeled .ops-analytics-bar__fill {
+    transition: none;
+  }
+}
+
+.ops-analytics-bar__count {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--brand-text);
+  line-height: 1.2;
+}
+
+.ops-analytics-bar__label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--brand-muted);
+  text-align: center;
+  line-height: 1.25;
+  max-width: 100%;
+  word-break: break-word;
+}
+
 .ops-analytics-card__msg {
   margin: 0 0 10px;
   font-size: 0.85rem;
