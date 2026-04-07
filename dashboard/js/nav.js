@@ -27,9 +27,7 @@ export function showView(viewId) {
     loadFinanceAudit();
   }
   if (viewId === 'finance') refreshFinanceAll();
-  if (viewId === 'operations-pipeline') loadPipeline();
-  if (viewId === 'operations-capacity') loadCapacity();
-  if (viewId === 'operations-quality') loadQuality();
+  if (viewId === 'operations-insights') loadPipeline();
   if (viewId === 'training-classroom') void loadClassrooms();
   if (viewId === 'training-course-library') void loadCourseLibrary();
   onOperationsViewChange(viewId);

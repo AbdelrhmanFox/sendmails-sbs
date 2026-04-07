@@ -22,4 +22,14 @@
   --brand-radius-dense: 8px;
   --brand-shadow: 0 6px 20px rgba(8, 10, 40, 0.38);
   --brand-shadow-soft: 0 2px 10px rgba(8, 10, 40, 0.22);
+
+  /* Spacing scale */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-7: 28px;
+  --sp-8: 32px;
 }

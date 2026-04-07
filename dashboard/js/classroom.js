@@ -41,6 +41,10 @@ function clearMaterialEditing() {
   $('classroomMatCancelEdit')?.classList.add('hidden');
   const h = $('classroomMatFormHeading');
   if (h) h.textContent = 'Add resource link';
+  const panel = $('classroomMatFormPanel');
+  if (panel) panel.removeAttribute('open');
+  const summary = panel?.querySelector('summary');
+  if (summary) summary.textContent = '+ Add resource link';
 }
 
 function clearAssignmentEditing() {
@@ -52,6 +56,10 @@ function clearAssignmentEditing() {
   $('classroomAsgCancelEdit')?.classList.add('hidden');
   const h = $('classroomAsgFormHeading');
   if (h) h.textContent = 'New assignment';
+  const panel = $('classroomAsgFormPanel');
+  if (panel) panel.removeAttribute('open');
+  const summary = panel?.querySelector('summary');
+  if (summary) summary.textContent = '+ New assignment';
 }
 
 function beginMaterialEdit(m) {
@@ -68,8 +76,12 @@ function beginMaterialEdit(m) {
   $('classroomMatCancelEdit')?.classList.remove('hidden');
   const h = $('classroomMatFormHeading');
   if (h) h.textContent = 'Edit resource link';
-  t?.focus();
+  const panel = $('classroomMatFormPanel');
+  if (panel) panel.setAttribute('open', '');
+  const summary = panel?.querySelector('summary');
+  if (summary) summary.textContent = 'Editing resource link';
   switchClassroomTab('materials');
+  setTimeout(() => t?.focus(), 50);
 }
 
 function beginAssignmentEdit(a) {
@@ -89,8 +101,12 @@ function beginAssignmentEdit(a) {
   $('classroomAsgCancelEdit')?.classList.remove('hidden');
   const h = $('classroomAsgFormHeading');
   if (h) h.textContent = 'Edit assignment';
-  title?.focus();
+  const panel = $('classroomAsgFormPanel');
+  if (panel) panel.setAttribute('open', '');
+  const summary = panel?.querySelector('summary');
+  if (summary) summary.textContent = 'Editing assignment';
   switchClassroomTab('classwork');
+  setTimeout(() => title?.focus(), 50);
 }
 
 function escapeHtml(s) {
@@ -114,24 +130,35 @@ export async function loadClassrooms() {
   const grid = $('classroomGrid');
   const msg = $('classroomListMsg');
   if (!grid) return;
-  if (msg) msg.textContent = 'Loading…';
+  if (msg) msg.textContent = '';
+  grid.innerHTML = '<div class="skeleton-row"></div><div class="skeleton-row"></div><div class="skeleton-row"></div>';
   try {
     const data = await jsonFetch(`${CLASSROOM}?resource=classrooms`, { headers: getAuthHeaders() });
     const items = data.items || [];
     if (!items.length) {
-      grid.innerHTML = '<p class="muted">No assigned courses yet. Ask admin to map your username to a course.</p>';
-      if (msg) msg.textContent = '';
+      grid.innerHTML = `<div class="empty-state">
+        <svg class="empty-state__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2"/></svg>
+        <p class="empty-state__title">No classrooms yet</p>
+        <p class="empty-state__hint">Ask an admin to map your username to a course so your classrooms appear here.</p>
+      </div>`;
       return;
     }
     grid.innerHTML = items
       .map((b) => {
-        const title = [escapeHtml(b.course_name || ''), escapeHtml(b.batch_name || b.batch_id)].filter(Boolean).join(' · ');
+        const courseLabel = escapeHtml(b.course_name || b.course_id || '');
+        const batchLabel = escapeHtml(b.batch_name || b.batch_id);
         const label = `${b.course_name || ''} · ${b.batch_name || b.batch_id}`.trim() || b.batch_id;
+        const count = Number(b.enrolled_count) || 0;
         return `<article class="card classroom-card" role="listitem">
-          <h4>${title || escapeHtml(b.batch_id)}</h4>
-          <p class="muted small-margin">${escapeHtml(b.batch_id)}${b.trainer ? ` · Trainer: ${escapeHtml(b.trainer)}` : ''}</p>
-          <p class="classroom-card-meta"><strong>${Number(b.enrolled_count) || 0}</strong> enrolled</p>
-          <button type="button" class="btn btn-primary classroom-open-btn" data-batch-id="${escapeHtml(b.batch_id)}" data-label="${escapeHtml(label)}" data-course-id="${escapeHtml(b.course_id || '')}">Open classroom</button>
+          <div class="classroom-card-header">
+            <div>
+              <h4 class="classroom-card-title">${batchLabel}</h4>
+              ${courseLabel ? `<p class="classroom-card-course muted">${courseLabel}</p>` : ''}
+            </div>
+            <span class="badge badge--info">${count} enrolled</span>
+          </div>
+          <p class="muted classroom-card-id">${escapeHtml(b.batch_id)}${b.trainer ? ` · ${escapeHtml(b.trainer)}` : ''}</p>
+          <button type="button" class="btn btn-primary btn-sm classroom-open-btn" data-batch-id="${escapeHtml(b.batch_id)}" data-label="${escapeHtml(label)}" data-course-id="${escapeHtml(b.course_id || '')}">Open classroom →</button>
         </article>`;
       })
       .join('');
@@ -143,7 +170,6 @@ export async function loadClassrooms() {
         void openClassroom(bid, lab, cid);
       });
     });
-    if (msg) msg.textContent = '';
   } catch (e) {
     grid.innerHTML = '';
     if (msg) msg.textContent = e.message || 'Could not load classrooms.';
@@ -206,48 +232,53 @@ async function refreshClassroomData() {
   if (!currentBatchId) return;
   await Promise.all([loadAssignmentsList(), loadMaterialsList()]);
   await loadSubmissionsBoard();
-  updateGradeAssignmentSelect();
-  const sel = $('classroomGradeAssignmentSelect');
-  const aid = sel && sel.value;
-  if (aid) await loadGradesTable(aid);
-  else {
-    const tbody = $('classroomGradesBody');
-    if (tbody) tbody.innerHTML = '';
-  }
 }
 
 function renderSubmissionsList() {
   const host = $('classroomSubmissionsList');
   if (!host) return;
   if (!submissionsAssignmentId) {
-    host.innerHTML = '<p class="muted">Select an assignment to view submissions.</p>';
+    host.innerHTML = `<div class="empty-state">
+      <svg class="empty-state__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg>
+      <p class="empty-state__title">No assignment selected</p>
+      <p class="empty-state__hint">Pick an assignment above to see its submissions.</p>
+    </div>`;
     return;
   }
   if (!submissionsCache.length) {
-    host.innerHTML = '<p class="muted">No submissions yet.</p>';
+    host.innerHTML = `<div class="empty-state">
+      <svg class="empty-state__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
+      <p class="empty-state__title">No submissions yet</p>
+    </div>`;
     return;
   }
   host.innerHTML = submissionsCache
     .map((s) => {
-      const status = s.status === 'reviewed' ? 'Reviewed' : 'Submitted';
+      const isReviewed = s.status === 'reviewed';
+      const statusBadge = isReviewed
+        ? `<span class="badge badge--success">Reviewed</span>`
+        : `<span class="badge badge--info">Submitted</span>`;
       const when = s.submitted_at ? String(s.submitted_at).replace('T', ' ').slice(0, 16) : '';
       const file = s.file_url
-        ? `<a href="${escapeHtml(s.file_url)}" target="_blank" rel="noopener noreferrer">Open file</a>`
-        : '<span class="muted">No file</span>';
-      const snippet = s.submission_text ? `<p class="muted small-margin">${escapeHtml(String(s.submission_text).slice(0, 180))}</p>` : '';
+        ? `<a href="${escapeHtml(s.file_url)}" target="_blank" rel="noopener noreferrer" class="classroom-sub-file-link">Open file ↗</a>`
+        : '';
+      const snippet = s.submission_text ? `<p class="classroom-sub-snippet">${escapeHtml(String(s.submission_text).slice(0, 160))}${s.submission_text.length > 160 ? '…' : ''}</p>` : '';
       return `<article class="classroom-submission-card" data-id="${escapeHtml(s.id)}">
         <div class="classroom-submission-card-head">
-          <strong>${escapeHtml(s.trainee_name || 'Trainee')}</strong>
-          <span class="classroom-submission-status">${escapeHtml(status)}</span>
+          <strong class="classroom-sub-name">${escapeHtml(s.trainee_name || 'Trainee')}</strong>
+          ${statusBadge}
         </div>
-        <p class="muted small-margin">${escapeHtml(s.trainee_email || '')}${when ? ` · ${escapeHtml(when)}` : ''}</p>
-        <p class="small-margin">${file}</p>
+        <p class="muted small-margin classroom-sub-meta">${escapeHtml(s.trainee_email || '')}${when ? ` · ${escapeHtml(when)}` : ''}</p>
+        ${file}
         ${snippet}
       </article>`;
     })
     .join('');
   host.querySelectorAll('.classroom-submission-card').forEach((card) => {
-    card.addEventListener('click', () => {
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('a')) return;
+      host.querySelectorAll('.classroom-submission-card').forEach((c) => c.classList.remove('active'));
+      card.classList.add('active');
       const id = card.getAttribute('data-id');
       const row = submissionsCache.find((x) => x.id === id);
       if (!row) return;
@@ -286,7 +317,7 @@ async function loadSubmissionsBoard() {
   const host = $('classroomSubmissionsAssignments');
   if (!host) return;
   if (!assignmentsCache.length) {
-    host.innerHTML = '<p class="muted">No assignments yet.</p>';
+    host.innerHTML = '<p class="muted" style="font-size:13px">No assignments yet — add one in the Classwork tab.</p>';
     submissionsAssignmentId = '';
     submissionsCache = [];
     renderSubmissionsList();
@@ -295,20 +326,18 @@ async function loadSubmissionsBoard() {
   host.innerHTML = assignmentsCache
     .map((a) => {
       const on = submissionsAssignmentId === a.id;
-      const due = a.due_date ? `Due ${escapeHtml(a.due_date)}` : 'No due date';
-      return `<button type="button" class="classroom-submissions-asg ${on ? 'active' : ''}" data-id="${escapeHtml(a.id)}">
-        <strong>${escapeHtml(a.title)}</strong>
-        <span class="muted">${due}</span>
+      return `<button type="button" class="classroom-asg-chip ${on ? 'active' : ''}" data-id="${escapeHtml(a.id)}" title="${escapeHtml(a.title)}">
+        ${escapeHtml(a.title.length > 32 ? a.title.slice(0, 32) + '…' : a.title)}
       </button>`;
     })
     .join('');
-  host.querySelectorAll('.classroom-submissions-asg').forEach((btn) => {
+  host.querySelectorAll('.classroom-asg-chip').forEach((btn) => {
     btn.addEventListener('click', () => {
       const aid = btn.getAttribute('data-id');
-      host.querySelectorAll('.classroom-submissions-asg').forEach((b) => b.classList.remove('active'));
+      host.querySelectorAll('.classroom-asg-chip').forEach((b) => b.classList.remove('active'));
       btn.classList.add('active');
       $('classroomReviewSubmissionId').value = '';
-      $('classroomReviewTarget').textContent = 'Select a submission.';
+      $('classroomReviewTarget').textContent = 'Select a submission to review.';
       $('classroomSubmissionReviewForm')?.reset();
       void loadSubmissionsForAssignment(aid);
     });
@@ -316,7 +345,7 @@ async function loadSubmissionsBoard() {
   if (!submissionsAssignmentId && assignmentsCache[0]) {
     const first = assignmentsCache[0].id;
     submissionsAssignmentId = first;
-    const firstBtn = host.querySelector(`.classroom-submissions-asg[data-id="${first}"]`);
+    const firstBtn = host.querySelector(`.classroom-asg-chip[data-id="${first}"]`);
     if (firstBtn) firstBtn.classList.add('active');
     await loadSubmissionsForAssignment(first);
     return;
@@ -324,24 +353,11 @@ async function loadSubmissionsBoard() {
   if (submissionsAssignmentId) await loadSubmissionsForAssignment(submissionsAssignmentId);
 }
 
-function updateGradeAssignmentSelect() {
-  const sel = $('classroomGradeAssignmentSelect');
-  if (!sel) return;
-  const prev = sel.value;
-  sel.innerHTML =
-    '<option value="">— Select an assignment —</option>' +
-    assignmentsCache
-      .map((a) => `<option value="${escapeHtml(a.id)}">${escapeHtml(a.title)}</option>`)
-      .join('');
-  if (prev && assignmentsCache.some((a) => a.id === prev)) sel.value = prev;
-  else if (assignmentsCache.length === 1) sel.value = assignmentsCache[0].id;
-  sel.dispatchEvent(new Event('change'));
-}
-
 async function loadAssignmentsList() {
   const host = $('classroomAssignmentsList');
   const msg = $('classroomClassworkMsg');
   if (!host || !currentBatchId) return;
+  host.innerHTML = '<div class="skeleton-row skeleton-row--lg"></div><div class="skeleton-row skeleton-row--lg"></div>';
   try {
     const data = await jsonFetch(`${CLASSROOM}?resource=assignments&batch_id=${encodeURIComponent(currentBatchId)}`, {
       headers: getAuthHeaders(),
@@ -361,35 +377,48 @@ async function loadAssignmentsList() {
       }),
     );
     if (!assignmentsCache.length) {
-      host.innerHTML = '<p class="muted">No assignments yet. Add one below.</p>';
+      host.innerHTML = `<div class="empty-state">
+        <svg class="empty-state__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12h8M12 8v8"/></svg>
+        <p class="empty-state__title">No assignments yet</p>
+        <p class="empty-state__hint">Use the form below to add the first assignment for this batch.</p>
+      </div>`;
       if (msg) msg.textContent = '';
       return;
     }
     host.innerHTML = assignmentsCache
       .map((a) => {
-        const due = a.due_date ? ` · Due ${escapeHtml(a.due_date)}` : '';
+        const today = new Date().toISOString().slice(0, 10);
+        const isOverdue = a.due_date && a.due_date < today;
+        const dueClass = isOverdue ? 'badge--danger' : 'badge--warn';
+        const dueBadge = a.due_date
+          ? `<span class="badge ${dueClass}">Due ${escapeHtml(a.due_date)}</span>`
+          : '';
         const files = assignmentFilesCache[a.id] || [];
+        const filesBadge = files.length ? `<span class="badge badge--muted">${files.length} file${files.length > 1 ? 's' : ''}</span>` : '';
         const filesHtml = files.length
           ? `<ul class="classroom-assignment-files">${files
               .map(
                 (f) =>
-                  `<li><a href="${escapeHtml(f.file_url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(f.title || 'Attachment')}</a>
-                    <button type="button" class="btn btn-secondary btn-sm classroom-del-asg-file" data-id="${escapeHtml(f.id)}" data-aid="${escapeHtml(a.id)}">Remove file</button>
+                  `<li>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;opacity:.6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    <a href="${escapeHtml(f.file_url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(f.title || 'Attachment')}</a>
+                    <button type="button" class="btn btn-ghost btn-sm classroom-del-asg-file" data-id="${escapeHtml(f.id)}" data-aid="${escapeHtml(a.id)}" title="Remove file">✕</button>
                   </li>`,
               )
               .join('')}</ul>`
-          : '<p class="muted small-margin">No attachments.</p>';
-        return `<div class="classroom-assignment-row">
-          <div>
-            <strong>${escapeHtml(a.title)}</strong>${due}
-            ${a.instructions ? `<p class="muted small-margin">${escapeHtml(a.instructions)}</p>` : ''}
-            ${filesHtml}
+          : '';
+        return `<article class="classroom-asg-card">
+          <div class="classroom-asg-card__head">
+            <h4 class="classroom-asg-card__title">${escapeHtml(a.title)}</h4>
+            <div class="classroom-asg-card__badges">${dueBadge}${filesBadge}</div>
           </div>
-          <div class="classroom-inline-actions">
-            <button type="button" class="btn btn-secondary btn-sm classroom-edit-asg" data-id="${escapeHtml(a.id)}">Edit</button>
-            <button type="button" class="btn btn-secondary btn-sm classroom-del-asg" data-id="${escapeHtml(a.id)}">Remove</button>
+          ${a.instructions ? `<p class="classroom-asg-card__instructions">${escapeHtml(a.instructions)}</p>` : ''}
+          ${filesHtml}
+          <div class="classroom-asg-card__actions">
+            <button type="button" class="btn btn-ghost btn-sm classroom-edit-asg" data-id="${escapeHtml(a.id)}">Edit</button>
+            <button type="button" class="btn btn-ghost btn-sm btn-danger classroom-del-asg" data-id="${escapeHtml(a.id)}">Remove</button>
           </div>
-        </div>`;
+        </article>`;
       })
       .join('');
     host.querySelectorAll('.classroom-edit-asg').forEach((btn) => {
@@ -402,7 +431,7 @@ async function loadAssignmentsList() {
     host.querySelectorAll('.classroom-del-asg').forEach((btn) => {
       btn.addEventListener('click', async () => {
         const id = btn.getAttribute('data-id');
-        if (!id || !confirm('Remove this assignment and its grades?')) return;
+        if (!id || !confirm('Remove this assignment and its files?')) return;
         try {
           await jsonFetch(`${CLASSROOM}?resource=assignments&id=${encodeURIComponent(id)}`, {
             method: 'DELETE',
@@ -441,6 +470,7 @@ async function loadMaterialsList() {
   const host = $('classroomMaterialsList');
   const msg = $('classroomMaterialsMsg');
   if (!host || !currentBatchId) return;
+  host.innerHTML = '<li class="skeleton-row skeleton-row--sm" style="list-style:none"></li><li class="skeleton-row skeleton-row--sm" style="list-style:none"></li>';
   try {
     const data = await jsonFetch(`${CLASSROOM}?resource=materials&batch_id=${encodeURIComponent(currentBatchId)}`, {
       headers: getAuthHeaders(),
@@ -448,7 +478,10 @@ async function loadMaterialsList() {
     const items = data.items || [];
     materialsCache = items;
     if (!items.length) {
-      host.innerHTML = '<li class="muted">No resource links yet.</li>';
+      host.innerHTML = `<li style="list-style:none"><div class="empty-state" style="padding:20px 0">
+        <p class="empty-state__title">No resource links yet</p>
+        <p class="empty-state__hint">Use the form below to add links for trainees.</p>
+      </div></li>`;
       if (msg) msg.textContent = '';
       return;
     }
@@ -457,12 +490,12 @@ async function loadMaterialsList() {
         (m) =>
           `<li class="classroom-material-row">
             <div class="classroom-material-main">
-              <a href="${escapeHtml(m.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(m.title)}</a>
-              ${m.description ? `<span class="muted"> — ${escapeHtml(m.description)}</span>` : ''}
+              <a href="${escapeHtml(m.url)}" target="_blank" rel="noopener noreferrer" class="classroom-mat-link">${escapeHtml(m.title)}</a>
+              ${m.description ? `<p class="muted small-margin" style="font-size:12px">${escapeHtml(m.description)}</p>` : ''}
             </div>
             <div class="classroom-inline-actions">
-              <button type="button" class="btn btn-secondary btn-sm classroom-edit-mat" data-id="${escapeHtml(m.id)}">Edit</button>
-              <button type="button" class="btn btn-secondary btn-sm classroom-del-mat" data-id="${escapeHtml(m.id)}">Remove</button>
+              <button type="button" class="btn btn-ghost btn-sm classroom-edit-mat" data-id="${escapeHtml(m.id)}">Edit</button>
+              <button type="button" class="btn btn-ghost btn-sm btn-danger classroom-del-mat" data-id="${escapeHtml(m.id)}">Remove</button>
             </div>
           </li>`,
       )
@@ -494,74 +527,6 @@ async function loadMaterialsList() {
   } catch (e) {
     host.innerHTML = '';
     if (msg) msg.textContent = e.message || 'Could not load materials.';
-  }
-}
-
-async function loadGradesTable(assignmentId) {
-  const tbody = $('classroomGradesBody');
-  const msg = $('classroomGradesMsg');
-  if (!tbody || !assignmentId) {
-    if (tbody) tbody.innerHTML = '';
-    return;
-  }
-  try {
-    const data = await jsonFetch(`${CLASSROOM}?resource=grades&assignment_id=${encodeURIComponent(assignmentId)}`, {
-      headers: getAuthHeaders(),
-    });
-    const roster = data.roster || [];
-    if (!roster.length) {
-      tbody.innerHTML = '<tr><td colspan="4" class="muted">No enrollments in this batch yet.</td></tr>';
-      if (msg) msg.textContent = '';
-      return;
-    }
-    tbody.innerHTML = roster
-      .map((r) => {
-        const g = r.grade != null && r.grade !== '' ? String(r.grade) : '';
-        const fb = r.feedback != null ? escapeHtml(String(r.feedback).replace(/\r?\n/g, ' ')) : '';
-        return `<tr data-trainee-id="${escapeHtml(r.trainee_id)}">
-          <td>${escapeHtml(r.full_name)}</td>
-          <td><input type="number" class="classroom-grade-input" step="0.01" min="0" max="9999" value="${escapeHtml(g)}" aria-label="Grade for ${escapeHtml(r.full_name)}" /></td>
-          <td><input type="text" class="classroom-feedback-input" value="${fb}" maxlength="2000" aria-label="Feedback for ${escapeHtml(r.full_name)}" /></td>
-          <td><button type="button" class="btn btn-primary btn-sm classroom-save-grade">Save</button></td>
-        </tr>`;
-      })
-      .join('');
-    tbody.querySelectorAll('.classroom-save-grade').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const tr = btn.closest('tr');
-        const tid = tr && tr.getAttribute('data-trainee-id');
-        if (!tid || !assignmentId) return;
-        const gradeInput = tr.querySelector('.classroom-grade-input');
-        const fbInput = tr.querySelector('.classroom-feedback-input');
-        void saveGrade(assignmentId, tid, gradeInput && gradeInput.value, fbInput && fbInput.value);
-      });
-    });
-    if (msg) msg.textContent = '';
-  } catch (e) {
-    tbody.innerHTML = '';
-    if (msg) msg.textContent = e.message || 'Could not load grades.';
-  }
-}
-
-async function saveGrade(assignmentId, traineeId, gradeVal, feedback) {
-  const msg = $('classroomGradesMsg');
-  try {
-    await jsonFetch(`${CLASSROOM}?resource=grades`, {
-      method: 'POST',
-      headers: getAuthHeaders(),
-      body: JSON.stringify({
-        assignment_id: assignmentId,
-        trainee_id: traineeId,
-        grade: gradeVal === '' ? null : gradeVal,
-        feedback: feedback || null,
-      }),
-    });
-    if (msg) msg.textContent = 'Saved.';
-    setTimeout(() => {
-      if (msg) msg.textContent = '';
-    }, 2000);
-  } catch (e) {
-    if (msg) msg.textContent = e.message || 'Save failed.';
   }
 }
 
@@ -720,11 +685,6 @@ export function initClassroom() {
     } catch (err) {
       if (msg) msg.textContent = err.message || 'Could not save review.';
     }
-  });
-
-  $('classroomGradeAssignmentSelect')?.addEventListener('change', (ev) => {
-    const aid = String(ev.target.value || '').trim();
-    void loadGradesTable(aid);
   });
 
   $('classroomGotoCourseLibrary')?.addEventListener('click', () => {

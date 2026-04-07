@@ -25,6 +25,7 @@ async function uploadCourseMaterialFile(courseId, file) {
 
 let currentCourseId = '';
 let librarySnapshot = null;
+let selectedChapterId = '__uncategorized__';
 
 function $(id) {
   return document.getElementById(id);
@@ -49,6 +50,10 @@ function clearMaterialForm() {
   if (h) h.textContent = 'Add resource link';
   const f = $('courseLibraryMatFile');
   if (f) f.value = '';
+  const panel = $('courseLibraryMatFormPanel');
+  if (panel) panel.removeAttribute('open');
+  const tog = $('courseLibraryMatFormToggle');
+  if (tog) tog.textContent = '+ Add resource link';
 }
 
 function beginMaterialEdit(m) {
@@ -65,7 +70,11 @@ function beginMaterialEdit(m) {
   $('courseLibraryMatSubmit').textContent = 'Save changes';
   $('courseLibraryMatCancelEdit')?.classList.remove('hidden');
   $('courseLibraryMatHeading').textContent = 'Edit resource link';
-  $('courseLibraryMatTitle')?.focus();
+  const panel = $('courseLibraryMatFormPanel');
+  if (panel) panel.setAttribute('open', '');
+  const tog = $('courseLibraryMatFormToggle');
+  if (tog) tog.textContent = 'Editing resource link';
+  setTimeout(() => $('courseLibraryMatTitle')?.focus(), 50);
 }
 
 function findMaterialById(id) {
@@ -87,43 +96,17 @@ function fillChapterSelect(chapters, uncategorizedLabel) {
   sel.innerHTML = opts.join('');
 }
 
-function renderTree(data) {
-  const host = $('courseLibraryTree');
-  if (!host) return;
-  const parts = [];
-  (data.chapters || []).forEach((ch) => {
-    const mats = (ch.materials || [])
-      .map((m) => {
-        const desc = m.description ? ` <span class="muted">— ${escapeHtml(m.description)}</span>` : '';
-        return `<li class="course-library-mat-row">
-          <div class="course-library-mat-main">
-            <a href="${escapeHtml(m.url)}" target="_blank" rel="noopener noreferrer" class="course-library-link">${escapeHtml(m.title)}</a>${desc}
-          </div>
-          <div class="course-library-mat-actions">
-            <button type="button" class="btn btn-ghost btn-sm course-lib-edit-mat" data-id="${escapeHtml(m.id)}">Edit</button>
-            <button type="button" class="btn btn-ghost btn-sm course-lib-del-mat" data-id="${escapeHtml(m.id)}">Remove</button>
-          </div>
-        </li>`;
-      })
-      .join('');
-    parts.push(`<div class="course-library-chapter" data-chapter-id="${escapeHtml(ch.id)}">
-      <div class="course-library-chapter__head">
-        <h3 class="course-library-chapter__title">${escapeHtml(ch.title)}</h3>
-        <div class="course-library-chapter__actions">
-          <button type="button" class="btn btn-ghost btn-sm course-lib-rename-ch" data-id="${escapeHtml(ch.id)}" data-title="${escapeHtml(ch.title)}">Rename</button>
-          <button type="button" class="btn btn-ghost btn-sm course-lib-del-ch" data-id="${escapeHtml(ch.id)}">Remove</button>
-        </div>
-      </div>
-      <ul class="course-library-mat-list">${mats || '<li class="course-library-empty">No links in this chapter yet.</li>'}</ul>
-    </div>`);
-  });
-
-  const unc = (data.uncategorized || [])
+function renderMaterialRows(materials) {
+  if (!materials || !materials.length) {
+    return '<div class="empty-state" style="padding:24px 0"><p class="empty-state__title">No links yet</p><p class="empty-state__hint">Use the form below to add a resource link.</p></div>';
+  }
+  return `<ul class="course-library-mat-list">${materials
     .map((m) => {
-      const desc = m.description ? ` <span class="muted">— ${escapeHtml(m.description)}</span>` : '';
+      const desc = m.description ? `<p class="muted" style="font-size:12px;margin:2px 0 0">${escapeHtml(m.description)}</p>` : '';
       return `<li class="course-library-mat-row">
         <div class="course-library-mat-main">
-          <a href="${escapeHtml(m.url)}" target="_blank" rel="noopener noreferrer" class="course-library-link">${escapeHtml(m.title)}</a>${desc}
+          <a href="${escapeHtml(m.url)}" target="_blank" rel="noopener noreferrer" class="course-library-link">${escapeHtml(m.title)}</a>
+          ${desc}
         </div>
         <div class="course-library-mat-actions">
           <button type="button" class="btn btn-ghost btn-sm course-lib-edit-mat" data-id="${escapeHtml(m.id)}">Edit</button>
@@ -131,14 +114,91 @@ function renderTree(data) {
         </div>
       </li>`;
     })
-    .join('');
+    .join('')}</ul>`;
+}
 
-  parts.push(`<div class="course-library-chapter course-library-chapter--muted">
-    <h3 class="course-library-chapter__title course-library-chapter__title--subtle">Uncategorized</h3>
-    <ul class="course-library-mat-list">${unc || '<li class="course-library-empty">No uncategorized links.</li>'}</ul>
-  </div>`);
+function renderChapterNav(data) {
+  const nav = $('courseLibraryChapterNav');
+  if (!nav) return;
+  const chapters = data.chapters || [];
+  const items = [
+    `<button type="button" class="cl-chapter-btn ${selectedChapterId === '__uncategorized__' ? 'active' : ''}" data-cid="__uncategorized__">Uncategorized <span class="badge badge--muted" style="margin-left:4px">${(data.uncategorized || []).length}</span></button>`,
+    ...chapters.map((ch) => {
+      const count = (ch.materials || []).length;
+      const active = selectedChapterId === ch.id;
+      return `<button type="button" class="cl-chapter-btn ${active ? 'active' : ''}" data-cid="${escapeHtml(ch.id)}" data-title="${escapeHtml(ch.title)}">
+        <span class="cl-chapter-btn-label">${escapeHtml(ch.title)}</span>
+        <span class="badge badge--muted" style="margin-left:4px">${count}</span>
+      </button>`;
+    }),
+  ];
+  nav.innerHTML = items.join('');
 
-  host.innerHTML = parts.join('');
+  nav.querySelectorAll('.cl-chapter-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const cid = btn.getAttribute('data-cid');
+      selectedChapterId = cid;
+      nav.querySelectorAll('.cl-chapter-btn').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderTree(librarySnapshot || { chapters: [], uncategorized: [] });
+    });
+  });
+
+  // Rename / delete buttons on chapter items (show on hover via CSS — we place them in the nav)
+  nav.querySelectorAll('.cl-chapter-btn[data-cid]:not([data-cid="__uncategorized__"])').forEach((btn) => {
+    btn.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      const id = btn.getAttribute('data-cid');
+      const title = btn.getAttribute('data-title') || '';
+      $('courseLibraryRenameChapterId').value = id || '';
+      $('courseLibraryRenameChapterTitle').value = title;
+      $('courseLibraryRenamePanel')?.classList.remove('hidden');
+      $('courseLibraryRenameChapterTitle')?.focus();
+    });
+  });
+}
+
+function renderTree(data) {
+  // Render chapter sidebar
+  renderChapterNav(data);
+
+  const host = $('courseLibraryTree');
+  if (!host) return;
+
+  // Determine materials to show based on selectedChapterId
+  let materialsToShow = [];
+  let chapterTitle = 'Uncategorized';
+  let chapterIdForActions = null;
+
+  if (selectedChapterId === '__uncategorized__') {
+    materialsToShow = data.uncategorized || [];
+    chapterTitle = 'Uncategorized';
+    chapterIdForActions = null;
+  } else {
+    const ch = (data.chapters || []).find((c) => c.id === selectedChapterId);
+    if (ch) {
+      materialsToShow = ch.materials || [];
+      chapterTitle = ch.title;
+      chapterIdForActions = ch.id;
+    } else {
+      materialsToShow = data.uncategorized || [];
+      chapterTitle = 'Uncategorized';
+      chapterIdForActions = null;
+    }
+  }
+
+  const chapterActionsHtml = chapterIdForActions
+    ? `<div class="cl-main-header-actions">
+        <button type="button" class="btn btn-ghost btn-sm course-lib-rename-ch" data-id="${escapeHtml(chapterIdForActions)}" data-title="${escapeHtml(chapterTitle)}">Rename</button>
+        <button type="button" class="btn btn-ghost btn-sm btn-danger course-lib-del-ch" data-id="${escapeHtml(chapterIdForActions)}">Remove chapter</button>
+      </div>`
+    : '';
+
+  host.innerHTML = `<div class="cl-main-header">
+    <h4 class="cl-main-title">${escapeHtml(chapterTitle)}</h4>
+    ${chapterActionsHtml}
+  </div>
+  ${renderMaterialRows(materialsToShow)}`;
 
   host.querySelectorAll('.course-lib-edit-mat').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -180,18 +240,25 @@ function renderTree(data) {
   host.querySelectorAll('.course-lib-del-ch').forEach((btn) => {
     btn.addEventListener('click', async () => {
       const id = btn.getAttribute('data-id');
-      if (!id || !confirm('Remove this chapter? Links in it become uncategorized.')) return;
+      if (!id || !confirm('Remove this chapter? Its links become uncategorized.')) return;
       try {
         await jsonFetch(`${API}?resource=chapters&id=${encodeURIComponent(id)}`, {
           method: 'DELETE',
           headers: getAuthHeaders(),
         });
+        if (selectedChapterId === id) selectedChapterId = '__uncategorized__';
         await loadLibrary(currentCourseId);
       } catch (e) {
         alert(e.message);
       }
     });
   });
+
+  // Auto-select the chapter in material form chapter select
+  const chSel = $('courseLibraryMatChapter');
+  if (chSel && selectedChapterId !== '__uncategorized__' && !$('courseLibraryMatEditId')?.value) {
+    chSel.value = selectedChapterId;
+  }
 }
 
 export async function loadLibrary(courseId) {
@@ -201,13 +268,17 @@ export async function loadLibrary(courseId) {
   if (!cid) {
     currentCourseId = '';
     librarySnapshot = null;
+    selectedChapterId = '__uncategorized__';
     if (shell) shell.classList.add('hidden');
     clearMaterialForm();
     return;
   }
+  if (cid !== currentCourseId) selectedChapterId = '__uncategorized__';
   currentCourseId = cid;
   if (shell) shell.classList.remove('hidden');
-  if (msg) msg.textContent = 'Loading…';
+  const tree = $('courseLibraryTree');
+  if (tree) tree.innerHTML = '<div class="skeleton-row"></div><div class="skeleton-row"></div>';
+  if (msg) msg.textContent = '';
   try {
     const data = await jsonFetch(`${API}?resource=library&course_id=${encodeURIComponent(cid)}`, {
       headers: getAuthHeaders(),
@@ -216,10 +287,8 @@ export async function loadLibrary(courseId) {
     fillChapterSelect(data.chapters || [], 'Uncategorized');
     renderTree(data);
     clearMaterialForm();
-    if (msg) msg.textContent = '';
   } catch (e) {
     librarySnapshot = null;
-    const tree = $('courseLibraryTree');
     if (tree) tree.innerHTML = '';
     if (msg) msg.textContent = e.message || 'Could not load library.';
   }
@@ -229,7 +298,6 @@ export async function loadCourseLibrary() {
   const sel = $('courseLibrarySelect');
   const msg = $('courseLibraryMsg');
   if (!sel) return;
-  if (msg) msg.textContent = 'Loading courses…';
   try {
     const data = await jsonFetch(`${API}?resource=courses`, { headers: getAuthHeaders() });
     const items = data.items || [];

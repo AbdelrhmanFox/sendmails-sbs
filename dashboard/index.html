@@ -117,21 +117,9 @@
           <hr class="subnav-separator" role="presentation" />
           <ul class="subnav-list subnav-list--accent" role="list">
             <li>
-              <button type="button" class="subnav-item" data-view="operations-pipeline">
-                <svg class="subnav-item__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
-                <span class="subnav-item__label">Pipeline</span>
-              </button>
-            </li>
-            <li>
-              <button type="button" class="subnav-item" data-view="operations-capacity">
-                <svg class="subnav-item__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-                <span class="subnav-item__label">Capacity</span>
-              </button>
-            </li>
-            <li>
-              <button type="button" class="subnav-item" data-view="operations-quality">
-                <svg class="subnav-item__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="m9 12 2 2 4-4"/></svg>
-                <span class="subnav-item__label">Data quality</span>
+              <button type="button" class="subnav-item" data-view="operations-insights">
+                <svg class="subnav-item__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/></svg>
+                <span class="subnav-item__label">Insights</span>
               </button>
             </li>
           </ul>
@@ -485,37 +473,50 @@
 
       <section id="view-operations-courses" class="view">
         <div class="view-hero"><div class="view-hero-text"><div class="view-header"><h2>Courses</h2><button type="button" class="btn btn-primary" id="btnNewCourse">+ New course</button></div><p class="subtitle">Course IDs are generated as SBS-CO-######.</p></div></div>
-        <div class="card card--plain ops-list-toolbar">
-          <div class="search-field-brand search-field-brand--compact">
-            <div class="search-field-brand__layers" aria-hidden="true">
-              <span class="search-field-brand__glow"></span>
-              <span class="search-field-brand__ring"></span>
+
+        <!-- Sub-tabs: Courses list / Trainer access -->
+        <div class="ops-subtabs" role="tablist">
+          <button type="button" class="ops-subtab active" id="coursesSubtabList" role="tab" aria-selected="true" aria-controls="coursesSubpaneList">Courses list</button>
+          <button type="button" class="ops-subtab" id="coursesSubtabAccess" role="tab" aria-selected="false" aria-controls="coursesSubpaneAccess">Trainer access</button>
+        </div>
+
+        <div id="coursesSubpaneList" role="tabpanel">
+          <div class="card card--plain ops-list-toolbar">
+            <div class="search-field-brand search-field-brand--compact">
+              <div class="search-field-brand__layers" aria-hidden="true">
+                <span class="search-field-brand__glow"></span>
+                <span class="search-field-brand__ring"></span>
+              </div>
+              <div class="search-field-brand__main">
+                <span class="search-field-brand__icon" aria-hidden="true">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                </span>
+                <input type="search" id="coursesListQ" class="ops-filter-search search-field-brand__input" placeholder="Search…" />
+              </div>
             </div>
-            <div class="search-field-brand__main">
-              <span class="search-field-brand__icon" aria-hidden="true">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-              </span>
-              <input type="search" id="coursesListQ" class="ops-filter-search search-field-brand__input" placeholder="Search…" />
-            </div>
+            <button type="button" class="btn btn-secondary" id="btnCoursesRefresh">Refresh</button>
           </div>
-          <button type="button" class="btn btn-secondary" id="btnCoursesRefresh">Refresh</button>
+          <div class="table-wrap"><table class="ops-data-table"><thead>
+            <tr><th>Course ID</th><th>Name</th><th>Category</th><th>Delivery</th><th>Price</th><th>Status</th><th></th></tr>
+          </thead><tbody id="coursesTableBody"></tbody></table></div>
+          <div class="card card--plain ops-pagination"><span id="coursesPageInfo" class="muted"></span><button type="button" class="btn btn-secondary" id="btnCoursesPrev">Prev</button> <button type="button" class="btn btn-secondary" id="btnCoursesNext">Next</button></div>
         </div>
-        <div class="table-wrap"><table class="ops-data-table"><thead>
-          <tr><th>Course ID</th><th>Name</th><th>Category</th><th>Delivery</th><th>Price</th><th>Status</th><th></th></tr>
-        </thead><tbody id="coursesTableBody"></tbody></table></div>
-        <div class="card card--plain ops-pagination"><span id="coursesPageInfo" class="muted"></span><button type="button" class="btn btn-secondary" id="btnCoursesPrev">Prev</button> <button type="button" class="btn btn-secondary" id="btnCoursesNext">Next</button></div>
-        <div class="card">
-          <h3>Trainer access by course</h3>
-          <p class="muted small-margin">Assign which trainers can see/manage each course in Classroom and Course library.</p>
-          <form id="trainerCourseAccessForm" class="row">
-            <select id="trainerCourseAccessCourse" aria-label="Course"></select>
-            <input type="text" id="trainerCourseAccessUsername" placeholder="trainer username" required />
-            <button type="submit" class="btn btn-primary">Assign</button>
-            <button type="button" class="btn btn-secondary" id="btnTrainerCourseAccessRefresh">Refresh</button>
-          </form>
-          <div id="trainerCourseAccessList" class="small-margin"></div>
-          <p id="trainerCourseAccessMsg" class="inline-note"></p>
+
+        <div id="coursesSubpaneAccess" class="hidden" role="tabpanel">
+          <div class="card">
+            <h3>Trainer access by course</h3>
+            <p class="muted small-margin">Assign which trainers can manage each course in Classroom and Course library.</p>
+            <form id="trainerCourseAccessForm" class="row" style="margin-top:12px">
+              <select id="trainerCourseAccessCourse" aria-label="Course"></select>
+              <input type="text" id="trainerCourseAccessUsername" placeholder="trainer username" required />
+              <button type="submit" class="btn btn-primary">Assign</button>
+              <button type="button" class="btn btn-secondary" id="btnTrainerCourseAccessRefresh">Refresh</button>
+            </form>
+            <div id="trainerCourseAccessList" class="small-margin"></div>
+            <p id="trainerCourseAccessMsg" class="inline-note"></p>
+          </div>
         </div>
+
         <div id="courseFormCard" class="card hidden">
           <h3 id="courseFormTitle">New course</h3>
           <form id="courseForm" class="form-grid">
@@ -732,51 +733,50 @@
         </div>
       </section>
 
-      <section id="view-operations-pipeline" class="view">
+      <section id="view-operations-insights" class="view">
         <div class="view-hero">
           <div class="view-hero-text">
-            <h2>Pipeline</h2>
-            <p class="subtitle">Enrollment counts by status.</p>
+            <h2>Insights</h2>
+            <p class="subtitle">Pipeline status, batch capacity, and data quality checks.</p>
           </div>
         </div>
-        <div class="card">
-          <button type="button" class="btn btn-secondary" id="btnRefreshPipeline">Refresh</button>
-          <div id="pipelineGrid" class="status-grid pipeline-grid"></div>
-          <p id="pipelineMsg" class="inline-note"></p>
+        <div class="insights-tabs" role="tablist">
+          <button type="button" class="btn btn-secondary insights-tab active" id="insightsTabPipeline" role="tab" aria-selected="true" aria-controls="insightsPanePipeline">Pipeline</button>
+          <button type="button" class="btn btn-secondary insights-tab" id="insightsTabCapacity" role="tab" aria-selected="false" aria-controls="insightsPaneCapacity">Capacity</button>
+          <button type="button" class="btn btn-secondary insights-tab" id="insightsTabQuality" role="tab" aria-selected="false" aria-controls="insightsPaneQuality">Data quality</button>
         </div>
-      </section>
 
-      <section id="view-operations-capacity" class="view">
-        <div class="view-hero">
-          <div class="view-hero-text">
-            <h2>Capacity</h2>
-            <p class="subtitle">Enrollments per batch versus declared capacity.</p>
+        <div id="insightsPanePipeline" class="insights-pane" role="tabpanel" aria-labelledby="insightsTabPipeline">
+          <div class="card">
+            <p class="muted" style="font-size:13px;margin-bottom:10px">Enrollment counts by status.</p>
+            <button type="button" class="btn btn-secondary" id="btnRefreshPipeline">Refresh</button>
+            <div id="pipelineGrid" class="status-grid pipeline-grid"></div>
+            <p id="pipelineMsg" class="inline-note"></p>
           </div>
         </div>
-        <div class="card">
-          <button type="button" class="btn btn-secondary" id="btnRefreshCapacity">Refresh</button>
-          <div class="table-wrap">
-            <table id="capacityTable">
-              <thead><tr><th>Batch</th><th>Course</th><th>Capacity</th><th>Enrolled</th><th>Utilization</th></tr></thead>
-              <tbody id="capacityBody"></tbody>
-            </table>
-          </div>
-          <p id="capacityMsg" class="inline-note"></p>
-        </div>
-      </section>
 
-      <section id="view-operations-quality" class="view">
-        <div class="view-hero">
-          <div class="view-hero-text">
-            <h2>Data quality</h2>
-            <p class="subtitle">Orphan references and duplicate enrollment IDs (sample lists).</p>
+        <div id="insightsPaneCapacity" class="insights-pane hidden" role="tabpanel" aria-labelledby="insightsTabCapacity">
+          <div class="card">
+            <p class="muted" style="font-size:13px;margin-bottom:10px">Enrollments per batch versus declared capacity.</p>
+            <button type="button" class="btn btn-secondary" id="btnRefreshCapacity">Refresh</button>
+            <div class="table-wrap">
+              <table id="capacityTable">
+                <thead><tr><th>Batch</th><th>Course</th><th>Capacity</th><th>Enrolled</th><th>Utilization</th></tr></thead>
+                <tbody id="capacityBody"></tbody>
+              </table>
+            </div>
+            <p id="capacityMsg" class="inline-note"></p>
           </div>
         </div>
-        <div class="card">
-          <button type="button" class="btn btn-secondary" id="btnRefreshQuality">Refresh</button>
-          <div id="qualitySummary" class="quality-summary"></div>
-          <pre id="qualityDetail" class="quality-pre"></pre>
-          <p id="qualityMsg" class="inline-note"></p>
+
+        <div id="insightsPaneQuality" class="insights-pane hidden" role="tabpanel" aria-labelledby="insightsTabQuality">
+          <div class="card">
+            <p class="muted" style="font-size:13px;margin-bottom:10px">Orphan references and duplicate enrollment IDs.</p>
+            <button type="button" class="btn btn-secondary" id="btnRefreshQuality">Refresh</button>
+            <div id="qualitySummary" class="quality-summary"></div>
+            <pre id="qualityDetail" class="quality-pre"></pre>
+            <p id="qualityMsg" class="inline-note"></p>
+          </div>
         </div>
       </section>
 
@@ -1025,74 +1025,84 @@
           <div class="classroom-room-tabs" role="tablist" aria-label="Classroom sections">
             <button type="button" class="btn btn-secondary classroom-tab active" id="classroomTabClasswork" role="tab" aria-selected="true" aria-controls="classroomPaneClasswork">Classwork</button>
             <button type="button" class="btn btn-secondary classroom-tab" id="classroomTabMaterials" role="tab" aria-selected="false" aria-controls="classroomPaneMaterials">Materials</button>
-            <button type="button" class="btn btn-secondary classroom-tab" id="classroomTabGrades" role="tab" aria-selected="false" aria-controls="classroomPaneGrades">Submissions</button>
+            <button type="button" class="btn btn-secondary classroom-tab" id="classroomTabGrades" role="tab" aria-selected="false" aria-controls="classroomPaneGrades">Grading</button>
           </div>
+
           <div id="classroomPaneClasswork" class="classroom-pane" role="tabpanel" aria-labelledby="classroomTabClasswork">
             <div id="classroomAssignmentsList" class="classroom-assignments-list"></div>
-            <div class="card classroom-form-card">
-              <h4 id="classroomAsgFormHeading">New assignment</h4>
-              <form id="classroomAssignmentForm" class="form-grid form-grid--two">
-                <input type="hidden" id="classroomAsgEditId" value="" />
-                <label class="full">Title <input type="text" id="classroomAsgTitle" required maxlength="200" /></label>
-                <label class="full">Instructions <textarea id="classroomAsgInstructions" rows="3" maxlength="4000"></textarea></label>
-                <label>Due date <input type="date" id="classroomAsgDue" /></label>
-                <label class="full">Attachments (PDF/docs, multiple files)
-                  <input type="file" id="classroomAsgFiles" multiple />
-                </label>
-                <p class="muted small-margin full">Files are uploaded by trainer and shown under assignment for trainees.</p>
-                <div class="form-actions full">
-                  <button type="submit" class="btn btn-primary" id="classroomAsgSubmit">Add assignment</button>
-                  <button type="button" class="btn btn-secondary hidden" id="classroomAsgCancelEdit">Cancel edit</button>
-                </div>
-              </form>
-            </div>
-            <p id="classroomClassworkMsg" class="inline-note"></p>
-          </div>
-          <div id="classroomPaneMaterials" class="classroom-pane hidden" role="tabpanel" aria-labelledby="classroomTabMaterials" hidden>
-            <ul id="classroomMaterialsList" class="classroom-materials-list"></ul>
-            <div class="card classroom-form-card">
-              <h4 id="classroomMatFormHeading">Add resource link</h4>
-              <form id="classroomMaterialForm" class="form-grid form-grid--two">
-                <input type="hidden" id="classroomMatEditId" value="" />
-                <label>Title <input type="text" id="classroomMatTitle" required maxlength="200" /></label>
-                <label>URL <input type="url" id="classroomMatUrl" required placeholder="https://..." /></label>
-                <label class="full">Description <input type="text" id="classroomMatDesc" maxlength="500" /></label>
-                <div class="form-actions full">
-                  <button type="submit" class="btn btn-primary" id="classroomMatSubmit">Add link</button>
-                  <button type="button" class="btn btn-secondary hidden" id="classroomMatCancelEdit">Cancel edit</button>
-                </div>
-              </form>
-            </div>
-            <p id="classroomMaterialsMsg" class="inline-note"></p>
-          </div>
-          <div id="classroomPaneGrades" class="classroom-pane hidden" role="tabpanel" aria-labelledby="classroomTabGrades" hidden>
-            <div class="classroom-submissions-layout">
-              <section class="card classroom-submissions-board">
-                <h4>Assignments board</h4>
-                <p class="muted small-margin">Choose assignment to review trainee submissions.</p>
-                <div id="classroomSubmissionsAssignments" class="classroom-submissions-assignments"></div>
-              </section>
-              <section class="card classroom-submissions-list-wrap">
-                <h4>Submissions</h4>
-                <div id="classroomSubmissionsList" class="classroom-submissions-list"></div>
-              </section>
-              <section class="card classroom-review-panel">
-                <h4>Review</h4>
-                <p class="muted small-margin" id="classroomReviewTarget">Select a submission.</p>
-                <form id="classroomSubmissionReviewForm" class="form-grid form-grid--two">
-                  <input type="hidden" id="classroomReviewSubmissionId" value="" />
-                  <label>Grade
-                    <input type="number" id="classroomReviewGrade" step="0.01" min="0" max="9999" />
+            <details class="form-collapse-panel" id="classroomAsgFormPanel">
+              <summary>+ New assignment</summary>
+              <div class="form-collapse-body">
+                <p class="course-library-eyebrow" id="classroomAsgFormHeading" style="margin:0 0 10px">New assignment</p>
+                <form id="classroomAssignmentForm" class="form-grid form-grid--two">
+                  <input type="hidden" id="classroomAsgEditId" value="" />
+                  <label class="full">Title <input type="text" id="classroomAsgTitle" required maxlength="200" /></label>
+                  <label class="full">Instructions <textarea id="classroomAsgInstructions" rows="3" maxlength="4000"></textarea></label>
+                  <label>Due date <input type="date" id="classroomAsgDue" /></label>
+                  <label class="full">Attachments (PDF/docs, multiple files)
+                    <input type="file" id="classroomAsgFiles" multiple />
                   </label>
-                  <label class="full">Feedback
-                    <textarea id="classroomReviewFeedback" rows="4" maxlength="2000"></textarea>
-                  </label>
+                  <p class="muted small-margin full">Files are uploaded by trainer and shown to trainees under the assignment.</p>
                   <div class="form-actions full">
-                    <button type="submit" class="btn btn-primary">Save review</button>
+                    <button type="submit" class="btn btn-primary" id="classroomAsgSubmit">Add assignment</button>
+                    <button type="button" class="btn btn-ghost hidden" id="classroomAsgCancelEdit">Cancel edit</button>
                   </div>
                 </form>
-                <p id="classroomGradesMsg" class="inline-note"></p>
-              </section>
+              </div>
+            </details>
+            <p id="classroomClassworkMsg" class="inline-note"></p>
+          </div>
+
+          <div id="classroomPaneMaterials" class="classroom-pane hidden" role="tabpanel" aria-labelledby="classroomTabMaterials" hidden>
+            <ul id="classroomMaterialsList" class="classroom-materials-list"></ul>
+            <details class="form-collapse-panel" id="classroomMatFormPanel">
+              <summary>+ Add resource link</summary>
+              <div class="form-collapse-body">
+                <p class="course-library-eyebrow" id="classroomMatFormHeading" style="margin:0 0 10px">Add resource link</p>
+                <form id="classroomMaterialForm" class="form-grid form-grid--two">
+                  <input type="hidden" id="classroomMatEditId" value="" />
+                  <label>Title <input type="text" id="classroomMatTitle" required maxlength="200" /></label>
+                  <label>URL <input type="url" id="classroomMatUrl" required placeholder="https://..." /></label>
+                  <label class="full">Description <input type="text" id="classroomMatDesc" maxlength="500" /></label>
+                  <div class="form-actions full">
+                    <button type="submit" class="btn btn-primary" id="classroomMatSubmit">Add link</button>
+                    <button type="button" class="btn btn-ghost hidden" id="classroomMatCancelEdit">Cancel edit</button>
+                  </div>
+                </form>
+              </div>
+            </details>
+            <p id="classroomMaterialsMsg" class="inline-note"></p>
+          </div>
+
+          <div id="classroomPaneGrades" class="classroom-pane hidden" role="tabpanel" aria-labelledby="classroomTabGrades" hidden>
+            <div class="classroom-grading-wrap">
+              <div class="classroom-grading-top card">
+                <p class="course-library-eyebrow" style="margin:0 0 10px">Select assignment</p>
+                <div id="classroomSubmissionsAssignments" class="classroom-asg-chips"></div>
+              </div>
+              <div class="classroom-grading-cols">
+                <section class="card classroom-submissions-list-wrap">
+                  <h4>Submissions</h4>
+                  <div id="classroomSubmissionsList" class="classroom-submissions-list"></div>
+                </section>
+                <section class="card classroom-review-panel" id="classroomReviewPanelCard">
+                  <h4>Review</h4>
+                  <p class="muted small-margin" id="classroomReviewTarget">Select a submission to review.</p>
+                  <form id="classroomSubmissionReviewForm" class="form-grid form-grid--two">
+                    <input type="hidden" id="classroomReviewSubmissionId" value="" />
+                    <label>Grade
+                      <input type="number" id="classroomReviewGrade" step="0.01" min="0" max="9999" />
+                    </label>
+                    <label class="full">Feedback
+                      <textarea id="classroomReviewFeedback" rows="4" maxlength="2000"></textarea>
+                    </label>
+                    <div class="form-actions full">
+                      <button type="submit" class="btn btn-primary">Save review</button>
+                    </div>
+                  </form>
+                  <p id="classroomGradesMsg" class="inline-note"></p>
+                </section>
+              </div>
             </div>
           </div>
         </div>
@@ -1102,7 +1112,7 @@
         <div class="view-hero">
           <div class="view-hero-text">
             <h2>Course library</h2>
-            <p class="subtitle view-course-library__lede">One place for shared chapters and files per course. It applies to all batches; the classroom link shows this together with batch-only items.</p>
+            <p class="subtitle view-course-library__lede">Shared chapters and materials per course — visible in every batch classroom link.</p>
           </div>
         </div>
         <p id="courseLibraryMsg" class="inline-note" role="status"></p>
@@ -1114,90 +1124,109 @@
           </label>
         </div>
         <div id="courseLibraryShell" class="course-library-shell hidden">
-          <div class="course-library-panel">
-            <div class="course-library-panel__toolbar">
-              <p class="course-library-eyebrow">New chapter</p>
-              <form id="courseLibraryChapterForm" class="course-library-quick-add">
-                <input type="text" id="courseLibraryChapterTitle" required maxlength="200" placeholder="e.g. Week 1 · Foundations" aria-label="Chapter title" />
-                <button type="submit" class="btn btn-primary">Add</button>
-              </form>
-            </div>
-            <div id="courseLibraryRenamePanel" class="course-library-rename-banner hidden">
-              <form id="courseLibraryRenameChapterForm" class="course-library-rename-banner__form">
-                <input type="hidden" id="courseLibraryRenameChapterId" value="" />
-                <label class="course-library-rename-banner__label">Rename chapter</label>
-                <input type="text" id="courseLibraryRenameChapterTitle" required maxlength="200" aria-label="New chapter title" />
-                <button type="submit" class="btn btn-primary btn-sm">Save</button>
-                <button type="button" class="btn btn-ghost btn-sm" id="courseLibraryRenameCancel">Cancel</button>
-              </form>
-            </div>
-            <div id="courseLibraryTree" class="course-library-tree" role="region" aria-label="Chapters and links"></div>
-            <div class="course-library-panel__divider" aria-hidden="true"></div>
-            <div class="course-library-panel__form">
-              <p class="course-library-eyebrow" id="courseLibraryMatHeading">Add resource link</p>
-              <form id="courseLibraryMaterialForm" class="form-grid form-grid--two course-library-material-form">
-                <input type="hidden" id="courseLibraryMatEditId" value="" />
-                <label>Chapter
-                  <select id="courseLibraryMatChapter" aria-label="Material chapter">
-                    <option value="">Uncategorized</option>
-                  </select>
-                </label>
-                <label>Title <input type="text" id="courseLibraryMatTitle" required maxlength="200" /></label>
-                <label class="full">URL <input type="url" id="courseLibraryMatUrl" required placeholder="https://..." /></label>
-                <label class="full">Description <input type="text" id="courseLibraryMatDesc" maxlength="500" /></label>
-                <div class="full course-library-upload-row" id="courseLibraryUploadRow">
-                  <label class="course-library-file-label">Or upload a file
-                    <input type="file" id="courseLibraryMatFile" />
-                  </label>
-                  <p class="muted small-margin" id="courseLibraryUploadHint">Uploads use secure storage; the URL is filled in automatically.</p>
+          <div class="cl-two-col">
+            <!-- Left: chapter sidebar -->
+            <aside class="cl-sidebar">
+              <div class="cl-sidebar-header">
+                <p class="course-library-eyebrow" style="margin:0">Chapters</p>
+              </div>
+              <nav id="courseLibraryChapterNav" class="cl-chapter-nav" aria-label="Chapters"></nav>
+              <details class="form-collapse-panel cl-chapter-add-panel">
+                <summary>+ New chapter</summary>
+                <div class="form-collapse-body">
+                  <form id="courseLibraryChapterForm" class="course-library-quick-add">
+                    <input type="text" id="courseLibraryChapterTitle" required maxlength="200" placeholder="e.g. Week 1 · Basics" aria-label="Chapter title" />
+                    <button type="submit" class="btn btn-primary btn-sm">Add</button>
+                  </form>
                 </div>
-                <div class="form-actions full">
-                  <button type="submit" class="btn btn-primary" id="courseLibraryMatSubmit">Add link</button>
-                  <button type="button" class="btn btn-ghost hidden" id="courseLibraryMatCancelEdit">Cancel edit</button>
+              </details>
+            </aside>
+
+            <!-- Right: materials for selected chapter -->
+            <div class="cl-main">
+              <div id="courseLibraryRenamePanel" class="course-library-rename-banner hidden">
+                <form id="courseLibraryRenameChapterForm" class="course-library-rename-banner__form">
+                  <input type="hidden" id="courseLibraryRenameChapterId" value="" />
+                  <label class="course-library-rename-banner__label">Rename chapter</label>
+                  <input type="text" id="courseLibraryRenameChapterTitle" required maxlength="200" aria-label="New chapter title" />
+                  <button type="submit" class="btn btn-primary btn-sm">Save</button>
+                  <button type="button" class="btn btn-ghost btn-sm" id="courseLibraryRenameCancel">Cancel</button>
+                </form>
+              </div>
+              <div id="courseLibraryTree" class="course-library-tree" role="region" aria-label="Materials"></div>
+              <details class="form-collapse-panel" id="courseLibraryMatFormPanel">
+                <summary id="courseLibraryMatFormToggle">+ Add resource link</summary>
+                <div class="form-collapse-body">
+                  <p class="course-library-eyebrow" id="courseLibraryMatHeading" style="margin:0 0 10px">Add resource link</p>
+                  <form id="courseLibraryMaterialForm" class="form-grid form-grid--two course-library-material-form">
+                    <input type="hidden" id="courseLibraryMatEditId" value="" />
+                    <label>Chapter
+                      <select id="courseLibraryMatChapter" aria-label="Material chapter">
+                        <option value="">Uncategorized</option>
+                      </select>
+                    </label>
+                    <label>Title <input type="text" id="courseLibraryMatTitle" required maxlength="200" /></label>
+                    <label class="full">URL <input type="url" id="courseLibraryMatUrl" required placeholder="https://..." /></label>
+                    <label class="full">Description <input type="text" id="courseLibraryMatDesc" maxlength="500" /></label>
+                    <div class="full course-library-upload-row" id="courseLibraryUploadRow">
+                      <label class="course-library-file-label">Or upload a file
+                        <input type="file" id="courseLibraryMatFile" />
+                      </label>
+                      <p class="muted small-margin" id="courseLibraryUploadHint">Uploads use secure storage; the URL is filled automatically.</p>
+                    </div>
+                    <div class="form-actions full">
+                      <button type="submit" class="btn btn-primary" id="courseLibraryMatSubmit">Add link</button>
+                      <button type="button" class="btn btn-ghost hidden" id="courseLibraryMatCancelEdit">Cancel edit</button>
+                    </div>
+                  </form>
                 </div>
-              </form>
+              </details>
             </div>
           </div>
         </div>
       </section>
 
       <section id="view-public-classroom" class="view">
-        <div class="view-hero">
+        <div class="view-hero pub-classroom-hero">
           <div class="view-hero-text">
             <h2 id="publicClassroomHeading">Classroom</h2>
             <p class="subtitle" id="publicClassroomSub">Participant view · no sign-in required</p>
           </div>
         </div>
         <p id="publicClassroomMsg" class="inline-error" role="alert" hidden></p>
+
+        <!-- Classwork assignments -->
         <div class="card public-classroom-block">
-          <h3>Classwork</h3>
+          <div class="pub-classwork-header">
+            <h3>Classwork</h3>
+            <div class="pub-email-lookup" id="pubEmailLookupWrap">
+              <form id="publicReviewLookupForm" class="pub-email-form">
+                <label class="pub-email-label" for="publicReviewEmail">Enter email to see your submission status</label>
+                <div class="pub-email-row">
+                  <input type="email" id="publicReviewEmail" placeholder="your@email.com" maxlength="200" />
+                  <button type="submit" class="btn btn-primary btn-sm">Check</button>
+                  <span class="inline-note" id="publicReviewMsg"></span>
+                </div>
+              </form>
+            </div>
+          </div>
           <div id="publicClassroomAssignments" class="public-classroom-body"></div>
         </div>
-        <div class="card public-classroom-block">
-          <h3>My review</h3>
-          <p class="muted small-margin">Enter the same email used when submitting the assignment.</p>
-          <form id="publicReviewLookupForm" class="public-submission-form">
-            <div class="public-submission-grid">
-              <label>Email
-                <input type="email" id="publicReviewEmail" required maxlength="200" />
-              </label>
-            </div>
-            <div class="public-submission-actions">
-              <button type="submit" class="btn btn-primary">Show review</button>
-              <span class="inline-note" id="publicReviewMsg"></span>
-            </div>
-          </form>
-          <div id="publicReviewResults" class="public-classroom-body"></div>
-        </div>
-        <div class="card public-classroom-block hidden" id="publicClassroomCourseLibraryWrap">
-          <h3>Course content</h3>
-          <p class="muted small-margin public-classroom-course-hint">Shared for this program across all runs.</p>
-          <div id="publicClassroomCourseLibrary" class="public-classroom-body"></div>
-        </div>
-        <div class="card public-classroom-block">
-          <h3>Batch materials</h3>
-          <p class="muted small-margin public-classroom-batch-hint">Added for this group only.</p>
-          <div id="publicClassroomMaterials" class="public-classroom-body"></div>
+
+        <!-- Resources: course content + batch materials as tabs -->
+        <div class="card public-classroom-block" id="publicResourcesBlock">
+          <div class="pub-resources-tabs" role="tablist">
+            <button type="button" class="pub-res-tab active" id="pubTabCourse" role="tab" aria-selected="true" aria-controls="pubPaneCourse">Course content</button>
+            <button type="button" class="pub-res-tab" id="pubTabBatch" role="tab" aria-selected="false" aria-controls="pubPaneBatch">Batch materials</button>
+          </div>
+          <div id="pubPaneCourse" class="pub-res-pane" role="tabpanel">
+            <p class="muted pub-classroom-course-hint">Shared for this program across all batches.</p>
+            <div id="publicClassroomCourseLibrary" class="public-classroom-body"></div>
+          </div>
+          <div id="pubPaneBatch" class="pub-res-pane hidden" role="tabpanel">
+            <p class="muted pub-classroom-batch-hint">Added specifically for this group.</p>
+            <div id="publicClassroomMaterials" class="public-classroom-body"></div>
+          </div>
         </div>
       </section>
 
@@ -1373,10 +1402,16 @@
               <input id="invNotes" />
             </div>
             <div class="full">
+              <label>Line items</label>
+              <div id="invoiceLinesEditor" class="invoice-lines-editor"></div>
+              <button type="button" class="btn btn-secondary btn-sm" id="btnAddInvoiceLine" style="margin-top:6px">+ Add line</button>
+            </div>
+            <div class="full form-actions">
               <button type="submit" class="btn btn-primary" id="btnSaveInvoice">Save invoice</button>
               <button type="button" class="btn btn-secondary" id="btnClearInvoiceForm">Clear</button>
             </div>
           </form>
+          <p id="financeInvEditorMsg" class="inline-note"></p>
         </div>
       </section>
 

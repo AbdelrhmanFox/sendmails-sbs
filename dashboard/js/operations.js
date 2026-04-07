@@ -1714,11 +1714,56 @@ export async function loadQuality() {
   }
 }
 
+function initInsightsTabs() {
+  const tabs = [
+    { tabId: 'insightsTabPipeline', paneId: 'insightsPanePipeline', key: 'pipeline', onActivate: loadPipeline },
+    { tabId: 'insightsTabCapacity', paneId: 'insightsPaneCapacity', key: 'capacity', onActivate: loadCapacity },
+    { tabId: 'insightsTabQuality', paneId: 'insightsPaneQuality', key: 'quality', onActivate: loadQuality },
+  ];
+
+  function activateInsightsTab(key) {
+    tabs.forEach(({ tabId, paneId, key: k, onActivate }) => {
+      const tab = document.getElementById(tabId);
+      const pane = document.getElementById(paneId);
+      const on = k === key;
+      if (tab) { tab.classList.toggle('active', on); tab.setAttribute('aria-selected', on ? 'true' : 'false'); }
+      if (pane) { pane.classList.toggle('hidden', !on); pane.hidden = !on; }
+      if (on && onActivate) onActivate();
+    });
+  }
+
+  tabs.forEach(({ tabId, key }) => {
+    document.getElementById(tabId)?.addEventListener('click', () => activateInsightsTab(key));
+  });
+}
+
+function initCoursesSubtabs() {
+  const tabList = document.getElementById('coursesSubtabList');
+  const tabAccess = document.getElementById('coursesSubtabAccess');
+  const paneList = document.getElementById('coursesSubpaneList');
+  const paneAccess = document.getElementById('coursesSubpaneAccess');
+  if (!tabList || !tabAccess) return;
+
+  function activate(which) {
+    tabList.classList.toggle('active', which === 'list');
+    tabList.setAttribute('aria-selected', which === 'list' ? 'true' : 'false');
+    tabAccess.classList.toggle('active', which === 'access');
+    tabAccess.setAttribute('aria-selected', which === 'access' ? 'true' : 'false');
+    if (paneList) { paneList.classList.toggle('hidden', which !== 'list'); paneList.hidden = which !== 'list'; }
+    if (paneAccess) { paneAccess.classList.toggle('hidden', which !== 'access'); paneAccess.hidden = which !== 'access'; }
+  }
+
+  tabList.addEventListener('click', () => activate('list'));
+  tabAccess.addEventListener('click', () => activate('access'));
+}
+
 export function initOpsInsights() {
   document.getElementById('btnRefreshPipeline')?.addEventListener('click', loadPipeline);
   document.getElementById('btnRefreshCapacity')?.addEventListener('click', loadCapacity);
   document.getElementById('btnRefreshQuality')?.addEventListener('click', loadQuality);
   document.getElementById('opsHomeAnalyticsDetails')?.addEventListener('click', () => {
-    document.dispatchEvent(new CustomEvent('sbs:goto-view', { detail: { viewId: 'operations-pipeline' } }));
+    document.dispatchEvent(new CustomEvent('sbs:goto-view', { detail: { viewId: 'operations-insights' } }));
   });
+  initInsightsTabs();
+  initCoursesSubtabs();
 }
