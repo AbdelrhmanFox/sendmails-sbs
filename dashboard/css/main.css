@@ -2650,6 +2650,22 @@ body.participant-join .app-top-bar__burger {
   background: var(--brand-surface-2);
 }
 
+.classroom-assignment-files {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.classroom-assignment-files li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
 .classroom-materials-list {
   list-style: none;
   margin: 0 0 12px;

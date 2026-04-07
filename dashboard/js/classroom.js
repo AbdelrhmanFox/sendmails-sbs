@@ -1,6 +1,7 @@
 import { jsonFetch, getAuthHeaders } from './shared.js';
 
 const CLASSROOM = '/.netlify/functions/classroom-data';
+const CLASSROOM_UPLOAD = '/.netlify/functions/classroom-assignment-upload';
 
 let currentBatchId = '';
 let currentBatchLabel = '';
@@ -9,6 +10,27 @@ let assignmentsCache = [];
 let materialsCache = [];
 let submissionsAssignmentId = '';
 let submissionsCache = [];
+let assignmentFilesCache = {};
+
+async function uploadAssignmentFile(assignmentId, file) {
+  const meta = await jsonFetch(CLASSROOM_UPLOAD, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({
+      assignment_id: assignmentId,
+      filename: file.name,
+      contentType: file.type || 'application/octet-stream',
+    }),
+  });
+  const headers = { 'Content-Type': file.type || 'application/octet-stream' };
+  if (meta.token) headers.Authorization = `Bearer ${meta.token}`;
+  const put = await fetch(meta.signedUrl, { method: 'PUT', headers, body: file });
+  if (!put.ok) {
+    const t = await put.text().catch(() => '');
+    throw new Error(t || `Upload failed (${put.status})`);
+  }
+  return { file_url: meta.publicUrl, file_storage_key: meta.path };
+}
 
 function clearMaterialEditing() {
   const hid = $('classroomMatEditId');
@@ -97,7 +119,7 @@ export async function loadClassrooms() {
     const data = await jsonFetch(`${CLASSROOM}?resource=classrooms`, { headers: getAuthHeaders() });
     const items = data.items || [];
     if (!items.length) {
-      grid.innerHTML = '<p class="muted">No batches assigned to you yet. Ask an admin to set your username as the trainer on a batch in Operations.</p>';
+      grid.innerHTML = '<p class="muted">No assigned courses yet. Ask admin to map your username to a course.</p>';
       if (msg) msg.textContent = '';
       return;
     }
@@ -325,6 +347,19 @@ async function loadAssignmentsList() {
       headers: getAuthHeaders(),
     });
     assignmentsCache = data.items || [];
+    assignmentFilesCache = {};
+    await Promise.all(
+      assignmentsCache.map(async (a) => {
+        try {
+          const fd = await jsonFetch(`${CLASSROOM}?resource=assignment-files&assignment_id=${encodeURIComponent(a.id)}`, {
+            headers: getAuthHeaders(),
+          });
+          assignmentFilesCache[a.id] = fd.items || [];
+        } catch (_) {
+          assignmentFilesCache[a.id] = [];
+        }
+      }),
+    );
     if (!assignmentsCache.length) {
       host.innerHTML = '<p class="muted">No assignments yet. Add one below.</p>';
       if (msg) msg.textContent = '';
@@ -333,10 +368,22 @@ async function loadAssignmentsList() {
     host.innerHTML = assignmentsCache
       .map((a) => {
         const due = a.due_date ? ` · Due ${escapeHtml(a.due_date)}` : '';
+        const files = assignmentFilesCache[a.id] || [];
+        const filesHtml = files.length
+          ? `<ul class="classroom-assignment-files">${files
+              .map(
+                (f) =>
+                  `<li><a href="${escapeHtml(f.file_url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(f.title || 'Attachment')}</a>
+                    <button type="button" class="btn btn-secondary btn-sm classroom-del-asg-file" data-id="${escapeHtml(f.id)}" data-aid="${escapeHtml(a.id)}">Remove file</button>
+                  </li>`,
+              )
+              .join('')}</ul>`
+          : '<p class="muted small-margin">No attachments.</p>';
         return `<div class="classroom-assignment-row">
           <div>
             <strong>${escapeHtml(a.title)}</strong>${due}
             ${a.instructions ? `<p class="muted small-margin">${escapeHtml(a.instructions)}</p>` : ''}
+            ${filesHtml}
           </div>
           <div class="classroom-inline-actions">
             <button type="button" class="btn btn-secondary btn-sm classroom-edit-asg" data-id="${escapeHtml(a.id)}">Edit</button>
@@ -363,6 +410,21 @@ async function loadAssignmentsList() {
           });
           if (String($('classroomAsgEditId')?.value || '') === id) clearAssignmentEditing();
           await refreshClassroomData();
+        } catch (e) {
+          alert(e.message);
+        }
+      });
+    });
+    host.querySelectorAll('.classroom-del-asg-file').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-id');
+        if (!id) return;
+        try {
+          await jsonFetch(`${CLASSROOM}?resource=assignment-files&id=${encodeURIComponent(id)}`, {
+            method: 'DELETE',
+            headers: getAuthHeaders(),
+          });
+          await loadAssignmentsList();
         } catch (e) {
           alert(e.message);
         }
@@ -537,11 +599,14 @@ export function initClassroom() {
     const title = String($('classroomAsgTitle')?.value || '').trim();
     const instructions = String($('classroomAsgInstructions')?.value || '');
     const due = String($('classroomAsgDue')?.value || '').trim();
+    const fileInput = $('classroomAsgFiles');
+    const files = fileInput && fileInput.files ? Array.from(fileInput.files) : [];
     if (!title) return;
     const editId = String($('classroomAsgEditId')?.value || '').trim();
     try {
+      let assignmentId = editId || '';
       if (editId) {
-        await jsonFetch(`${CLASSROOM}?resource=assignments&id=${encodeURIComponent(editId)}`, {
+        const res = await jsonFetch(`${CLASSROOM}?resource=assignments&id=${encodeURIComponent(editId)}`, {
           method: 'PATCH',
           headers: getAuthHeaders(),
           body: JSON.stringify({
@@ -550,9 +615,10 @@ export function initClassroom() {
             due_date: due || null,
           }),
         });
+        assignmentId = res.item && res.item.id ? res.item.id : editId;
         clearAssignmentEditing();
       } else {
-        await jsonFetch(`${CLASSROOM}?resource=assignments`, {
+        const res = await jsonFetch(`${CLASSROOM}?resource=assignments`, {
           method: 'POST',
           headers: getAuthHeaders(),
           body: JSON.stringify({
@@ -562,8 +628,27 @@ export function initClassroom() {
             due_date: due || null,
           }),
         });
+        assignmentId = res.item && res.item.id ? res.item.id : '';
         clearAssignmentEditing();
       }
+      if (assignmentId && files.length) {
+        for (const file of files) {
+          const up = await uploadAssignmentFile(assignmentId, file);
+          await jsonFetch(`${CLASSROOM}?resource=assignment-files`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({
+              assignment_id: assignmentId,
+              title: file.name,
+              file_url: up.file_url,
+              file_storage_key: up.file_storage_key,
+              mime_type: file.type || null,
+              file_size_bytes: file.size || null,
+            }),
+          });
+        }
+      }
+      if (fileInput) fileInput.value = '';
       await refreshClassroomData();
     } catch (err) {
       $('classroomClassworkMsg').textContent = err.message || 'Failed to save assignment.';

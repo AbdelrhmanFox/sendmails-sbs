@@ -504,6 +504,18 @@
           <tr><th>Course ID</th><th>Name</th><th>Category</th><th>Delivery</th><th>Price</th><th>Status</th><th></th></tr>
         </thead><tbody id="coursesTableBody"></tbody></table></div>
         <div class="card card--plain ops-pagination"><span id="coursesPageInfo" class="muted"></span><button type="button" class="btn btn-secondary" id="btnCoursesPrev">Prev</button> <button type="button" class="btn btn-secondary" id="btnCoursesNext">Next</button></div>
+        <div class="card">
+          <h3>Trainer access by course</h3>
+          <p class="muted small-margin">Assign which trainers can see/manage each course in Classroom and Course library.</p>
+          <form id="trainerCourseAccessForm" class="row">
+            <select id="trainerCourseAccessCourse" aria-label="Course"></select>
+            <input type="text" id="trainerCourseAccessUsername" placeholder="trainer username" required />
+            <button type="submit" class="btn btn-primary">Assign</button>
+            <button type="button" class="btn btn-secondary" id="btnTrainerCourseAccessRefresh">Refresh</button>
+          </form>
+          <div id="trainerCourseAccessList" class="small-margin"></div>
+          <p id="trainerCourseAccessMsg" class="inline-note"></p>
+        </div>
         <div id="courseFormCard" class="card hidden">
           <h3 id="courseFormTitle">New course</h3>
           <form id="courseForm" class="form-grid">
@@ -1024,6 +1036,10 @@
                 <label class="full">Title <input type="text" id="classroomAsgTitle" required maxlength="200" /></label>
                 <label class="full">Instructions <textarea id="classroomAsgInstructions" rows="3" maxlength="4000"></textarea></label>
                 <label>Due date <input type="date" id="classroomAsgDue" /></label>
+                <label class="full">Attachments (PDF/docs, multiple files)
+                  <input type="file" id="classroomAsgFiles" multiple />
+                </label>
+                <p class="muted small-margin full">Files are uploaded by trainer and shown under assignment for trainees.</p>
                 <div class="form-actions full">
                   <button type="submit" class="btn btn-primary" id="classroomAsgSubmit">Add assignment</button>
                   <button type="button" class="btn btn-secondary hidden" id="classroomAsgCancelEdit">Cancel edit</button>

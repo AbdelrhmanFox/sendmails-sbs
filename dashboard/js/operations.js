@@ -497,11 +497,60 @@ async function loadCoursesList() {
     </tr>`,
       )
       .join('');
+    const coursePick = document.getElementById('trainerCourseAccessCourse');
+    if (coursePick) {
+      coursePick.innerHTML =
+        '<option value="">Select course…</option>' +
+        items.map((c) => `<option value="${escapeHtml(c.course_id)}">${escapeHtml(c.course_name)} (${escapeHtml(c.course_id)})</option>`).join('');
+    }
     body.querySelectorAll('[data-edit-course]').forEach((b) =>
       b.addEventListener('click', () => openCourseForm((data.items || []).find((x) => x.id === b.getAttribute('data-edit-course')))),
     );
+    await loadTrainerCourseAccess();
   } catch (e) {
     if (info) info.textContent = e.message;
+  }
+}
+
+async function loadTrainerCourseAccess() {
+  const host = document.getElementById('trainerCourseAccessList');
+  const msg = document.getElementById('trainerCourseAccessMsg');
+  const courseId = document.getElementById('trainerCourseAccessCourse')?.value || '';
+  if (!host) return;
+  try {
+    const url = `${OPS}?resource=trainer-course-access${courseId ? `&course_id=${encodeURIComponent(courseId)}` : ''}`;
+    const data = await jsonFetch(url, { headers: getAuthHeaders() });
+    const items = data.items || [];
+    if (!items.length) {
+      host.innerHTML = '<p class="muted">No trainer mappings yet.</p>';
+    } else {
+      host.innerHTML = `<ul class="classroom-assignment-files">${items
+        .map(
+          (r) => `<li><strong>${escapeHtml(r.trainer_username)}</strong> → ${escapeHtml(r.course_id)}
+            <button type="button" class="btn btn-secondary btn-sm" data-map-del="${escapeHtml(r.id)}">Remove</button>
+          </li>`,
+        )
+        .join('')}</ul>`;
+      host.querySelectorAll('[data-map-del]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const id = btn.getAttribute('data-map-del');
+          if (!id) return;
+          try {
+            await jsonFetch(`${OPS}?resource=trainer-course-access&id=${encodeURIComponent(id)}`, {
+              method: 'DELETE',
+              headers: getAuthHeaders(),
+            });
+            await loadTrainerCourseAccess();
+          } catch (e) {
+            if (msg) msg.textContent = e.message || 'Could not remove mapping.';
+          }
+        });
+      });
+    }
+    if (msg) msg.textContent = '';
+  } catch (e) {
+    host.innerHTML = '';
+    if (msg) msg.textContent = e.message || 'Could not load mappings.';
   }
 }
 
@@ -1284,6 +1333,34 @@ export function initOperations() {
     loadCoursesList();
   });
   document.getElementById('coursesListQ')?.addEventListener('input', debounce(loadCoursesList, 300));
+  document.getElementById('trainerCourseAccessCourse')?.addEventListener('change', () => {
+    void loadTrainerCourseAccess();
+  });
+  document.getElementById('btnTrainerCourseAccessRefresh')?.addEventListener('click', () => {
+    void loadTrainerCourseAccess();
+  });
+  document.getElementById('trainerCourseAccessForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById('trainerCourseAccessMsg');
+    const courseId = document.getElementById('trainerCourseAccessCourse')?.value || '';
+    const username = document.getElementById('trainerCourseAccessUsername')?.value.trim() || '';
+    if (!courseId || !username) {
+      if (msg) msg.textContent = 'Choose course and trainer username.';
+      return;
+    }
+    try {
+      await jsonFetch(`${OPS}?resource=trainer-course-access`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ trainer_username: username, course_id: courseId }),
+      });
+      document.getElementById('trainerCourseAccessUsername').value = '';
+      await loadTrainerCourseAccess();
+      if (msg) msg.textContent = 'Mapping saved.';
+    } catch (err) {
+      if (msg) msg.textContent = err.message || 'Could not save mapping.';
+    }
+  });
   document.getElementById('btnCoursesPrev')?.addEventListener('click', () => {
     if (coursesState.page > 1) {
       coursesState.page -= 1;

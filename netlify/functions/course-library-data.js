@@ -11,10 +11,10 @@ async function assertCourseAccess(supabase, auth, courseId) {
   if (auth.role === 'admin') return { ok: true, course_id: cid };
   const uname = String(auth.username || '').trim();
   const { data: rows, error: be } = await supabase
-    .from('batches')
-    .select('batch_id')
+    .from('trainer_course_access')
+    .select('id')
     .eq('course_id', cid)
-    .eq('trainer', uname)
+    .eq('trainer_username', uname)
     .limit(1);
   if (be) return { ok: false, status: 500, error: be.message || 'Access check failed' };
   if (rows && rows.length) return { ok: true, course_id: cid };
@@ -53,9 +53,9 @@ exports.handler = async (event) => {
       if (error) return json({ error: error.message || 'Could not load courses' }, 500);
       return json({ items: items || [] });
     }
-    const { data: batches, error: be } = await supabase.from('batches').select('course_id').eq('trainer', username);
-    if (be) return json({ error: be.message || 'Could not load batches' }, 500);
-    const ids = [...new Set((batches || []).map((b) => b.course_id).filter(Boolean))];
+    const { data: maps, error: be } = await supabase.from('trainer_course_access').select('course_id').eq('trainer_username', username);
+    if (be) return json({ error: be.message || 'Could not load course access' }, 500);
+    const ids = [...new Set((maps || []).map((m) => m.course_id).filter(Boolean))];
     if (!ids.length) return json({ items: [] });
     const { data: items, error } = await supabase.from('courses').select('course_id, course_name').in('course_id', ids).order('course_name');
     if (error) return json({ error: error.message || 'Could not load courses' }, 500);

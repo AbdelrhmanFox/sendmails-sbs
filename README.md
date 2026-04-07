@@ -9,7 +9,7 @@ Internal staff dashboard for **SBS** (educational and training services). The ap
 | **Operations Data** | Workbook-driven CRUD for trainees, courses, batches, and enrollments; **Excel (.xlsx) import** in the UI and bulk upsert via `operations-data` (see below). |
 | **Email Campaigns** | n8n-powered preview, send, and status; webhook + Google Sheets integration. |
 | **Live Session Groups** | Trainers create sessions and groups; participants join with links; realtime chat (Supabase); optional **shared whiteboard** per session (Realtime broadcast, not persisted). |
-| **Trainer Classroom** | Each Operations **batch** where you are the trainer is a classroom: **assignments**, **resource links**, and **grades** per enrolled trainee (`classroom-data`; apply migration `20260407_classroom_tables.sql`). |
+| **Trainer Classroom** | Classroom includes shareable participant links, assignment submissions/review, trainer-side multi-file assignment attachments, and course-mapped access control for trainers (`classroom-data`, `public-classroom`, `classroom-assignment-upload`). |
 | **Finance** | KPIs, Chart.js visuals (revenue, payment mix, AR aging), ledger, invoices, and exports via `finance-data`. |
 | **User management** | Admin flows for listing, creating, resetting, and deleting users. |
 | **Authentication** | JWT-based login; same contracts for Netlify Functions and Vercel. |
@@ -165,7 +165,7 @@ CLI import from exported CSV remains: `npm run import:workbook`.
 
 `api/[name].js` exposes names that mirror Netlify function names, for example:
 
-`login`, `seed`, `operations-data`, `finance-data`, `training-data`, `training-sessions`, `training-join`, `training-messages`, `public-config`, `public-training-session`, `create-user`, `list-users`, `delete-user`, `reset-password`, `health-supabase`.
+`login`, `seed`, `operations-data`, `finance-data`, `training-data`, `training-sessions`, `training-join`, `training-messages`, `classroom-data`, `classroom-assignment-upload`, `public-classroom`, `public-classroom-upload`, `public-classroom-submit`, `course-library-data`, `course-library-upload`, `public-config`, `public-training-session`, `create-user`, `list-users`, `delete-user`, `reset-password`, `health-supabase`.
 
 - **Netlify:** `/.netlify/functions/<name>`
 - **Vercel:** `/api/<name>` (and rewrites from `/.netlify/functions/<name>` for compatibility)
@@ -173,6 +173,10 @@ CLI import from exported CSV remains: `npm run import:workbook`.
 Health check: `GET /api/health-supabase` on your deployed origin.
 
 **Bulk operations import:** `POST` `/.netlify/functions/operations-data?entity=<trainees|courses|batches|enrollments>&bulk=1` with JSON body `{ "items": [ { ... }, ... ] }`. Each object is coerced from workbook-style column names then upserted. Requires `Authorization: Bearer <JWT>`.
+
+**Trainer course mapping (admin/staff):** `operations-data?resource=trainer-course-access` supports `GET`, `POST`, `DELETE` for `(trainer_username, course_id)` access rows.
+
+**Assignment attachments:** Trainers upload files using signed URLs via `POST /.netlify/functions/classroom-assignment-upload`, then persist metadata with `classroom-data?resource=assignment-files`. Public classroom payload returns assignment attachments for participant download.
 
 ---
 

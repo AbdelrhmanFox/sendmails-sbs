@@ -142,10 +142,17 @@ export async function initPublicClassroom(token) {
         .map((a) => {
           const due = a.due_date ? `<p class="muted small-margin">Due ${escapeHtml(a.due_date)}</p>` : '';
           const inst = a.instructions ? `<div class="public-classroom-instructions">${escapeHtml(a.instructions)}</div>` : '';
+          const attachments = Array.isArray(a.attachments) ? a.attachments : [];
+          const atHtml = attachments.length
+            ? `<div class="public-classroom-attachments"><p class="muted small-margin"><strong>Attachments</strong></p><ul class="public-classroom-materials-ul">${attachments
+                .map((f) => `<li><a href="${escapeHtml(f.file_url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(f.title || 'Attachment')}</a></li>`)
+                .join('')}</ul></div>`
+            : '';
           return `<div class="public-classroom-item">
             <strong>${escapeHtml(a.title)}</strong>
             ${due}
             ${inst}
+            ${atHtml}
             <form class="public-submission-form" data-assignment-id="${escapeHtml(a.id)}">
               <div class="public-submission-grid">
                 <label>Name <input type="text" required class="public-submission-name" maxlength="200" /></label>

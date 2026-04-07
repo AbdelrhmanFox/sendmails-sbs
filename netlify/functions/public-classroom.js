@@ -38,6 +38,26 @@ exports.handler = async (event) => {
     .eq('batch_id', batchId)
     .order('created_at', { ascending: false });
   if (ae) return json({ error: 'Could not load assignments' }, 500);
+  const asgIds = (assignments || []).map((a) => a.id);
+  const filesByAssignment = {};
+  if (asgIds.length) {
+    const { data: afRows, error: afe } = await supabase
+      .from('classroom_assignment_files')
+      .select('id, assignment_id, title, file_url, mime_type, file_size_bytes')
+      .in('assignment_id', asgIds)
+      .order('created_at', { ascending: true });
+    if (afe) return json({ error: 'Could not load assignment files' }, 500);
+    (afRows || []).forEach((f) => {
+      if (!filesByAssignment[f.assignment_id]) filesByAssignment[f.assignment_id] = [];
+      filesByAssignment[f.assignment_id].push({
+        id: f.id,
+        title: f.title,
+        file_url: f.file_url,
+        mime_type: f.mime_type,
+        file_size_bytes: f.file_size_bytes,
+      });
+    });
+  }
 
   const { data: materials, error: me } = await supabase
     .from('classroom_materials')
@@ -88,7 +108,10 @@ exports.handler = async (event) => {
       start_date: batch.start_date,
       end_date: batch.end_date,
     },
-    assignments: assignments || [],
+    assignments: (assignments || []).map((a) => ({
+      ...a,
+      attachments: filesByAssignment[a.id] || [],
+    })),
     materials: materials || [],
     course_library,
   });

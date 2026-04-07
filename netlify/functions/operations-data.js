@@ -524,6 +524,43 @@ exports.handler = async (event) => {
   if (qResource === 'bulk-enrollments') {
     return handleBulkEnrollments(event, auth, supabase);
   }
+  if (qResource === 'trainer-course-access') {
+    if (!['admin', 'staff'].includes(auth.role)) return json({ error: 'Forbidden' }, 403);
+    if (event.httpMethod === 'GET') {
+      const courseId = String(event.queryStringParameters?.course_id || '').trim();
+      let q = supabase.from('trainer_course_access').select('id, trainer_username, course_id, created_at').order('created_at', { ascending: false });
+      if (courseId) q = q.eq('course_id', courseId);
+      const { data, error } = await q.limit(500);
+      if (error) return json({ error: error.message || 'Could not load mappings' }, 500);
+      return json({ items: data || [] });
+    }
+    if (event.httpMethod === 'POST') {
+      let body;
+      try {
+        body = JSON.parse(event.body || '{}');
+      } catch (_) {
+        return json({ error: 'Invalid JSON' }, 400);
+      }
+      const trainer = String(body.trainer_username || '').trim();
+      const courseId = String(body.course_id || '').trim();
+      if (!trainer || !courseId) return json({ error: 'trainer_username and course_id are required' }, 400);
+      const { data, error } = await supabase
+        .from('trainer_course_access')
+        .upsert({ trainer_username: trainer, course_id: courseId }, { onConflict: 'trainer_username,course_id' })
+        .select('*')
+        .single();
+      if (error) return json({ error: error.message || 'Could not save mapping' }, 500);
+      return json({ ok: true, item: data });
+    }
+    if (event.httpMethod === 'DELETE') {
+      const id = String(event.queryStringParameters?.id || '').trim();
+      if (!id) return json({ error: 'id query parameter is required' }, 400);
+      const { error } = await supabase.from('trainer_course_access').delete().eq('id', id);
+      if (error) return json({ error: error.message || 'Delete failed' }, 500);
+      return json({ ok: true });
+    }
+    return json({ error: 'Method not allowed' }, 405);
+  }
   if (qResource === 'search') {
     return handleSearch(event, auth, supabase);
   }
