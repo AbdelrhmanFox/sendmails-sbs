@@ -18,6 +18,8 @@ const HANDLERS = {
   'public-config': require('../netlify/functions/public-config').handler,
   'public-training-session': require('../netlify/functions/public-training-session').handler,
   'public-classroom': require('../netlify/functions/public-classroom').handler,
+  'public-classroom-upload': require('../netlify/functions/public-classroom-upload').handler,
+  'public-classroom-submit': require('../netlify/functions/public-classroom-submit').handler,
   'delete-user': require('../netlify/functions/delete-user').handler,
   'reset-password': require('../netlify/functions/reset-password').handler,
   'health-supabase': require('../netlify/functions/health-supabase').handler,

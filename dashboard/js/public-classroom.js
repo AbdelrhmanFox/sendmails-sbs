@@ -1,4 +1,4 @@
-import { jsonFetch } from './shared.js';
+﻿import { jsonFetch } from './shared.js';
 
 function escapeHtml(s) {
   return String(s)
@@ -6,6 +6,92 @@ function escapeHtml(s) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+async function uploadSubmissionFile(token, assignmentId, file) {
+  const meta = await jsonFetch('/.netlify/functions/public-classroom-upload', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      token,
+      assignment_id: assignmentId,
+      filename: file.name,
+      contentType: file.type || 'application/octet-stream',
+    }),
+  });
+  const headers = { 'Content-Type': file.type || 'application/octet-stream' };
+  if (meta.token) headers.Authorization = `Bearer ${meta.token}`;
+  const put = await fetch(meta.signedUrl, { method: 'PUT', headers, body: file });
+  if (!put.ok) {
+    const t = await put.text().catch(() => '');
+    throw new Error(t || `File upload failed (${put.status})`);
+  }
+  return { publicUrl: meta.publicUrl, path: meta.path };
+}
+
+function wireSubmissionForms(token) {
+  document.querySelectorAll('.public-submission-form').forEach((form) => {
+    form.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const assignmentId = String(form.getAttribute('data-assignment-id') || '').trim();
+      if (!assignmentId) return;
+
+      const msg = form.querySelector('.public-submission-msg');
+      const submitBtn = form.querySelector('.public-submission-submit');
+      const nameInput = form.querySelector('.public-submission-name');
+      const emailInput = form.querySelector('.public-submission-email');
+      const textInput = form.querySelector('.public-submission-text');
+      const fileInput = form.querySelector('.public-submission-file');
+
+      const traineeName = String(nameInput?.value || '').trim();
+      const traineeEmail = String(emailInput?.value || '').trim();
+      const submissionText = String(textInput?.value || '').trim();
+      const file = fileInput && fileInput.files && fileInput.files[0];
+
+      if (!traineeName) {
+        if (msg) msg.textContent = 'Your name is required.';
+        return;
+      }
+      if (!submissionText && !file) {
+        if (msg) msg.textContent = 'Add text/link or upload a file.';
+        return;
+      }
+
+      if (submitBtn) submitBtn.disabled = true;
+      if (msg) msg.textContent = 'Submitting...';
+
+      try {
+        let fileUrl = null;
+        let fileStorageKey = null;
+        if (file) {
+          const up = await uploadSubmissionFile(token, assignmentId, file);
+          fileUrl = up.publicUrl;
+          fileStorageKey = up.path;
+        }
+
+        const res = await jsonFetch('/.netlify/functions/public-classroom-submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            token,
+            assignment_id: assignmentId,
+            trainee_name: traineeName,
+            trainee_email: traineeEmail || null,
+            submission_text: submissionText || null,
+            file_url: fileUrl,
+            file_storage_key: fileStorageKey,
+          }),
+        });
+
+        if (msg) msg.textContent = res.updated ? 'Updated successfully.' : 'Submitted successfully.';
+        if (fileInput) fileInput.value = '';
+      } catch (err) {
+        if (msg) msg.textContent = err.message || 'Submit failed.';
+      } finally {
+        if (submitBtn) submitBtn.disabled = false;
+      }
+    });
+  });
 }
 
 /**
@@ -35,7 +121,7 @@ export async function initPublicClassroom(token) {
     msg.hidden = true;
     msg.textContent = '';
   }
-  asgHost.innerHTML = '<p class="muted">Loading…</p>';
+  asgHost.innerHTML = '<p class="muted">Loading...</p>';
   matHost.innerHTML = '';
   if (courseLibHost) courseLibHost.innerHTML = '';
   if (courseLibWrap) courseLibWrap.classList.add('hidden');
@@ -60,9 +146,26 @@ export async function initPublicClassroom(token) {
             <strong>${escapeHtml(a.title)}</strong>
             ${due}
             ${inst}
+            <form class="public-submission-form" data-assignment-id="${escapeHtml(a.id)}">
+              <div class="public-submission-grid">
+                <label>Name <input type="text" required class="public-submission-name" maxlength="200" /></label>
+                <label>Email (optional) <input type="email" class="public-submission-email" maxlength="200" /></label>
+                <label class="full">Your solution (text/link)
+                  <textarea class="public-submission-text" rows="3" maxlength="5000" placeholder="Write answer or paste links..."></textarea>
+                </label>
+                <label class="full">Attachment (optional)
+                  <input type="file" class="public-submission-file" />
+                </label>
+              </div>
+              <div class="public-submission-actions">
+                <button type="submit" class="btn btn-primary public-submission-submit">Submit solution</button>
+                <span class="inline-note public-submission-msg"></span>
+              </div>
+            </form>
           </div>`;
         })
         .join('');
+      wireSubmissionForms(token);
     }
     const cl = data.course_library;
     if (cl && courseLibHost && courseLibWrap) {

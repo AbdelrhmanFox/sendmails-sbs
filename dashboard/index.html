@@ -1013,7 +1013,7 @@
           <div class="classroom-room-tabs" role="tablist" aria-label="Classroom sections">
             <button type="button" class="btn btn-secondary classroom-tab active" id="classroomTabClasswork" role="tab" aria-selected="true" aria-controls="classroomPaneClasswork">Classwork</button>
             <button type="button" class="btn btn-secondary classroom-tab" id="classroomTabMaterials" role="tab" aria-selected="false" aria-controls="classroomPaneMaterials">Materials</button>
-            <button type="button" class="btn btn-secondary classroom-tab" id="classroomTabGrades" role="tab" aria-selected="false" aria-controls="classroomPaneGrades">Grades</button>
+            <button type="button" class="btn btn-secondary classroom-tab" id="classroomTabGrades" role="tab" aria-selected="false" aria-controls="classroomPaneGrades">Submissions</button>
           </div>
           <div id="classroomPaneClasswork" class="classroom-pane" role="tabpanel" aria-labelledby="classroomTabClasswork">
             <div id="classroomAssignmentsList" class="classroom-assignments-list"></div>
@@ -1050,24 +1050,34 @@
             <p id="classroomMaterialsMsg" class="inline-note"></p>
           </div>
           <div id="classroomPaneGrades" class="classroom-pane hidden" role="tabpanel" aria-labelledby="classroomTabGrades" hidden>
-            <label for="classroomGradeAssignmentSelect" class="classroom-grade-select-label">Assignment</label>
-            <select id="classroomGradeAssignmentSelect" class="classroom-grade-select" aria-label="Pick assignment for grading">
-              <option value="">— Create an assignment in Classwork first —</option>
-            </select>
-            <div class="table-wrap classroom-grades-wrap">
-              <table class="grades-table">
-                <thead>
-                  <tr>
-                    <th>Trainee</th>
-                    <th>Grade</th>
-                    <th>Feedback</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody id="classroomGradesBody"></tbody>
-              </table>
+            <div class="classroom-submissions-layout">
+              <section class="card classroom-submissions-board">
+                <h4>Assignments board</h4>
+                <p class="muted small-margin">Choose assignment to review trainee submissions.</p>
+                <div id="classroomSubmissionsAssignments" class="classroom-submissions-assignments"></div>
+              </section>
+              <section class="card classroom-submissions-list-wrap">
+                <h4>Submissions</h4>
+                <div id="classroomSubmissionsList" class="classroom-submissions-list"></div>
+              </section>
+              <section class="card classroom-review-panel">
+                <h4>Review</h4>
+                <p class="muted small-margin" id="classroomReviewTarget">Select a submission.</p>
+                <form id="classroomSubmissionReviewForm" class="form-grid form-grid--two">
+                  <input type="hidden" id="classroomReviewSubmissionId" value="" />
+                  <label>Grade
+                    <input type="number" id="classroomReviewGrade" step="0.01" min="0" max="9999" />
+                  </label>
+                  <label class="full">Feedback
+                    <textarea id="classroomReviewFeedback" rows="4" maxlength="2000"></textarea>
+                  </label>
+                  <div class="form-actions full">
+                    <button type="submit" class="btn btn-primary">Save review</button>
+                  </div>
+                </form>
+                <p id="classroomGradesMsg" class="inline-note"></p>
+              </section>
             </div>
-            <p id="classroomGradesMsg" class="inline-note"></p>
           </div>
         </div>
       </section>

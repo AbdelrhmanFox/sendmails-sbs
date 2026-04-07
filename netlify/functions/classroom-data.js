@@ -237,6 +237,94 @@ exports.handler = async (event) => {
     return json({ error: 'Method not allowed' }, 405);
   }
 
+  if (resource === 'submissions') {
+    const assignmentId = String(event.queryStringParameters?.assignment_id || '').trim();
+
+    if (event.httpMethod === 'GET') {
+      if (!assignmentId) return json({ error: 'assignment_id required' }, 400);
+      const { data: asg, error: ae } = await supabase.from('classroom_assignments').select('id, batch_id, title').eq('id', assignmentId).maybeSingle();
+      if (ae || !asg) return json({ error: 'Assignment not found' }, 404);
+      const gate = await assertBatchAccess(supabase, auth, asg.batch_id);
+      if (!gate.ok) return json({ error: gate.error }, gate.status);
+
+      const { data: subs, error: se } = await supabase
+        .from('classroom_assignment_submissions')
+        .select('*')
+        .eq('assignment_id', assignmentId)
+        .order('submitted_at', { ascending: false });
+      if (se) return json({ error: se.message || 'Could not load submissions' }, 500);
+
+      const ids = (subs || []).map((s) => s.id);
+      const reviewsById = {};
+      if (ids.length) {
+        const { data: revs } = await supabase.from('classroom_submission_reviews').select('*').in('submission_id', ids);
+        (revs || []).forEach((r) => {
+          reviewsById[r.submission_id] = r;
+        });
+      }
+
+      const items = (subs || []).map((s) => ({
+        ...s,
+        review: reviewsById[s.id] || null,
+      }));
+      return json({ assignment: asg, items });
+    }
+
+    if (event.httpMethod === 'PATCH') {
+      const id = String(event.queryStringParameters?.id || '').trim();
+      if (!id) return json({ error: 'id required' }, 400);
+      let body;
+      try {
+        body = JSON.parse(event.body || '{}');
+      } catch (_) {
+        return json({ error: 'Invalid JSON' }, 400);
+      }
+      const { data: sub, error: se } = await supabase
+        .from('classroom_assignment_submissions')
+        .select('id, assignment_id')
+        .eq('id', id)
+        .maybeSingle();
+      if (se || !sub) return json({ error: 'Submission not found' }, 404);
+      const { data: asg, error: ae } = await supabase.from('classroom_assignments').select('batch_id').eq('id', sub.assignment_id).maybeSingle();
+      if (ae || !asg) return json({ error: 'Assignment not found' }, 404);
+      const gate = await assertBatchAccess(supabase, auth, asg.batch_id);
+      if (!gate.ok) return json({ error: gate.error }, gate.status);
+
+      const gradeVal = body.grade;
+      const grade = gradeVal === '' || gradeVal == null ? null : Number(gradeVal);
+      if (grade != null && Number.isNaN(grade)) return json({ error: 'Invalid grade' }, 400);
+      const feedback = body.feedback != null ? String(body.feedback) : null;
+
+      const { data: review, error: re } = await supabase
+        .from('classroom_submission_reviews')
+        .upsert(
+          {
+            submission_id: id,
+            grade,
+            feedback,
+            reviewed_by: username,
+            reviewed_at: new Date().toISOString(),
+          },
+          { onConflict: 'submission_id' },
+        )
+        .select('*')
+        .single();
+      if (re) return json({ error: re.message || 'Review save failed' }, 500);
+
+      const { data: subRow, error: ue } = await supabase
+        .from('classroom_assignment_submissions')
+        .update({ status: 'reviewed', updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .select('*')
+        .single();
+      if (ue) return json({ error: ue.message || 'Submission update failed' }, 500);
+
+      return json({ ok: true, item: subRow, review });
+    }
+
+    return json({ error: 'Method not allowed' }, 405);
+  }
+
   if (resource === 'materials') {
     const batchId = String(event.queryStringParameters?.batch_id || '').trim();
 

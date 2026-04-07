@@ -7,6 +7,8 @@ let currentBatchLabel = '';
 let currentClassroomCourseId = '';
 let assignmentsCache = [];
 let materialsCache = [];
+let submissionsAssignmentId = '';
+let submissionsCache = [];
 
 function clearMaterialEditing() {
   const hid = $('classroomMatEditId');
@@ -171,6 +173,8 @@ function closeClassroomRoom() {
   currentClassroomCourseId = '';
   assignmentsCache = [];
   materialsCache = [];
+  submissionsAssignmentId = '';
+  submissionsCache = [];
   clearAssignmentEditing();
   clearMaterialEditing();
   showPanel(true);
@@ -179,6 +183,7 @@ function closeClassroomRoom() {
 async function refreshClassroomData() {
   if (!currentBatchId) return;
   await Promise.all([loadAssignmentsList(), loadMaterialsList()]);
+  await loadSubmissionsBoard();
   updateGradeAssignmentSelect();
   const sel = $('classroomGradeAssignmentSelect');
   const aid = sel && sel.value;
@@ -187,6 +192,114 @@ async function refreshClassroomData() {
     const tbody = $('classroomGradesBody');
     if (tbody) tbody.innerHTML = '';
   }
+}
+
+function renderSubmissionsList() {
+  const host = $('classroomSubmissionsList');
+  if (!host) return;
+  if (!submissionsAssignmentId) {
+    host.innerHTML = '<p class="muted">Select an assignment to view submissions.</p>';
+    return;
+  }
+  if (!submissionsCache.length) {
+    host.innerHTML = '<p class="muted">No submissions yet.</p>';
+    return;
+  }
+  host.innerHTML = submissionsCache
+    .map((s) => {
+      const status = s.status === 'reviewed' ? 'Reviewed' : 'Submitted';
+      const when = s.submitted_at ? String(s.submitted_at).replace('T', ' ').slice(0, 16) : '';
+      const file = s.file_url
+        ? `<a href="${escapeHtml(s.file_url)}" target="_blank" rel="noopener noreferrer">Open file</a>`
+        : '<span class="muted">No file</span>';
+      const snippet = s.submission_text ? `<p class="muted small-margin">${escapeHtml(String(s.submission_text).slice(0, 180))}</p>` : '';
+      return `<article class="classroom-submission-card" data-id="${escapeHtml(s.id)}">
+        <div class="classroom-submission-card-head">
+          <strong>${escapeHtml(s.trainee_name || 'Trainee')}</strong>
+          <span class="classroom-submission-status">${escapeHtml(status)}</span>
+        </div>
+        <p class="muted small-margin">${escapeHtml(s.trainee_email || '')}${when ? ` · ${escapeHtml(when)}` : ''}</p>
+        <p class="small-margin">${file}</p>
+        ${snippet}
+      </article>`;
+    })
+    .join('');
+  host.querySelectorAll('.classroom-submission-card').forEach((card) => {
+    card.addEventListener('click', () => {
+      const id = card.getAttribute('data-id');
+      const row = submissionsCache.find((x) => x.id === id);
+      if (!row) return;
+      $('classroomReviewSubmissionId').value = row.id;
+      $('classroomReviewTarget').textContent = `${row.trainee_name || 'Trainee'}${row.trainee_email ? ` (${row.trainee_email})` : ''}`;
+      $('classroomReviewGrade').value = row.review && row.review.grade != null ? String(row.review.grade) : '';
+      $('classroomReviewFeedback').value = row.review && row.review.feedback ? row.review.feedback : '';
+    });
+  });
+}
+
+async function loadSubmissionsForAssignment(assignmentId) {
+  const aid = String(assignmentId || '').trim();
+  submissionsAssignmentId = aid;
+  submissionsCache = [];
+  const msg = $('classroomGradesMsg');
+  if (!aid) {
+    renderSubmissionsList();
+    return;
+  }
+  try {
+    const data = await jsonFetch(`${CLASSROOM}?resource=submissions&assignment_id=${encodeURIComponent(aid)}`, {
+      headers: getAuthHeaders(),
+    });
+    submissionsCache = data.items || [];
+    renderSubmissionsList();
+    if (msg) msg.textContent = '';
+  } catch (e) {
+    const host = $('classroomSubmissionsList');
+    if (host) host.innerHTML = '';
+    if (msg) msg.textContent = e.message || 'Could not load submissions.';
+  }
+}
+
+async function loadSubmissionsBoard() {
+  const host = $('classroomSubmissionsAssignments');
+  if (!host) return;
+  if (!assignmentsCache.length) {
+    host.innerHTML = '<p class="muted">No assignments yet.</p>';
+    submissionsAssignmentId = '';
+    submissionsCache = [];
+    renderSubmissionsList();
+    return;
+  }
+  host.innerHTML = assignmentsCache
+    .map((a) => {
+      const on = submissionsAssignmentId === a.id;
+      const due = a.due_date ? `Due ${escapeHtml(a.due_date)}` : 'No due date';
+      return `<button type="button" class="classroom-submissions-asg ${on ? 'active' : ''}" data-id="${escapeHtml(a.id)}">
+        <strong>${escapeHtml(a.title)}</strong>
+        <span class="muted">${due}</span>
+      </button>`;
+    })
+    .join('');
+  host.querySelectorAll('.classroom-submissions-asg').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const aid = btn.getAttribute('data-id');
+      host.querySelectorAll('.classroom-submissions-asg').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      $('classroomReviewSubmissionId').value = '';
+      $('classroomReviewTarget').textContent = 'Select a submission.';
+      $('classroomSubmissionReviewForm')?.reset();
+      void loadSubmissionsForAssignment(aid);
+    });
+  });
+  if (!submissionsAssignmentId && assignmentsCache[0]) {
+    const first = assignmentsCache[0].id;
+    submissionsAssignmentId = first;
+    const firstBtn = host.querySelector(`.classroom-submissions-asg[data-id="${first}"]`);
+    if (firstBtn) firstBtn.classList.add('active');
+    await loadSubmissionsForAssignment(first);
+    return;
+  }
+  if (submissionsAssignmentId) await loadSubmissionsForAssignment(submissionsAssignmentId);
 }
 
 function updateGradeAssignmentSelect() {
@@ -500,6 +613,29 @@ export function initClassroom() {
   });
 
   $('classroomMatCancelEdit')?.addEventListener('click', () => clearMaterialEditing());
+
+  $('classroomSubmissionReviewForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = String($('classroomReviewSubmissionId')?.value || '').trim();
+    if (!id) return;
+    const gradeVal = String($('classroomReviewGrade')?.value || '').trim();
+    const feedback = String($('classroomReviewFeedback')?.value || '');
+    const msg = $('classroomGradesMsg');
+    try {
+      await jsonFetch(`${CLASSROOM}?resource=submissions&id=${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          grade: gradeVal === '' ? null : gradeVal,
+          feedback: feedback || null,
+        }),
+      });
+      if (msg) msg.textContent = 'Review saved.';
+      if (submissionsAssignmentId) await loadSubmissionsForAssignment(submissionsAssignmentId);
+    } catch (err) {
+      if (msg) msg.textContent = err.message || 'Could not save review.';
+    }
+  });
 
   $('classroomGradeAssignmentSelect')?.addEventListener('change', (ev) => {
     const aid = String(ev.target.value || '').trim();
