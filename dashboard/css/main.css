@@ -660,6 +660,41 @@ body.participant-join .main {
 
 .sidebar-footer { margin-top: auto; display: grid; gap: 10px; }
 
+.sidebar-change-password {
+  border-radius: var(--brand-radius-dense);
+  border: 1px solid color-mix(in oklab, var(--brand-border) 45%, transparent);
+  background: color-mix(in oklab, var(--brand-surface-2) 50%, transparent);
+  padding: 8px 10px;
+}
+.sidebar-change-password > summary {
+  list-style: none;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--brand-muted);
+  user-select: none;
+}
+.sidebar-change-password > summary::-webkit-details-marker { display: none; }
+.sidebar-change-password[open] > summary { color: var(--brand-primary); margin-bottom: 8px; }
+.sidebar-change-password__form label {
+  font-size: 11px;
+  margin-bottom: 4px;
+}
+.sidebar-change-password__form input {
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+}
+.sidebar-change-password__form .btn-sm {
+  margin-top: 4px;
+  padding: 8px 12px;
+  font-size: 12px;
+}
+.sidebar-change-password__form .inline-note {
+  margin-top: 8px;
+  font-size: 11px;
+}
+
 .main {
   grid-column: 2;
   grid-row: 2;

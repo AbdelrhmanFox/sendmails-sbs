@@ -197,6 +197,19 @@
       </div>
       <div class="sidebar-footer">
         <div id="loggedInUser" class="muted"></div>
+        <details class="sidebar-change-password hidden" id="changePasswordWrap">
+          <summary class="sidebar-change-password__summary">Change password</summary>
+          <form id="changePasswordForm" class="sidebar-change-password__form">
+            <label for="changePasswordCurrent">Current password</label>
+            <input type="password" id="changePasswordCurrent" autocomplete="current-password" required />
+            <label for="changePasswordNew">New password</label>
+            <input type="password" id="changePasswordNew" autocomplete="new-password" minlength="4" required />
+            <label for="changePasswordConfirm">Confirm new password</label>
+            <input type="password" id="changePasswordConfirm" autocomplete="new-password" minlength="4" required />
+            <button type="submit" class="btn btn-secondary btn-block btn-sm" id="btnChangePasswordSubmit">Update password</button>
+            <p id="changePasswordMsg" class="inline-note" role="status"></p>
+          </form>
+        </details>
         <button type="button" id="btnLogout" class="btn btn-secondary btn-block">Log out</button>
       </div>
     </aside>
@@ -1039,10 +1052,10 @@
                   <label class="full">Title <input type="text" id="classroomAsgTitle" required maxlength="200" /></label>
                   <label class="full">Instructions <textarea id="classroomAsgInstructions" rows="3" maxlength="4000"></textarea></label>
                   <label>Due date <input type="date" id="classroomAsgDue" /></label>
-                  <label class="full">Attachments (PDF/docs, multiple files)
-                    <input type="file" id="classroomAsgFiles" multiple />
+                  <label class="full">Attachments (PDF, Office, video, audio — multiple files, max 100 MB each)
+                    <input type="file" id="classroomAsgFiles" multiple accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.mp4,.webm,.mov,.mkv,.avi,.m4v,.mp3,.wav,.m4a,.aac,.ogg,.flac" />
                   </label>
-                  <p class="muted small-margin full">Files are uploaded by trainer and shown to trainees under the assignment.</p>
+                  <p class="muted small-margin full">Same file types as trainee submissions; see README for the full list.</p>
                   <div class="form-actions full">
                     <button type="submit" class="btn btn-primary" id="classroomAsgSubmit">Add assignment</button>
                     <button type="button" class="btn btn-ghost hidden" id="classroomAsgCancelEdit">Cancel edit</button>

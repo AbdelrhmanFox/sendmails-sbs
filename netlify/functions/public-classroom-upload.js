@@ -1,5 +1,6 @@
 ﻿const crypto = require('crypto');
 const { cors, json, getSupabaseServiceClient, getSupabaseApiUrl } = require('../lib/_shared');
+const { validateClassroomUpload } = require('../lib/classroom-upload-allowlist');
 
 async function resolveAssignmentByToken(supabase, token, assignmentId) {
   const tok = String(token || '').trim();
@@ -45,6 +46,9 @@ exports.handler = async (event) => {
   if (!gate.ok) return json({ error: gate.error }, gate.status);
 
   const filename = safeFilename(body.filename);
+  const typeCheck = validateClassroomUpload(filename, body.contentType);
+  if (!typeCheck.ok) return json({ error: typeCheck.error }, 400);
+
   const objectPath = `${gate.assignment.id}/${crypto.randomUUID()}_${filename}`;
 
   const { data, error } = await supabase.storage.from('classroom-submissions').createSignedUploadUrl(objectPath);

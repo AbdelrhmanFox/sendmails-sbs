@@ -1,5 +1,6 @@
 ﻿const crypto = require('crypto');
 const { cors, json, getSupabaseServiceClient, getSupabaseApiUrl, verifyAuth } = require('../lib/_shared');
+const { validateClassroomUpload } = require('../lib/classroom-upload-allowlist');
 
 const TRAINER_ROLES = ['admin', 'trainer'];
 
@@ -53,6 +54,9 @@ exports.handler = async (event) => {
   if (!gate.ok) return json({ error: gate.error }, gate.status);
 
   const filename = safeFilename(body.filename);
+  const typeCheck = validateClassroomUpload(filename, body.contentType);
+  if (!typeCheck.ok) return json({ error: typeCheck.error }, 400);
+
   const objectPath = `${gate.assignment.id}/${crypto.randomUUID()}_${filename}`;
   const { data, error } = await supabase.storage.from('classroom-assignment-files').createSignedUploadUrl(objectPath);
   if (error) return json({ error: error.message || 'Could not create upload URL' }, 500);

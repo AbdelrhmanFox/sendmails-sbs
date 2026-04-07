@@ -24,6 +24,7 @@ const HANDLERS = {
   'classroom-assignment-upload': require('../netlify/functions/classroom-assignment-upload').handler,
   'delete-user': require('../netlify/functions/delete-user').handler,
   'reset-password': require('../netlify/functions/reset-password').handler,
+  'change-password': require('../netlify/functions/change-password').handler,
   'health-supabase': require('../netlify/functions/health-supabase').handler,
   'classroom-data': require('../netlify/functions/classroom-data').handler,
   'course-library-data': require('../netlify/functions/course-library-data').handler,

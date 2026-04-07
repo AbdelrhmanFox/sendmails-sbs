@@ -6,6 +6,7 @@ import {
   authRole,
   authUsername,
   jsonFetch,
+  getAuthHeaders,
 } from './shared.js';
 import { showLogin, showApp, applyRoleVisibility, initShell } from './nav.js';
 import { initCampaigns } from './campaigns.js';
@@ -42,6 +43,42 @@ function hasPublicTrainingJoinQuery() {
   } catch (_) {
     return false;
   }
+}
+
+function toggleChangePasswordPanel() {
+  const wrap = document.getElementById('changePasswordWrap');
+  if (!wrap) return;
+  const u = String(localStorage.getItem(AUTH_USER) || '').trim().toLowerCase();
+  if (authToken && u && u !== 'local') wrap.classList.remove('hidden');
+  else wrap.classList.add('hidden');
+}
+
+function initChangePasswordForm() {
+  const form = document.getElementById('changePasswordForm');
+  const msg = document.getElementById('changePasswordMsg');
+  if (!form) return;
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (msg) msg.textContent = '';
+    const cur = String(document.getElementById('changePasswordCurrent')?.value || '');
+    const neu = String(document.getElementById('changePasswordNew')?.value || '');
+    const conf = String(document.getElementById('changePasswordConfirm')?.value || '');
+    if (neu !== conf) {
+      if (msg) msg.textContent = 'New password and confirmation do not match.';
+      return;
+    }
+    try {
+      await jsonFetch('/.netlify/functions/change-password', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ currentPassword: cur, newPassword: neu }),
+      });
+      if (msg) msg.textContent = 'Password updated. Use your new password next login.';
+      form.reset();
+    } catch (err) {
+      if (msg) msg.textContent = err.message || 'Could not update password.';
+    }
+  });
 }
 
 function dismissAppPreloader() {
@@ -95,6 +132,7 @@ async function bootAuth() {
   }
   showApp();
   applyRoleVisibility();
+  toggleChangePasswordPanel();
   initShell();
   initCampaigns();
   initOperations();
@@ -147,5 +185,6 @@ function initLoginCharacterHero() {
   img.src = 'assets/brand/characters/hero-login.png';
 }
 initLoginCharacterHero();
+initChangePasswordForm();
 
 bootAuth();

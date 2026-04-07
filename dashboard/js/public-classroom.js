@@ -1,5 +1,10 @@
 ﻿import { jsonFetch } from './shared.js';
 
+/** Keep in sync with netlify/lib/classroom-upload-allowlist.js (ACCEPT_ATTR). */
+const PUBLIC_SUBMISSION_ACCEPT =
+  '.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,' +
+  '.mp4,.webm,.mov,.mkv,.avi,.m4v,.mp3,.wav,.m4a,.aac,.ogg,.flac';
+
 function escapeHtml(s) {
   return String(s)
     .replace(/&/g, '&amp;')
@@ -299,8 +304,9 @@ export async function initPublicClassroom(token) {
                       <textarea class="public-submission-text" rows="3" maxlength="5000" placeholder="Write answer or paste links…"></textarea>
                     </label>
                     <label class="full">Attach file (optional)
-                      <input type="file" class="public-submission-file" />
+                      <input type="file" class="public-submission-file" accept="${PUBLIC_SUBMISSION_ACCEPT}" />
                     </label>
+                    <p class="muted small-margin full" style="font-size:12px">PDF, Word, Excel, PowerPoint, text, video, or audio — max 100 MB per file.</p>
                   </div>
                   <div class="public-submission-actions">
                     <button type="submit" class="btn btn-primary public-submission-submit">Submit</button>

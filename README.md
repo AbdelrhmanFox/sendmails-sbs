@@ -12,7 +12,7 @@ Internal staff dashboard for **SBS** (educational and training services). The ap
 | **Trainer Classroom** | Classroom includes shareable participant links, assignment submissions/review, trainer-side multi-file assignment attachments, course-mapped access control for trainers, and a fully redesigned Google Classroom-inspired UI with assignment cards, badges, collapsible forms, and inline submission review (`classroom-data`, `public-classroom`, `classroom-assignment-upload`). |
 | **Finance** | KPIs, Chart.js visuals (revenue, payment mix, AR aging), ledger, invoices, and exports via `finance-data`. |
 | **User management** | Admin flows for listing, creating, resetting, and deleting users. |
-| **Authentication** | JWT-based login; same contracts for Netlify Functions and Vercel. |
+| **Authentication** | JWT-based login; same contracts for Netlify Functions and Vercel. Signed-in users can change their own password from the sidebar (`change-password`). |
 
 ## Tech stack
 
@@ -165,7 +165,7 @@ CLI import from exported CSV remains: `npm run import:workbook`.
 
 `api/[name].js` exposes names that mirror Netlify function names, for example:
 
-`login`, `seed`, `operations-data`, `finance-data`, `training-data`, `training-sessions`, `training-join`, `training-messages`, `classroom-data`, `classroom-assignment-upload`, `public-classroom`, `public-classroom-upload`, `public-classroom-submit`, `public-classroom-review`, `course-library-data`, `course-library-upload`, `public-config`, `public-training-session`, `create-user`, `list-users`, `delete-user`, `reset-password`, `health-supabase`.
+`login`, `seed`, `operations-data`, `finance-data`, `training-data`, `training-sessions`, `training-join`, `training-messages`, `classroom-data`, `classroom-assignment-upload`, `public-classroom`, `public-classroom-upload`, `public-classroom-submit`, `public-classroom-review`, `course-library-data`, `course-library-upload`, `public-config`, `public-training-session`, `create-user`, `list-users`, `delete-user`, `reset-password`, `change-password`, `health-supabase`.
 
 - **Netlify:** `/.netlify/functions/<name>`
 - **Vercel:** `/api/<name>` (and rewrites from `/.netlify/functions/<name>` for compatibility)
@@ -176,7 +176,9 @@ Health check: `GET /api/health-supabase` on your deployed origin.
 
 **Trainer course mapping (admin/staff):** `operations-data?resource=trainer-course-access` supports `GET`, `POST`, `DELETE` for `(trainer_username, course_id)` access rows.
 
-**Assignment attachments:** Trainers upload files using signed URLs via `POST /.netlify/functions/classroom-assignment-upload`, then persist metadata with `classroom-data?resource=assignment-files`. Public classroom payload returns assignment attachments for participant download.
+**Assignment attachments:** Trainers upload files using signed URLs via `POST /.netlify/functions/classroom-assignment-upload`, then persist metadata with `classroom-data?resource=assignment-files`. Public classroom payload returns assignment attachments for participant download. **Allowed file types** (trainer uploads and trainee submissions): PDF; Word, Excel, PowerPoint (incl. `.docx`/`.xlsx`/`.pptx`); plain text; common video (e.g. `.mp4`, `.webm`, `.mov`, `.mkv`, `.avi`, `.m4v`); common audio (e.g. `.mp3`, `.wav`, `.m4a`, `.aac`, `.ogg`, `.flac`). Enforcement is by extension in `netlify/lib/classroom-upload-allowlist.js`. **`classroom-submissions` bucket file size limit is 100 MB** per object (see migrations).
+
+**Change password:** Logged-in users (not the `local` fallback account) can update their own password from the dashboard sidebar. `POST /.netlify/functions/change-password` with JWT body `{ currentPassword, newPassword }`. Admins can still reset any user via `reset-password`.
 
 **Participant review lookup:** `POST /.netlify/functions/public-classroom-review` with `{ token, email }` returns that trainee email submissions in the classroom plus review details (grade, feedback, reviewed timestamp).
 
