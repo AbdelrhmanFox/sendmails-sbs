@@ -94,6 +94,52 @@ function wireSubmissionForms(token) {
   });
 }
 
+function wireReviewLookup(token) {
+  const form = document.getElementById('publicReviewLookupForm');
+  const emailInput = document.getElementById('publicReviewEmail');
+  const msg = document.getElementById('publicReviewMsg');
+  const host = document.getElementById('publicReviewResults');
+  if (!form || !emailInput || !host) return;
+  form.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const email = String(emailInput.value || '').trim().toLowerCase();
+    if (!email) return;
+    host.innerHTML = '';
+    if (msg) msg.textContent = 'Loading...';
+    try {
+      const data = await jsonFetch('/.netlify/functions/public-classroom-review', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, email }),
+      });
+      const items = data.items || [];
+      if (!items.length) {
+        host.innerHTML = '<p class="muted">No submissions found for this email in this classroom.</p>';
+      } else {
+        host.innerHTML = items
+          .map((it) => {
+            const reviewed = !!it.review;
+            const grade = reviewed && it.review.grade != null ? String(it.review.grade) : '—';
+            const feedback = reviewed && it.review.feedback ? escapeHtml(it.review.feedback) : 'No feedback yet.';
+            const reviewedAt = reviewed && it.review.reviewed_at ? String(it.review.reviewed_at).replace('T', ' ').slice(0, 16) : '';
+            const status = reviewed ? 'Reviewed' : 'Pending review';
+            return `<article class="public-classroom-item">
+              <strong>${escapeHtml(it.assignment_title || 'Assignment')}</strong>
+              <p class="muted small-margin">Status: ${escapeHtml(status)}</p>
+              <p class="small-margin"><strong>Grade:</strong> ${escapeHtml(grade)}</p>
+              <p class="small-margin"><strong>Feedback:</strong> ${feedback}</p>
+              ${reviewedAt ? `<p class="muted small-margin">Reviewed at: ${escapeHtml(reviewedAt)}</p>` : ''}
+            </article>`;
+          })
+          .join('');
+      }
+      if (msg) msg.textContent = '';
+    } catch (err) {
+      if (msg) msg.textContent = err.message || 'Could not load review.';
+    }
+  });
+}
+
 /**
  * Load read-only classroom for participants (?classroom=<token>, no auth).
  */
@@ -121,6 +167,10 @@ export async function initPublicClassroom(token) {
     msg.hidden = true;
     msg.textContent = '';
   }
+    const reviewMsg = document.getElementById('publicReviewMsg');
+    const reviewHost = document.getElementById('publicReviewResults');
+    if (reviewMsg) reviewMsg.textContent = '';
+    if (reviewHost) reviewHost.innerHTML = '';
   asgHost.innerHTML = '<p class="muted">Loading...</p>';
   matHost.innerHTML = '';
   if (courseLibHost) courseLibHost.innerHTML = '';
@@ -174,6 +224,7 @@ export async function initPublicClassroom(token) {
         .join('');
       wireSubmissionForms(token);
     }
+    wireReviewLookup(token);
     const cl = data.course_library;
     if (cl && courseLibHost && courseLibWrap) {
       const hasCh = (cl.chapters || []).some((ch) => (ch.materials || []).length);

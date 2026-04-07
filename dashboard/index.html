@@ -1173,6 +1173,22 @@
           <h3>Classwork</h3>
           <div id="publicClassroomAssignments" class="public-classroom-body"></div>
         </div>
+        <div class="card public-classroom-block">
+          <h3>My review</h3>
+          <p class="muted small-margin">Enter the same email used when submitting the assignment.</p>
+          <form id="publicReviewLookupForm" class="public-submission-form">
+            <div class="public-submission-grid">
+              <label>Email
+                <input type="email" id="publicReviewEmail" required maxlength="200" />
+              </label>
+            </div>
+            <div class="public-submission-actions">
+              <button type="submit" class="btn btn-primary">Show review</button>
+              <span class="inline-note" id="publicReviewMsg"></span>
+            </div>
+          </form>
+          <div id="publicReviewResults" class="public-classroom-body"></div>
+        </div>
         <div class="card public-classroom-block hidden" id="publicClassroomCourseLibraryWrap">
           <h3>Course content</h3>
           <p class="muted small-margin public-classroom-course-hint">Shared for this program across all runs.</p>

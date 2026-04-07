@@ -165,7 +165,7 @@ CLI import from exported CSV remains: `npm run import:workbook`.
 
 `api/[name].js` exposes names that mirror Netlify function names, for example:
 
-`login`, `seed`, `operations-data`, `finance-data`, `training-data`, `training-sessions`, `training-join`, `training-messages`, `classroom-data`, `classroom-assignment-upload`, `public-classroom`, `public-classroom-upload`, `public-classroom-submit`, `course-library-data`, `course-library-upload`, `public-config`, `public-training-session`, `create-user`, `list-users`, `delete-user`, `reset-password`, `health-supabase`.
+`login`, `seed`, `operations-data`, `finance-data`, `training-data`, `training-sessions`, `training-join`, `training-messages`, `classroom-data`, `classroom-assignment-upload`, `public-classroom`, `public-classroom-upload`, `public-classroom-submit`, `public-classroom-review`, `course-library-data`, `course-library-upload`, `public-config`, `public-training-session`, `create-user`, `list-users`, `delete-user`, `reset-password`, `health-supabase`.
 
 - **Netlify:** `/.netlify/functions/<name>`
 - **Vercel:** `/api/<name>` (and rewrites from `/.netlify/functions/<name>` for compatibility)
@@ -177,6 +177,8 @@ Health check: `GET /api/health-supabase` on your deployed origin.
 **Trainer course mapping (admin/staff):** `operations-data?resource=trainer-course-access` supports `GET`, `POST`, `DELETE` for `(trainer_username, course_id)` access rows.
 
 **Assignment attachments:** Trainers upload files using signed URLs via `POST /.netlify/functions/classroom-assignment-upload`, then persist metadata with `classroom-data?resource=assignment-files`. Public classroom payload returns assignment attachments for participant download.
+
+**Participant review lookup:** `POST /.netlify/functions/public-classroom-review` with `{ token, email }` returns that trainee email submissions in the classroom plus review details (grade, feedback, reviewed timestamp).
 
 ---
 

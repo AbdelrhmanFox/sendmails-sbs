@@ -20,6 +20,7 @@ const HANDLERS = {
   'public-classroom': require('../netlify/functions/public-classroom').handler,
   'public-classroom-upload': require('../netlify/functions/public-classroom-upload').handler,
   'public-classroom-submit': require('../netlify/functions/public-classroom-submit').handler,
+  'public-classroom-review': require('../netlify/functions/public-classroom-review').handler,
   'classroom-assignment-upload': require('../netlify/functions/classroom-assignment-upload').handler,
   'delete-user': require('../netlify/functions/delete-user').handler,
   'reset-password': require('../netlify/functions/reset-password').handler,
