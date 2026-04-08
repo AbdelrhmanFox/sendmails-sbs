@@ -1,4 +1,10 @@
-import { jsonFetch, getAuthHeaders, authUsername } from './shared.js';
+import {
+  jsonFetch,
+  getAuthHeaders,
+  authUsername,
+  DEMO_WHATSAPP_SUPPORT_NUMBER,
+  normalizePhone,
+} from './shared.js';
 
 export async function loadUsers() {
   const tbody = document.getElementById('usersTableBody');
@@ -87,7 +93,40 @@ export function setAuditPage(page) {
   auditPage = page;
 }
 
+function loadDemoSupportNumber() {
+  const input = document.getElementById('demoSupportWhatsappNumber');
+  if (!input) return;
+  input.value = localStorage.getItem(DEMO_WHATSAPP_SUPPORT_NUMBER) || '';
+}
+
+function initDemoSupportForm() {
+  const form = document.getElementById('demoSupportForm');
+  const msg = document.getElementById('demoSupportMsg');
+  const input = document.getElementById('demoSupportWhatsappNumber');
+  if (!form || !msg || !input) return;
+  loadDemoSupportNumber();
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    msg.textContent = '';
+    const normalized = normalizePhone(input.value);
+    if (!normalized) {
+      msg.textContent = 'WhatsApp number is required.';
+      return;
+    }
+    const valid = /^\+?\d{8,15}$/.test(normalized);
+    if (!valid) {
+      msg.textContent = 'Use a valid international number, e.g. +201234567890.';
+      return;
+    }
+    localStorage.setItem(DEMO_WHATSAPP_SUPPORT_NUMBER, normalized);
+    input.value = normalized;
+    msg.textContent = 'Saved.';
+    window.dispatchEvent(new CustomEvent('sbs:demo-support-number-updated'));
+  });
+}
+
 export function initAdmin() {
+  initDemoSupportForm();
   document.getElementById('createUserForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const username = String(document.getElementById('newUsername').value || '').trim();

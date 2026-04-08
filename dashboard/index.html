@@ -1502,6 +1502,21 @@
           </ul>
           <p class="muted small-margin">See <code>.env.example</code> for names. Local dev uses <code>.env</code> (gitignored).</p>
         </div>
+        <div class="card">
+          <h3>Demo support</h3>
+          <p class="muted small-margin">Set one WhatsApp number for demo issue reporting across all tabs.</p>
+          <form id="demoSupportForm" class="row">
+            <input
+              type="text"
+              id="demoSupportWhatsappNumber"
+              placeholder="+201234567890"
+              aria-label="WhatsApp support number"
+              required
+            />
+            <button type="submit" class="btn btn-primary" id="btnSaveDemoSupport">Save number</button>
+          </form>
+          <p id="demoSupportMsg" class="inline-note"></p>
+        </div>
         <form id="createUserForm" class="card row">
           <input type="text" id="newUsername" minlength="2" placeholder="New username" required />
           <input type="password" id="newPassword" minlength="4" placeholder="Password" required />
@@ -1540,6 +1555,19 @@
       </section>
     </main>
   </div>
+
+  <a
+    id="demoWhatsappCta"
+    class="demo-whatsapp-cta disabled"
+    href="#"
+    target="_blank"
+    rel="noopener noreferrer"
+    aria-disabled="true"
+    title="Support number not configured"
+  >
+    <span class="demo-whatsapp-cta__icon" aria-hidden="true">WA</span>
+    <span class="demo-whatsapp-cta__label">Report issue</span>
+  </a>
 
   <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

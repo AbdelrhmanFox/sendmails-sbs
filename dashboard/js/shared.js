@@ -1,6 +1,7 @@
 export const AUTH_TOKEN = 'sbs_token';
 export const AUTH_ROLE = 'sbs_role';
 export const AUTH_USER = 'sbs_username';
+export const DEMO_WHATSAPP_SUPPORT_NUMBER = 'sbs_demo_whatsapp_support_number';
 
 export const authToken = localStorage.getItem(AUTH_TOKEN);
 export const authRole = localStorage.getItem(AUTH_ROLE);
@@ -32,4 +33,12 @@ export const ROLE_AREAS = {
 
 export function areasForRole(role) {
   return ROLE_AREAS[role] || ROLE_AREAS.user;
+}
+
+export function normalizePhone(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  const leadPlus = raw.startsWith('+');
+  const digits = raw.replace(/\D+/g, '');
+  return (leadPlus ? '+' : '') + digits;
 }

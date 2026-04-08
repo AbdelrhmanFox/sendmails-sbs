@@ -2,6 +2,7 @@ import {
   AUTH_TOKEN,
   AUTH_ROLE,
   AUTH_USER,
+  DEMO_WHATSAPP_SUPPORT_NUMBER,
   authToken,
   authRole,
   authUsername,
@@ -19,6 +20,7 @@ import { initAdmin } from './admin.js';
 import { initFinance } from './finance.js';
 
 const loginError = document.getElementById('loginError');
+let lastDemoError = '';
 
 const loggedInUserEl = document.getElementById('loggedInUser');
 if (loggedInUserEl && authUsername) loggedInUserEl.textContent = `${authUsername} (${authRole || 'user'})`;
@@ -78,6 +80,80 @@ function initChangePasswordForm() {
     } catch (err) {
       if (msg) msg.textContent = err.message || 'Could not update password.';
     }
+  });
+}
+
+function getCurrentViewId() {
+  const active = document.querySelector('.view.active');
+  const id = active && active.id ? String(active.id) : '';
+  return id.startsWith('view-') ? id.slice(5) : id;
+}
+
+function buildDemoIssueMessage() {
+  const viewId = getCurrentViewId() || 'unknown';
+  const username = String(localStorage.getItem(AUTH_USER) || '').trim() || 'unknown';
+  const role = String(localStorage.getItem(AUTH_ROLE) || '').trim() || 'unknown';
+  const at = new Date().toISOString();
+  const lines = [
+    'I have an issue in Demo.',
+    `View: ${viewId}`,
+    `User: ${username}`,
+    `Role: ${role}`,
+    `Time: ${at}`,
+  ];
+  if (lastDemoError) lines.push(`Error: ${lastDemoError}`);
+  return lines.join('\n');
+}
+
+function updateDemoWhatsappCta() {
+  const cta = document.getElementById('demoWhatsappCta');
+  if (!cta) return;
+  const number = String(localStorage.getItem(DEMO_WHATSAPP_SUPPORT_NUMBER) || '').trim();
+  if (!number) {
+    cta.classList.add('disabled');
+    cta.setAttribute('aria-disabled', 'true');
+    cta.setAttribute('title', 'Support number not configured');
+    cta.setAttribute('href', '#');
+    return;
+  }
+  const msg = buildDemoIssueMessage();
+  const normalized = number.replace(/^\+/, '');
+  cta.classList.remove('disabled');
+  cta.setAttribute('aria-disabled', 'false');
+  cta.setAttribute('title', 'Contact demo support on WhatsApp');
+  cta.setAttribute('href', `https://wa.me/${encodeURIComponent(normalized)}?text=${encodeURIComponent(msg)}`);
+}
+
+function pulseDemoWhatsappCta(errorText) {
+  const cta = document.getElementById('demoWhatsappCta');
+  if (!cta) return;
+  if (errorText) lastDemoError = String(errorText).replace(/\s+/g, ' ').slice(0, 220);
+  updateDemoWhatsappCta();
+  cta.classList.add('attention');
+  window.setTimeout(() => cta.classList.remove('attention'), 5500);
+}
+
+function initDemoSupportCta() {
+  updateDemoWhatsappCta();
+  document.addEventListener('click', (e) => {
+    const cta = document.getElementById('demoWhatsappCta');
+    if (!cta) return;
+    if (e.target instanceof Node && cta.contains(e.target)) {
+      if (cta.classList.contains('disabled')) e.preventDefault();
+      else updateDemoWhatsappCta();
+    }
+  });
+  window.addEventListener('storage', (e) => {
+    if (e.key === DEMO_WHATSAPP_SUPPORT_NUMBER) updateDemoWhatsappCta();
+  });
+  window.addEventListener('sbs:demo-support-number-updated', () => updateDemoWhatsappCta());
+  window.addEventListener('error', (ev) => {
+    const msg = ev && ev.message ? ev.message : 'Unhandled error';
+    pulseDemoWhatsappCta(msg);
+  });
+  window.addEventListener('unhandledrejection', (ev) => {
+    const reason = ev && ev.reason ? String(ev.reason.message || ev.reason) : 'Unhandled promise rejection';
+    pulseDemoWhatsappCta(reason);
   });
 }
 
@@ -186,5 +262,6 @@ function initLoginCharacterHero() {
 }
 initLoginCharacterHero();
 initChangePasswordForm();
+initDemoSupportCta();
 
 bootAuth();
