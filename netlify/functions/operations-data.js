@@ -509,12 +509,78 @@ async function ensureBulkIds(supabase, entity, cfg, payload) {
   }
 }
 
+/** Payments reference enrollments with ON DELETE RESTRICT; remove them before enrollments. */
+async function adminDeletePaymentsForEnrollments(supabase, enrollmentInternalIds) {
+  const ids = [...new Set((enrollmentInternalIds || []).filter(Boolean))];
+  if (!ids.length) return null;
+  const { error } = await supabase.from('payments').delete().in('enrollment_uuid', ids);
+  return error ? error.message || 'Could not delete payments' : null;
+}
+
+async function adminDeleteEnrollmentByInternalId(supabase, internalId) {
+  const eid = String(internalId || '').trim();
+  if (!eid) return 'Missing id';
+  const payErr = await adminDeletePaymentsForEnrollments(supabase, [eid]);
+  if (payErr) return payErr;
+  const { error } = await supabase.from('enrollments').delete().eq('id', eid);
+  return error ? error.message || 'Could not delete enrollment' : null;
+}
+
+async function adminDeleteBatchByInternalId(supabase, internalId) {
+  const { data: batch, error: be } = await supabase.from('batches').select('id, batch_id').eq('id', internalId).maybeSingle();
+  if (be) return be.message || 'Batch lookup failed';
+  if (!batch) return 'Batch not found';
+  const { data: ens, error: ee } = await supabase.from('enrollments').select('id').eq('batch_id', batch.batch_id);
+  if (ee) return ee.message || 'Could not list enrollments';
+  const uuids = (ens || []).map((x) => x.id).filter(Boolean);
+  const payErr = await adminDeletePaymentsForEnrollments(supabase, uuids);
+  if (payErr) return payErr;
+  if (uuids.length) {
+    const { error: de } = await supabase.from('enrollments').delete().in('id', uuids);
+    if (de) return de.message || 'Could not delete enrollments';
+  }
+  const { error } = await supabase.from('batches').delete().eq('id', internalId);
+  return error ? error.message || 'Could not delete batch' : null;
+}
+
+async function adminDeleteCourseByInternalId(supabase, internalId) {
+  const { data: course, error: ce } = await supabase.from('courses').select('id, course_id').eq('id', internalId).maybeSingle();
+  if (ce) return ce.message || 'Course lookup failed';
+  if (!course) return 'Course not found';
+  const { data: batches, error: be } = await supabase.from('batches').select('id').eq('course_id', course.course_id);
+  if (be) return be.message || 'Could not list batches';
+  for (const b of batches || []) {
+    const err = await adminDeleteBatchByInternalId(supabase, b.id);
+    if (err) return err;
+  }
+  const { error } = await supabase.from('courses').delete().eq('id', internalId);
+  return error ? error.message || 'Could not delete course' : null;
+}
+
+async function adminDeleteTraineeByInternalId(supabase, internalId) {
+  const { data: t, error: te } = await supabase.from('trainees').select('id, trainee_id').eq('id', internalId).maybeSingle();
+  if (te) return te.message || 'Trainee lookup failed';
+  if (!t) return 'Trainee not found';
+  const { data: ens, error: ee } = await supabase.from('enrollments').select('id').eq('trainee_id', t.trainee_id);
+  if (ee) return ee.message || 'Could not list enrollments';
+  const uuids = (ens || []).map((x) => x.id).filter(Boolean);
+  const payErr = await adminDeletePaymentsForEnrollments(supabase, uuids);
+  if (payErr) return payErr;
+  if (uuids.length) {
+    const { error: de } = await supabase.from('enrollments').delete().in('id', uuids);
+    if (de) return de.message || 'Could not delete enrollments';
+  }
+  const { error } = await supabase.from('trainees').delete().eq('id', internalId);
+  return error ? error.message || 'Could not delete trainee' : null;
+}
+
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: cors };
   if (!['GET', 'POST', 'PUT', 'DELETE'].includes(event.httpMethod)) return json({ error: 'Method not allowed' }, 405);
 
-  const auth = verifyAuth(event);
+  let auth = verifyAuth(event);
   if (!auth) return json({ error: 'Unauthorized' }, 401);
+  auth = { ...auth, role: String(auth.role || '').trim().toLowerCase() };
   if (!['admin', 'staff', 'trainer', 'user'].includes(auth.role)) return json({ error: 'Forbidden' }, 403);
 
   const supabase = getSupabaseServiceClient();
@@ -747,9 +813,34 @@ exports.handler = async (event) => {
     }
   }
 
-  const id = String(event.queryStringParameters?.id || '').trim();
-  if (!id) return json({ error: 'id query parameter is required' }, 400);
-  const { error } = await supabase.from(cfg.table).delete().eq(cfg.idKey, id);
-  if (error) return json({ error: error.message || 'Delete failed' }, 500);
-  return json({ ok: true });
+  if (event.httpMethod === 'DELETE') {
+    if (auth.role !== 'admin') {
+      return json({ error: 'Only administrators can delete courses, batches, trainees, or enrollments' }, 403);
+    }
+    const id = String(event.queryStringParameters?.id || '').trim();
+    if (!id) return json({ error: 'id query parameter is required' }, 400);
+    if (entity === 'enrollments') {
+      const err = await adminDeleteEnrollmentByInternalId(supabase, id);
+      if (err) return json({ error: err }, 500);
+      return json({ ok: true });
+    }
+    if (entity === 'batches') {
+      const err = await adminDeleteBatchByInternalId(supabase, id);
+      if (err) return json({ error: err }, 500);
+      return json({ ok: true });
+    }
+    if (entity === 'courses') {
+      const err = await adminDeleteCourseByInternalId(supabase, id);
+      if (err) return json({ error: err }, 500);
+      return json({ ok: true });
+    }
+    if (entity === 'trainees') {
+      const err = await adminDeleteTraineeByInternalId(supabase, id);
+      if (err) return json({ error: err }, 500);
+      return json({ ok: true });
+    }
+    return json({ error: 'Delete is only supported for courses, batches, trainees, and enrollments' }, 400);
+  }
+
+  return json({ error: 'Method not allowed' }, 405);
 };

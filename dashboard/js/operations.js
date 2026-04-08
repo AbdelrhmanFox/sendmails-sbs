@@ -1,4 +1,5 @@
-import { jsonFetch, getAuthHeaders } from './shared.js';
+import { jsonFetch, getAuthHeaders, AUTH_ROLE } from './shared.js';
+import { loadClassrooms } from './classroom.js';
 
 const OPS = '/.netlify/functions/operations-data';
 const BULK_IMPORT_CHUNK = 75;
@@ -31,12 +32,22 @@ function escapeHtml(s) {
     .replace(/"/g, '&quot;');
 }
 
+function renderCardField(label, value) {
+  return `<div class="ops-mobile-card-field"><span class="ops-mobile-card-label">${escapeHtml(label)}</span><span class="ops-mobile-card-value">${escapeHtml(
+    value == null || value === '' ? '—' : value,
+  )}</span></div>`;
+}
+
 function debounce(fn, ms) {
   let t;
   return (...args) => {
     clearTimeout(t);
     t = setTimeout(() => fn(...args), ms);
   };
+}
+
+function opsIsAdmin() {
+  return (localStorage.getItem(AUTH_ROLE) || '').trim().toLowerCase() === 'admin';
 }
 
 const traineesState = { page: 1, pageSize: 20, total: 0, sort: 'created_at', dir: 'desc' };
@@ -196,6 +207,7 @@ export async function loadTraineesList() {
   const cards = document.getElementById('traineesCards');
   const info = document.getElementById('traineesPageInfo');
   if (!body) return;
+  const canDel = opsIsAdmin();
   try {
     const data = await jsonFetch(`${OPS}?${traineesQueryParams()}`, { headers: getAuthHeaders() });
     traineesState.total = data.total || 0;
@@ -218,6 +230,11 @@ export async function loadTraineesList() {
         <td>
           <button type="button" class="btn btn-secondary btn-sm" data-profile="${escapeHtml(r.id)}">Profile</button>
           <button type="button" class="btn btn-secondary btn-sm" data-edit="${escapeHtml(r.id)}">Edit</button>
+          ${
+            canDel
+              ? `<button type="button" class="btn btn-danger btn-sm" data-del-trainee="${escapeHtml(r.id)}" data-label="${escapeHtml(r.full_name || r.trainee_id || '')}">Delete</button>`
+              : ''
+          }
         </td>
       </tr>`,
       )
@@ -226,6 +243,22 @@ export async function loadTraineesList() {
       b.addEventListener('click', () => openTraineeProfile(b.getAttribute('data-profile'))),
     );
     body.querySelectorAll('[data-edit]').forEach((b) => b.addEventListener('click', () => openTraineeFormEdit(b.getAttribute('data-edit'))));
+    body.querySelectorAll('[data-del-trainee]').forEach((b) => {
+      b.addEventListener('click', async () => {
+        const id = b.getAttribute('data-del-trainee');
+        const lab = b.getAttribute('data-label') || id;
+        if (!id) return;
+        if (!confirm(`Permanently delete trainee "${lab}" and all enrollments/payments for them? This cannot be undone.`)) return;
+        try {
+          await jsonFetch(`${OPS}?entity=trainees&id=${encodeURIComponent(id)}`, { method: 'DELETE', headers: getAuthHeaders() });
+          selectedTraineeIds.delete(id);
+          await loadTraineesList();
+          void loadClassrooms();
+        } catch (e) {
+          alert(e.message || 'Delete failed');
+        }
+      });
+    });
 
     if (cards) {
       cards.innerHTML = items
@@ -233,13 +266,36 @@ export async function loadTraineesList() {
           (r) => `<article class="ops-mobile-card">
           <div class="ops-mobile-card-head"><strong>${escapeHtml(r.full_name || '')}</strong><span class="muted">${escapeHtml(r.status || '')}</span></div>
           <p class="muted">${escapeHtml(r.phone || '')} · ${escapeHtml(r.email || '')}</p>
-          <button type="button" class="btn btn-secondary btn-block" data-profile="${escapeHtml(r.id)}">View</button>
+          <div class="ops-mobile-card-actions">
+            <button type="button" class="btn btn-secondary btn-sm btn-block" data-profile="${escapeHtml(r.id)}">View</button>
+            ${
+              canDel
+                ? `<button type="button" class="btn btn-danger btn-sm btn-block" data-del-trainee="${escapeHtml(r.id)}" data-label="${escapeHtml(r.full_name || r.trainee_id || '')}">Delete</button>`
+                : ''
+            }
+          </div>
         </article>`,
         )
         .join('');
       cards.querySelectorAll('[data-profile]').forEach((b) =>
         b.addEventListener('click', () => openTraineeProfile(b.getAttribute('data-profile'))),
       );
+      cards.querySelectorAll('[data-del-trainee]').forEach((b) => {
+        b.addEventListener('click', async () => {
+          const id = b.getAttribute('data-del-trainee');
+          const lab = b.getAttribute('data-label') || id;
+          if (!id) return;
+          if (!confirm(`Permanently delete trainee "${lab}" and all enrollments/payments for them? This cannot be undone.`)) return;
+          try {
+            await jsonFetch(`${OPS}?entity=trainees&id=${encodeURIComponent(id)}`, { method: 'DELETE', headers: getAuthHeaders() });
+            selectedTraineeIds.delete(id);
+            await loadTraineesList();
+            void loadClassrooms();
+          } catch (e) {
+            alert(e.message || 'Delete failed');
+          }
+        });
+      });
     }
 
     document.getElementById('traineesSelectAll')?.addEventListener('change', (e) => {
@@ -397,7 +453,25 @@ function renderTraineeProfile() {
         </tr>`,
           )
           .join('')}
-      </tbody></table></div>`;
+      </tbody></table></div>
+      <div class="ops-cards-mobile" style="display:flex;flex-direction:column;gap:10px;margin-top:10px;">
+        ${enrollments
+          .map(
+            (r) => `<article class="ops-mobile-card">
+            <h4 class="ops-mobile-card-title">${escapeHtml(r.course_name || r.course_id || '')}</h4>
+            <div class="ops-mobile-card-grid">
+              ${renderCardField('Batch', r.batch_name || r.batch_id || '')}
+              ${renderCardField('Status', r.enrollment_status || '')}
+              ${renderCardField('Payment', r.payment_status || '')}
+              ${renderCardField('Amount', r.amount_paid ?? '')}
+            </div>
+            <div class="ops-mobile-card-actions">
+              <button type="button" class="btn btn-secondary btn-sm btn-pe" data-eid="${escapeHtml(r.id)}">Payment</button>
+            </div>
+          </article>`,
+          )
+          .join('')}
+      </div>`;
       en.querySelectorAll('.btn-pe').forEach((b) => {
         b.addEventListener('click', () => openPaymentEditor(enrollments.find((x) => x.id === b.getAttribute('data-eid'))));
       });
@@ -477,8 +551,10 @@ function coursesParams() {
 
 async function loadCoursesList() {
   const body = document.getElementById('coursesTableBody');
+  const cards = document.getElementById('coursesCards');
   const info = document.getElementById('coursesPageInfo');
   if (!body) return;
+  const canDel = opsIsAdmin();
   try {
     const data = await jsonFetch(`${OPS}?${coursesParams()}`, { headers: getAuthHeaders() });
     coursesState.total = data.total || 0;
@@ -493,7 +569,14 @@ async function loadCoursesList() {
       <td>${escapeHtml(r.delivery_type || '')}</td>
       <td>${r.price ?? ''}</td>
       <td>${escapeHtml(r.status || '')}</td>
-      <td><button type="button" class="btn btn-secondary btn-sm" data-edit-course="${escapeHtml(r.id)}">Edit</button></td>
+      <td>
+        <button type="button" class="btn btn-secondary btn-sm" data-edit-course="${escapeHtml(r.id)}">Edit</button>
+        ${
+          canDel
+            ? `<button type="button" class="btn btn-danger btn-sm" data-del-course="${escapeHtml(r.id)}" data-label="${escapeHtml(r.course_name || r.course_id)}">Delete</button>`
+            : ''
+        }
+      </td>
     </tr>`,
       )
       .join('');
@@ -506,6 +589,73 @@ async function loadCoursesList() {
     body.querySelectorAll('[data-edit-course]').forEach((b) =>
       b.addEventListener('click', () => openCourseForm((data.items || []).find((x) => x.id === b.getAttribute('data-edit-course')))),
     );
+    body.querySelectorAll('[data-del-course]').forEach((b) => {
+      b.addEventListener('click', async () => {
+        const id = b.getAttribute('data-del-course');
+        const lab = b.getAttribute('data-label') || id;
+        if (!id) return;
+        if (
+          !confirm(
+            `Delete course "${lab}" and all its batches, classroom links, enrollments, and related payments? This cannot be undone.`,
+          )
+        )
+          return;
+        try {
+          await jsonFetch(`${OPS}?entity=courses&id=${encodeURIComponent(id)}`, { method: 'DELETE', headers: getAuthHeaders() });
+          await loadCoursesList();
+          void loadClassrooms();
+        } catch (e) {
+          alert(e.message || 'Delete failed');
+        }
+      });
+    });
+    if (cards) {
+      cards.innerHTML = items
+        .map(
+          (r) => `<article class="ops-mobile-card">
+          <h4 class="ops-mobile-card-title">${escapeHtml(r.course_name || r.course_id || 'Course')}</h4>
+          <div class="ops-mobile-card-grid">
+            ${renderCardField('Course ID', r.course_id || '')}
+            ${renderCardField('Category', r.category || '')}
+            ${renderCardField('Delivery', r.delivery_type || '')}
+            ${renderCardField('Price', r.price ?? '')}
+            ${renderCardField('Status', r.status || '')}
+          </div>
+          <div class="ops-mobile-card-actions">
+            <button type="button" class="btn btn-secondary btn-sm" data-edit-course="${escapeHtml(r.id)}">Edit</button>
+            ${
+              canDel
+                ? `<button type="button" class="btn btn-danger btn-sm" data-del-course="${escapeHtml(r.id)}" data-label="${escapeHtml(r.course_name || r.course_id)}">Delete</button>`
+                : ''
+            }
+          </div>
+        </article>`,
+        )
+        .join('');
+      cards.querySelectorAll('[data-edit-course]').forEach((b) =>
+        b.addEventListener('click', () => openCourseForm((data.items || []).find((x) => x.id === b.getAttribute('data-edit-course')))),
+      );
+      cards.querySelectorAll('[data-del-course]').forEach((b) => {
+        b.addEventListener('click', async () => {
+          const id = b.getAttribute('data-del-course');
+          const lab = b.getAttribute('data-label') || id;
+          if (!id) return;
+          if (
+            !confirm(
+              `Delete course "${lab}" and all its batches, classroom links, enrollments, and related payments? This cannot be undone.`,
+            )
+          )
+            return;
+          try {
+            await jsonFetch(`${OPS}?entity=courses&id=${encodeURIComponent(id)}`, { method: 'DELETE', headers: getAuthHeaders() });
+            await loadCoursesList();
+            void loadClassrooms();
+          } catch (e) {
+            alert(e.message || 'Delete failed');
+          }
+        });
+      });
+    }
     await loadTrainerCourseAccess();
   } catch (e) {
     if (info) info.textContent = e.message;
@@ -647,8 +797,10 @@ function batchesParams() {
 
 async function loadBatchesList() {
   const body = document.getElementById('batchesTableBody');
+  const cards = document.getElementById('batchesCards');
   const info = document.getElementById('batchesPageInfo');
   if (!body) return;
+  const canDel = opsIsAdmin();
   try {
     const data = await jsonFetch(`${OPS}?${batchesParams()}`, { headers: getAuthHeaders() });
     batchesState.total = data.total || 0;
@@ -664,7 +816,14 @@ async function loadBatchesList() {
       <td>${escapeHtml(r.trainer || '')}</td>
       <td>${r.capacity ?? ''}</td>
       <td>${r.enrolled_count ?? 0}</td>
-      <td><button type="button" class="btn btn-secondary btn-sm" data-edit-batch="${escapeHtml(r.id)}">Edit</button></td>
+      <td>
+        <button type="button" class="btn btn-secondary btn-sm" data-edit-batch="${escapeHtml(r.id)}">Edit</button>
+        ${
+          canDel
+            ? `<button type="button" class="btn btn-danger btn-sm" data-del-batch="${escapeHtml(r.id)}" data-label="${escapeHtml(r.batch_name || r.batch_id)}">Delete</button>`
+            : ''
+        }
+      </td>
     </tr>`,
       )
       .join('');
@@ -676,6 +835,69 @@ async function loadBatchesList() {
         if (row) openBatchForm(row);
       });
     });
+    body.querySelectorAll('[data-del-batch]').forEach((b) => {
+      b.addEventListener('click', async () => {
+        const id = b.getAttribute('data-del-batch');
+        const lab = b.getAttribute('data-label') || id;
+        if (!id) return;
+        if (!confirm(`Delete batch "${lab}", its classroom content, enrollments, and related payments? This cannot be undone.`)) return;
+        try {
+          await jsonFetch(`${OPS}?entity=batches&id=${encodeURIComponent(id)}`, { method: 'DELETE', headers: getAuthHeaders() });
+          await loadBatchesList();
+          void loadClassrooms();
+        } catch (e) {
+          alert(e.message || 'Delete failed');
+        }
+      });
+    });
+    if (cards) {
+      cards.innerHTML = items
+        .map(
+          (r) => `<article class="ops-mobile-card">
+          <h4 class="ops-mobile-card-title">${escapeHtml(r.batch_name || r.batch_id || 'Batch')}</h4>
+          <div class="ops-mobile-card-grid">
+            ${renderCardField('Batch ID', r.batch_id || '')}
+            ${renderCardField('Course', r.course_id || '')}
+            ${renderCardField('Dates', `${r.start_date || ''} - ${r.end_date || ''}`)}
+            ${renderCardField('Trainer', r.trainer || '')}
+            ${renderCardField('Capacity', r.capacity ?? '')}
+            ${renderCardField('Enrolled', r.enrolled_count ?? 0)}
+          </div>
+          <div class="ops-mobile-card-actions">
+            <button type="button" class="btn btn-secondary btn-sm" data-edit-batch="${escapeHtml(r.id)}">Edit</button>
+            ${
+              canDel
+                ? `<button type="button" class="btn btn-danger btn-sm" data-del-batch="${escapeHtml(r.id)}" data-label="${escapeHtml(r.batch_name || r.batch_id)}">Delete</button>`
+                : ''
+            }
+          </div>
+        </article>`,
+        )
+        .join('');
+      cards.querySelectorAll('[data-edit-batch]').forEach((b) => {
+        b.addEventListener('click', async () => {
+          const id = b.getAttribute('data-edit-batch');
+          const all = await jsonFetch(`${OPS}?${batchesParams()}`, { headers: getAuthHeaders() });
+          const row = (all.items || []).find((x) => x.id === id);
+          if (row) openBatchForm(row);
+        });
+      });
+      cards.querySelectorAll('[data-del-batch]').forEach((b) => {
+        b.addEventListener('click', async () => {
+          const id = b.getAttribute('data-del-batch');
+          const lab = b.getAttribute('data-label') || id;
+          if (!id) return;
+          if (!confirm(`Delete batch "${lab}", its classroom content, enrollments, and related payments? This cannot be undone.`)) return;
+          try {
+            await jsonFetch(`${OPS}?entity=batches&id=${encodeURIComponent(id)}`, { method: 'DELETE', headers: getAuthHeaders() });
+            await loadBatchesList();
+            void loadClassrooms();
+          } catch (e) {
+            alert(e.message || 'Delete failed');
+          }
+        });
+      });
+    }
   } catch (e) {
     if (info) info.textContent = e.message;
   }
@@ -777,6 +999,7 @@ function enrollmentsParams() {
 
 async function loadEnrollmentsList() {
   const body = document.getElementById('enrollmentsTableBody');
+  const cards = document.getElementById('enrollmentsCards');
   const info = document.getElementById('enrollmentsPageInfo');
   if (!body) return;
   try {
@@ -802,6 +1025,29 @@ async function loadEnrollmentsList() {
     body.querySelectorAll('[data-pay]').forEach((b) => {
       b.addEventListener('click', () => openPaymentEditor(items.find((x) => x.id === b.getAttribute('data-pay'))));
     });
+    if (cards) {
+      cards.innerHTML = items
+        .map(
+          (r) => `<article class="ops-mobile-card">
+          <h4 class="ops-mobile-card-title">${escapeHtml(r.trainee_name || r.trainee_id || r.enrollment_id || 'Enrollment')}</h4>
+          <div class="ops-mobile-card-grid">
+            ${renderCardField('ID', r.enrollment_id || '')}
+            ${renderCardField('Course', r.course_name || r.course_id || '')}
+            ${renderCardField('Batch', r.batch_name || r.batch_id || '')}
+            ${renderCardField('Enrollment', r.enrollment_status || '')}
+            ${renderCardField('Payment', r.payment_status || '')}
+            ${renderCardField('Amount', r.amount_paid ?? '')}
+          </div>
+          <div class="ops-mobile-card-actions">
+            <button type="button" class="btn btn-secondary btn-sm" data-pay="${escapeHtml(r.id)}">Payment</button>
+          </div>
+        </article>`,
+        )
+        .join('');
+      cards.querySelectorAll('[data-pay]').forEach((b) => {
+        b.addEventListener('click', () => openPaymentEditor(items.find((x) => x.id === b.getAttribute('data-pay'))));
+      });
+    }
     document.getElementById('enrollSelectAll')?.addEventListener('change', (ev) => {
       const on = ev.target.checked;
       document.querySelectorAll('.enroll-row-check').forEach((c) => {
@@ -1269,12 +1515,40 @@ export function initOperations() {
   buildTraineeTypeCityFilters();
   bindProfileTabs();
   setupTraineeFormRefs();
+  document.getElementById('btnTraineesBulkDelete')?.classList.toggle('hidden', !opsIsAdmin());
 
   document.getElementById('btnProfileBack')?.addEventListener('click', () => goToView('operations-trainees'));
 
   document.getElementById('btnNewTrainee')?.addEventListener('click', openTraineeFormNew);
   document.getElementById('btnTraineeFormCancel')?.addEventListener('click', () => showTraineeForm(false));
   document.getElementById('traineeForm')?.addEventListener('submit', submitTraineeForm);
+  document.getElementById('btnTraineesBulkDelete')?.addEventListener('click', async () => {
+    if (!opsIsAdmin()) return;
+    const ids = [...selectedTraineeIds].filter(Boolean);
+    if (!ids.length) {
+      alert('Select at least one trainee using the checkboxes.');
+      return;
+    }
+    if (
+      !confirm(
+        `Permanently delete ${ids.length} trainee(s) and all their enrollments and related payments? This cannot be undone.`,
+      )
+    )
+      return;
+    for (const id of ids) {
+      try {
+        await jsonFetch(`${OPS}?entity=trainees&id=${encodeURIComponent(id)}`, { method: 'DELETE', headers: getAuthHeaders() });
+      } catch (e) {
+        alert(e.message || 'Delete failed');
+        break;
+      }
+    }
+    selectedTraineeIds.clear();
+    const selAll = document.getElementById('traineesSelectAll');
+    if (selAll) selAll.checked = false;
+    await loadTraineesList();
+    void loadClassrooms();
+  });
   document.getElementById('btnTraineesRefresh')?.addEventListener('click', () => {
     traineesState.page = 1;
     loadTraineesList();
@@ -1679,16 +1953,34 @@ export async function loadPipeline() {
 
 export async function loadCapacity() {
   const body = document.getElementById('capacityBody');
+  const cards = document.getElementById('capacityCards');
   const msg = document.getElementById('capacityMsg');
   if (!body) return;
   try {
     const data = await jsonFetch(`${OPS}?resource=capacity`, { headers: getAuthHeaders() });
-    body.innerHTML = (data.capacity || [])
+    const items = data.capacity || [];
+    body.innerHTML = items
       .map(
         (r) =>
           `<tr><td>${r.batch_id ?? ''}${r.batch_name ? ` · ${escapeHtml(r.batch_name)}` : ''}</td><td>${r.course_id ?? ''}</td><td>${r.capacity ?? ''}</td><td>${r.enrolled ?? ''}</td><td>${r.utilization_pct != null ? `${r.utilization_pct}%` : ''}</td></tr>`,
       )
       .join('');
+    if (cards) {
+      cards.innerHTML = items
+        .map(
+          (r) => `<article class="ops-mobile-card">
+            <h4 class="ops-mobile-card-title">${escapeHtml(r.batch_name || r.batch_id || 'Batch')}</h4>
+            <div class="ops-mobile-card-grid">
+              ${renderCardField('Batch ID', r.batch_id ?? '')}
+              ${renderCardField('Course', r.course_id ?? '')}
+              ${renderCardField('Capacity', r.capacity ?? '')}
+              ${renderCardField('Enrolled', r.enrolled ?? '')}
+              ${renderCardField('Utilization', r.utilization_pct != null ? `${r.utilization_pct}%` : '')}
+            </div>
+          </article>`,
+        )
+        .join('');
+    }
     if (msg) msg.textContent = '';
   } catch (err) {
     if (msg) msg.textContent = err.message;
