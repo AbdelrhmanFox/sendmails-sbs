@@ -263,7 +263,19 @@ async function handleEntityList(event, auth, supabase, entity, cfg) {
     } else if (entity === 'batches') {
       query = query.or(`batch_name.ilike."${pat}",batch_id.ilike."${pat}",trainer.ilike."${pat}"`);
     } else if (entity === 'enrollments') {
-      query = query.or(`enrollment_id.ilike."${pat}",trainee_id.ilike."${pat}",batch_id.ilike."${pat}"`);
+      const baseOr = `enrollment_id.ilike."${pat}",trainee_id.ilike."${pat}",batch_id.ilike."${pat}"`;
+      const { data: nameHits } = await supabase
+        .from('trainees')
+        .select('trainee_id')
+        .or(`full_name.ilike."${pat}",email.ilike."${pat}",phone.ilike."${pat}"`)
+        .limit(100);
+      const nameTids = [...new Set((nameHits || []).map((t) => t.trainee_id).filter(Boolean))];
+      if (nameTids.length) {
+        const inList = nameTids.map((tid) => `"${String(tid).replace(/"/g, '')}"`).join(',');
+        query = query.or(`${baseOr},trainee_id.in.(${inList})`);
+      } else {
+        query = query.or(baseOr);
+      }
     }
   }
 

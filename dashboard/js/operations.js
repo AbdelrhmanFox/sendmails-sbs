@@ -98,6 +98,7 @@ export function onOperationsViewChange(viewId) {
   }
   if (viewId === 'operations-enrollments') {
     fillFilterSelects();
+    void loadEnrollmentBatchFilterOptions(true);
     loadEnrollmentsList();
   }
   if (viewId === 'operations-bulk') {
@@ -817,6 +818,7 @@ async function loadBatchesList() {
       <td>${r.capacity ?? ''}</td>
       <td>${r.enrolled_count ?? 0}</td>
       <td>
+        <button type="button" class="btn btn-secondary btn-sm" data-batch-roster="${escapeHtml(r.batch_id)}">Roster</button>
         <button type="button" class="btn btn-secondary btn-sm" data-edit-batch="${escapeHtml(r.id)}">Edit</button>
         ${
           canDel
@@ -827,6 +829,12 @@ async function loadBatchesList() {
     </tr>`,
       )
       .join('');
+    body.querySelectorAll('[data-batch-roster]').forEach((b) => {
+      b.addEventListener('click', () => {
+        const bid = b.getAttribute('data-batch-roster');
+        if (bid) void openEnrollmentsForBatch(bid);
+      });
+    });
     body.querySelectorAll('[data-edit-batch]').forEach((b) => {
       b.addEventListener('click', async () => {
         const id = b.getAttribute('data-edit-batch');
@@ -864,6 +872,7 @@ async function loadBatchesList() {
             ${renderCardField('Enrolled', r.enrolled_count ?? 0)}
           </div>
           <div class="ops-mobile-card-actions">
+            <button type="button" class="btn btn-secondary btn-sm" data-batch-roster="${escapeHtml(r.batch_id)}">Roster</button>
             <button type="button" class="btn btn-secondary btn-sm" data-edit-batch="${escapeHtml(r.id)}">Edit</button>
             ${
               canDel
@@ -874,6 +883,12 @@ async function loadBatchesList() {
         </article>`,
         )
         .join('');
+      cards.querySelectorAll('[data-batch-roster]').forEach((b) => {
+        b.addEventListener('click', () => {
+          const bid = b.getAttribute('data-batch-roster');
+          if (bid) void openEnrollmentsForBatch(bid);
+        });
+      });
       cards.querySelectorAll('[data-edit-batch]').forEach((b) => {
         b.addEventListener('click', async () => {
           const id = b.getAttribute('data-edit-batch');
@@ -985,6 +1000,47 @@ async function submitBatchForm(e) {
 }
 
 /* ——— Enrollments + wizard ——— */
+async function loadEnrollmentBatchFilterOptions(preserveSelection) {
+  const sel = document.getElementById('enrollmentsFilterBatch');
+  if (!sel) return;
+  const prev = preserveSelection ? sel.value : '';
+  try {
+    const data = await jsonFetch(`${OPS}?entity=batches&page=1&pageSize=500&sort=created_at&dir=desc`, { headers: getAuthHeaders() });
+    const opts = [`<option value="">All batches</option>`].concat(
+      (data.items || []).map((b) => {
+        const lab = `${b.batch_name || b.batch_id} (${b.batch_id})`;
+        return `<option value="${escapeHtml(b.batch_id)}">${escapeHtml(lab)}</option>`;
+      }),
+    );
+    sel.innerHTML = opts.join('');
+    if (prev && [...sel.options].some((o) => o.value === prev)) sel.value = prev;
+  } catch (_) {
+    /* ignore */
+  }
+}
+
+/** Jump to Enrollments filtered to one batch (roster). */
+export async function openEnrollmentsForBatch(batchId) {
+  const bid = String(batchId || '').trim();
+  if (!bid) return;
+  const sel = document.getElementById('enrollmentsFilterBatch');
+  if (sel) {
+    if (![...sel.options].some((o) => o.value === bid)) {
+      const opt = document.createElement('option');
+      opt.value = bid;
+      opt.textContent = bid;
+      sel.appendChild(opt);
+    }
+    sel.value = bid;
+  }
+  enrollmentsState.page = 1;
+  const qInput = document.getElementById('enrollmentsListQ');
+  if (qInput) qInput.value = '';
+  goToView('operations-enrollments');
+  await loadEnrollmentBatchFilterOptions(true);
+  loadEnrollmentsList();
+}
+
 function enrollmentsParams() {
   const q = document.getElementById('enrollmentsListQ')?.value.trim() || '';
   const p = new URLSearchParams({
@@ -995,8 +1051,10 @@ function enrollmentsParams() {
     dir: 'desc',
   });
   if (q) p.set('q', q);
+  const batchId = document.getElementById('enrollmentsFilterBatch')?.value?.trim();
   const es = document.getElementById('enrollmentsFilterStatus')?.value;
   const ps = document.getElementById('enrollmentsFilterPay')?.value;
+  if (batchId) p.set('batch_id', batchId);
   if (es) p.set('enrollment_status', es);
   if (ps) p.set('payment_status', ps);
   return p.toString();
@@ -1747,8 +1805,15 @@ export function initOperations() {
   document.getElementById('wiz_course_search')?.addEventListener('input', debounce((e) => void wizSearchCourses(e.target.value.trim()), 300));
   document.getElementById('wiz_payment_status')?.addEventListener('change', wizToggleAmount);
 
-  document.getElementById('btnEnrollmentsRefresh')?.addEventListener('click', loadEnrollmentsList);
+  document.getElementById('btnEnrollmentsRefresh')?.addEventListener('click', () => {
+    void loadEnrollmentBatchFilterOptions(true);
+    loadEnrollmentsList();
+  });
   document.getElementById('enrollmentsListQ')?.addEventListener('input', debounce(loadEnrollmentsList, 300));
+  document.getElementById('enrollmentsFilterBatch')?.addEventListener('change', () => {
+    enrollmentsState.page = 1;
+    loadEnrollmentsList();
+  });
   document.getElementById('enrollmentsFilterStatus')?.addEventListener('change', loadEnrollmentsList);
   document.getElementById('enrollmentsFilterPay')?.addEventListener('change', loadEnrollmentsList);
   document.getElementById('btnEnrollmentsPrev')?.addEventListener('click', () => {
