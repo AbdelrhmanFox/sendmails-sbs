@@ -391,12 +391,22 @@ exports.handler = async (event) => {
       const title = String(body.title || '').trim();
       const url = String(body.url || '').trim();
       if (!title || !url) return json({ error: 'title and url required' }, 400);
+      const skRaw = body.storage_object_key != null ? String(body.storage_object_key).trim() : '';
       const row = {
         batch_id: bid,
         title,
         url,
         description: body.description != null ? String(body.description) : null,
         sort_order: body.sort_order != null ? Number(body.sort_order) : 0,
+        storage_object_key: skRaw || null,
+        mime_type:
+          body.mime_type != null && String(body.mime_type).trim()
+            ? String(body.mime_type).trim().slice(0, 200)
+            : null,
+        file_size_bytes:
+          body.file_size_bytes != null && body.file_size_bytes !== '' && !Number.isNaN(Number(body.file_size_bytes))
+            ? Number(body.file_size_bytes)
+            : null,
       };
       const { data, error } = await supabase.from('classroom_materials').insert(row).select('*').single();
       if (error) return json({ error: error.message || 'Insert failed' }, 500);
@@ -412,35 +422,67 @@ exports.handler = async (event) => {
       } catch (_) {
         return json({ error: 'Invalid JSON' }, 400);
       }
-      const { data: row, error: fe } = await supabase.from('classroom_materials').select('batch_id').eq('id', id).maybeSingle();
-      if (fe || !row) return json({ error: 'Material not found' }, 404);
-      const gate = await assertBatchAccess(supabase, auth, row.batch_id);
+      const { data: prev, error: fe } = await supabase.from('classroom_materials').select('*').eq('id', id).maybeSingle();
+      if (fe || !prev) return json({ error: 'Material not found' }, 404);
+      const gate = await assertBatchAccess(supabase, auth, prev.batch_id);
       if (!gate.ok) return json({ error: gate.error }, gate.status);
-      const title = String(body.title || '').trim();
-      const url = String(body.url || '').trim();
+      const title = String(body.title !== undefined ? body.title : prev.title).trim();
+      const url = String(body.url !== undefined ? body.url : prev.url).trim();
       if (!title || !url) return json({ error: 'title and url required' }, 400);
+      let newSk = prev.storage_object_key;
+      if (Object.prototype.hasOwnProperty.call(body, 'storage_object_key')) {
+        newSk = body.storage_object_key ? String(body.storage_object_key).trim() : null;
+      }
+      let description = prev.description;
+      if (body.description !== undefined) {
+        description = body.description != null ? String(body.description) : null;
+      }
       const updates = {
         title,
         url,
-        description: body.description != null ? String(body.description) : null,
+        description,
+        storage_object_key: newSk,
       };
+      if (Object.prototype.hasOwnProperty.call(body, 'mime_type')) {
+        updates.mime_type =
+          body.mime_type != null && String(body.mime_type).trim()
+            ? String(body.mime_type).trim().slice(0, 200)
+            : null;
+      }
+      if (Object.prototype.hasOwnProperty.call(body, 'file_size_bytes')) {
+        updates.file_size_bytes =
+          body.file_size_bytes != null && body.file_size_bytes !== '' && !Number.isNaN(Number(body.file_size_bytes))
+            ? Number(body.file_size_bytes)
+            : null;
+      }
       if (body.sort_order != null && !Number.isNaN(Number(body.sort_order))) {
         updates.sort_order = Number(body.sort_order);
       }
+      const oldSk = prev.storage_object_key;
       const { data, error } = await supabase.from('classroom_materials').update(updates).eq('id', id).select('*').single();
       if (error) return json({ error: error.message || 'Update failed' }, 500);
+      if (oldSk && oldSk !== newSk) {
+        await supabase.storage.from('classroom-material-files').remove([oldSk]);
+      }
       return json({ ok: true, item: data });
     }
 
     if (event.httpMethod === 'DELETE') {
       const id = String(event.queryStringParameters?.id || '').trim();
       if (!id) return json({ error: 'id required' }, 400);
-      const { data: row, error: fe } = await supabase.from('classroom_materials').select('batch_id').eq('id', id).maybeSingle();
+      const { data: row, error: fe } = await supabase
+        .from('classroom_materials')
+        .select('batch_id, storage_object_key')
+        .eq('id', id)
+        .maybeSingle();
       if (fe || !row) return json({ error: 'Material not found' }, 404);
       const gate = await assertBatchAccess(supabase, auth, row.batch_id);
       if (!gate.ok) return json({ error: gate.error }, gate.status);
       const { error } = await supabase.from('classroom_materials').delete().eq('id', id);
       if (error) return json({ error: error.message || 'Delete failed' }, 500);
+      if (row.storage_object_key) {
+        await supabase.storage.from('classroom-material-files').remove([row.storage_object_key]);
+      }
       return json({ ok: true });
     }
 

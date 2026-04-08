@@ -2,6 +2,7 @@ import { jsonFetch, getAuthHeaders } from './shared.js';
 
 const CLASSROOM = '/.netlify/functions/classroom-data';
 const CLASSROOM_UPLOAD = '/.netlify/functions/classroom-assignment-upload';
+const CLASSROOM_MATERIAL_UPLOAD = '/.netlify/functions/classroom-material-upload';
 
 let currentBatchId = '';
 let currentBatchLabel = '';
@@ -32,19 +33,41 @@ async function uploadAssignmentFile(assignmentId, file) {
   return { file_url: meta.publicUrl, file_storage_key: meta.path };
 }
 
+async function uploadClassroomMaterialFile(batchId, file) {
+  const meta = await jsonFetch(CLASSROOM_MATERIAL_UPLOAD, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({
+      batch_id: batchId,
+      filename: file.name,
+      contentType: file.type || 'application/octet-stream',
+    }),
+  });
+  const headers = { 'Content-Type': file.type || 'application/octet-stream' };
+  if (meta.token) headers.Authorization = `Bearer ${meta.token}`;
+  const put = await fetch(meta.signedUrl, { method: 'PUT', headers, body: file });
+  if (!put.ok) {
+    const t = await put.text().catch(() => '');
+    throw new Error(t || `Upload failed (${put.status})`);
+  }
+  return { publicUrl: meta.publicUrl, path: meta.path };
+}
+
 function clearMaterialEditing() {
   const hid = $('classroomMatEditId');
   if (hid) hid.value = '';
   $('classroomMaterialForm')?.reset();
+  const fIn = $('classroomMatFile');
+  if (fIn) fIn.value = '';
   const sub = $('classroomMatSubmit');
-  if (sub) sub.textContent = 'Add link';
+  if (sub) sub.textContent = 'Add resource';
   $('classroomMatCancelEdit')?.classList.add('hidden');
   const h = $('classroomMatFormHeading');
-  if (h) h.textContent = 'Add resource link';
+  if (h) h.textContent = 'Add resource';
   const panel = $('classroomMatFormPanel');
   if (panel) panel.removeAttribute('open');
   const summary = panel?.querySelector('summary');
-  if (summary) summary.textContent = '+ Add resource link';
+  if (summary) summary.textContent = '+ Add resource';
 }
 
 function clearAssignmentEditing() {
@@ -75,11 +98,13 @@ function beginMaterialEdit(m) {
   if (sub) sub.textContent = 'Save changes';
   $('classroomMatCancelEdit')?.classList.remove('hidden');
   const h = $('classroomMatFormHeading');
-  if (h) h.textContent = 'Edit resource link';
+  const fIn = $('classroomMatFile');
+  if (fIn) fIn.value = '';
+  if (h) h.textContent = 'Edit resource';
   const panel = $('classroomMatFormPanel');
   if (panel) panel.setAttribute('open', '');
   const summary = panel?.querySelector('summary');
-  if (summary) summary.textContent = 'Editing resource link';
+  if (summary) summary.textContent = 'Editing resource';
   switchClassroomTab('materials');
   setTimeout(() => t?.focus(), 50);
 }
@@ -532,7 +557,7 @@ async function loadMaterialsList() {
     if (!items.length) {
       host.innerHTML = `<li style="list-style:none"><div class="empty-state" style="padding:20px 0">
         <p class="empty-state__title">No resource links yet</p>
-        <p class="empty-state__hint">Use the form below to add links for trainees.</p>
+        <p class="empty-state__hint">Use the form below to add links or file uploads for trainees.</p>
       </div></li>`;
       if (msg) msg.textContent = '';
       return;
@@ -543,6 +568,7 @@ async function loadMaterialsList() {
           `<li class="classroom-material-row">
             <div class="classroom-material-main">
               <a href="${escapeHtml(m.url)}" target="_blank" rel="noopener noreferrer" class="classroom-mat-link">${escapeHtml(m.title)}</a>
+              ${m.storage_object_key ? ` <span class="badge badge--muted">File</span>` : ''}
               ${m.description ? `<p class="muted small-margin" style="font-size:12px">${escapeHtml(m.description)}</p>` : ''}
             </div>
             <div class="classroom-inline-actions">
@@ -683,20 +709,47 @@ export function initClassroom() {
     e.preventDefault();
     if (!currentBatchId) return;
     const title = String($('classroomMatTitle')?.value || '').trim();
-    const url = String($('classroomMatUrl')?.value || '').trim();
+    let url = String($('classroomMatUrl')?.value || '').trim();
     const description = String($('classroomMatDesc')?.value || '').trim();
-    if (!title || !url) return;
+    const fileInput = $('classroomMatFile');
+    const files = fileInput && fileInput.files ? Array.from(fileInput.files) : [];
     const editId = String($('classroomMatEditId')?.value || '').trim();
+    const msg = $('classroomMaterialsMsg');
+    if (!title) {
+      if (msg) msg.textContent = 'Title is required.';
+      return;
+    }
+    if (!files.length && !url) {
+      if (msg) msg.textContent = 'Add a URL or choose a file to upload.';
+      return;
+    }
     try {
+      let payload = {
+        title,
+        description: description || null,
+      };
+      if (files.length) {
+        const up = await uploadClassroomMaterialFile(currentBatchId, files[0]);
+        url = up.publicUrl;
+        payload.url = up.publicUrl;
+        payload.storage_object_key = up.path;
+        payload.mime_type = files[0].type || null;
+        payload.file_size_bytes = files[0].size ?? null;
+      } else {
+        payload.url = url;
+        if (editId) {
+          const m = materialsCache.find((x) => x.id === editId);
+          const prevUrl = m ? String(m.url || '').trim() : '';
+          if (m && url !== prevUrl) {
+            payload.storage_object_key = null;
+          }
+        }
+      }
       if (editId) {
         await jsonFetch(`${CLASSROOM}?resource=materials&id=${encodeURIComponent(editId)}`, {
           method: 'PATCH',
           headers: getAuthHeaders(),
-          body: JSON.stringify({
-            title,
-            url,
-            description: description || null,
-          }),
+          body: JSON.stringify(payload),
         });
         clearMaterialEditing();
       } else {
@@ -705,17 +758,16 @@ export function initClassroom() {
           headers: getAuthHeaders(),
           body: JSON.stringify({
             batch_id: currentBatchId,
-            title,
-            url,
-            description: description || null,
+            ...payload,
           }),
         });
         clearMaterialEditing();
       }
+      if (fileInput) fileInput.value = '';
       await loadMaterialsList();
-      $('classroomMaterialsMsg').textContent = '';
+      if (msg) msg.textContent = '';
     } catch (err) {
-      $('classroomMaterialsMsg').textContent = err.message || 'Failed to save link.';
+      if (msg) msg.textContent = err.message || 'Failed to save resource.';
     }
   });
 

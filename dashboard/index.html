@@ -1087,16 +1087,20 @@
           <div id="classroomPaneMaterials" class="classroom-pane hidden" role="tabpanel" aria-labelledby="classroomTabMaterials" hidden>
             <ul id="classroomMaterialsList" class="classroom-materials-list"></ul>
             <details class="form-collapse-panel" id="classroomMatFormPanel">
-              <summary>+ Add resource link</summary>
+              <summary>+ Add resource</summary>
               <div class="form-collapse-body">
-                <p class="course-library-eyebrow" id="classroomMatFormHeading" style="margin:0 0 10px">Add resource link</p>
+                <p class="course-library-eyebrow" id="classroomMatFormHeading" style="margin:0 0 10px">Add resource</p>
                 <form id="classroomMaterialForm" class="form-grid form-grid--two">
                   <input type="hidden" id="classroomMatEditId" value="" />
                   <label>Title <input type="text" id="classroomMatTitle" required maxlength="200" /></label>
-                  <label>URL <input type="url" id="classroomMatUrl" required placeholder="https://..." /></label>
+                  <label>URL <input type="url" id="classroomMatUrl" placeholder="https://… (optional if you upload a file)" /></label>
+                  <label class="full">File (optional, max 100 MB)
+                    <input type="file" id="classroomMatFile" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.mp4,.webm,.mov,.mkv,.avi,.m4v,.mp3,.wav,.m4a,.aac,.ogg,.flac" />
+                  </label>
+                  <p class="muted small-margin full" style="font-size:12px">Same file types as classwork attachments (PDF, Office, video, audio). Leave URL empty when uploading a file.</p>
                   <label class="full">Description <input type="text" id="classroomMatDesc" maxlength="500" /></label>
                   <div class="form-actions full">
-                    <button type="submit" class="btn btn-primary" id="classroomMatSubmit">Add link</button>
+                    <button type="submit" class="btn btn-primary" id="classroomMatSubmit">Add resource</button>
                     <button type="button" class="btn btn-ghost hidden" id="classroomMatCancelEdit">Cancel edit</button>
                   </div>
                 </form>
