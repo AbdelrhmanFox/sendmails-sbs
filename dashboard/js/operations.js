@@ -972,6 +972,11 @@ async function submitBatchForm(e) {
       headers: getAuthHeaders(),
       body: JSON.stringify(payload),
     });
+    if (id && payload.batch_id) {
+      document.dispatchEvent(
+        new CustomEvent('sbs:classroom-batch-updated', { detail: { batch_id: String(payload.batch_id).trim() } }),
+      );
+    }
     document.getElementById('batchFormCard')?.classList.add('hidden');
     await loadBatchesList();
   } catch (err) {

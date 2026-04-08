@@ -5,7 +5,7 @@ const TRAINER_ROLES = ['admin', 'trainer'];
 async function assertBatchAccess(supabase, auth, batchId) {
   const bid = String(batchId || '').trim();
   if (!bid) return { ok: false, status: 400, error: 'batch_id required' };
-  const { data: b, error } = await supabase.from('batches').select('batch_id, trainer, course_id').eq('batch_id', bid).maybeSingle();
+  const { data: b, error } = await supabase.from('batches').select('batch_id, batch_name, trainer, course_id').eq('batch_id', bid).maybeSingle();
   if (error) return { ok: false, status: 500, error: error.message || 'Batch lookup failed' };
   if (!b) return { ok: false, status: 404, error: 'Batch not found' };
   if (auth.role === 'admin') return { ok: true, batch: b };
@@ -96,6 +96,24 @@ exports.handler = async (event) => {
       token = ins.data.token;
     }
     return json({ token, batch_id: batchId });
+  }
+
+  if (resource === 'batch-context' && event.httpMethod === 'GET') {
+    const batchId = String(event.queryStringParameters?.batch_id || '').trim();
+    const gate = await assertBatchAccess(supabase, auth, batchId);
+    if (!gate.ok) return json({ error: gate.error }, gate.status);
+    const b = gate.batch;
+    let course_name = '';
+    if (b.course_id) {
+      const { data: crs } = await supabase.from('courses').select('course_name').eq('course_id', b.course_id).maybeSingle();
+      course_name = (crs && crs.course_name) || '';
+    }
+    return json({
+      batch_id: b.batch_id,
+      batch_name: b.batch_name || '',
+      course_id: b.course_id || '',
+      course_name,
+    });
   }
 
   if (resource === 'assignments') {

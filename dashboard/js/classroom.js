@@ -181,6 +181,41 @@ function buildParticipantShareUrl(token) {
   return `${base}?classroom=${token}`;
 }
 
+function setClassroomContextMessage(text) {
+  const el = $('classroomRoomContextMsg');
+  if (el) el.textContent = text || '';
+}
+
+/** Loads authoritative batch_name and course_id from the server (e.g. after Operations edits). */
+async function syncBatchContextFromServer() {
+  const bid = String(currentBatchId || '').trim();
+  if (!bid) return { ok: false };
+  try {
+    const data = await jsonFetch(`${CLASSROOM}?resource=batch-context&batch_id=${encodeURIComponent(bid)}`, {
+      headers: getAuthHeaders(),
+    });
+    currentClassroomCourseId = String(data.course_id || '').trim();
+    const bn = String(data.batch_name || '').trim();
+    if (bn) {
+      currentBatchLabel = bn;
+      const titleEl = $('classroomRoomTitle');
+      if (titleEl) titleEl.textContent = bn;
+    }
+    setClassroomContextMessage('');
+    $('classroomClassworkMsg').textContent = '';
+    $('classroomMaterialsMsg').textContent = '';
+    $('classroomGradesMsg').textContent = '';
+    return { ok: true };
+  } catch (e) {
+    const msg = e.message || 'Could not load batch context.';
+    setClassroomContextMessage(msg);
+    $('classroomClassworkMsg').textContent = msg;
+    $('classroomMaterialsMsg').textContent = msg;
+    $('classroomGradesMsg').textContent = msg;
+    return { ok: false, message: msg };
+  }
+}
+
 async function loadShareLink() {
   const input = $('classroomShareUrl');
   if (!input || !currentBatchId) return;
@@ -216,6 +251,7 @@ async function openClassroom(batchId, label, courseId) {
 }
 
 function closeClassroomRoom() {
+  setClassroomContextMessage('');
   currentBatchId = '';
   currentBatchLabel = '';
   currentClassroomCourseId = '';
@@ -230,6 +266,22 @@ function closeClassroomRoom() {
 
 async function refreshClassroomData() {
   if (!currentBatchId) return;
+  const sync = await syncBatchContextFromServer();
+  if (!sync.ok) {
+    assignmentsCache = [];
+    materialsCache = [];
+    assignmentFilesCache = {};
+    const asgHost = $('classroomAssignmentsList');
+    if (asgHost) asgHost.innerHTML = '';
+    const matHost = $('classroomMaterialsList');
+    if (matHost) matHost.innerHTML = '';
+    submissionsAssignmentId = '';
+    submissionsCache = [];
+    renderSubmissionsList();
+    const subAsgHost = $('classroomSubmissionsAssignments');
+    if (subAsgHost) subAsgHost.innerHTML = '';
+    return;
+  }
   await Promise.all([loadAssignmentsList(), loadMaterialsList()]);
   await loadSubmissionsBoard();
 }
@@ -553,6 +605,11 @@ function switchClassroomTab(which) {
 
 export function initClassroom() {
   $('classroomBackBtn')?.addEventListener('click', () => closeClassroomRoom());
+
+  document.addEventListener('sbs:classroom-batch-updated', (e) => {
+    const bid = e.detail && e.detail.batch_id ? String(e.detail.batch_id).trim() : '';
+    if (bid && bid === String(currentBatchId || '').trim()) void refreshClassroomData();
+  });
 
   $('classroomTabClasswork')?.addEventListener('click', () => switchClassroomTab('classwork'));
   $('classroomTabMaterials')?.addEventListener('click', () => switchClassroomTab('materials'));
