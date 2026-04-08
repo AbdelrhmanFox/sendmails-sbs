@@ -27,8 +27,9 @@ async function assertBatchAccess(supabase, auth, batchId) {
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: cors };
 
-  const auth = verifyAuth(event);
+  let auth = verifyAuth(event);
   if (!auth) return json({ error: 'Unauthorized' }, 401);
+  auth = { ...auth, role: String(auth.role || '').trim().toLowerCase() };
   if (!TRAINER_ROLES.includes(auth.role)) return json({ error: 'Trainer or admin role required' }, 403);
 
   const supabase = getSupabaseServiceClient();
@@ -38,10 +39,13 @@ exports.handler = async (event) => {
   const resource = String(event.queryStringParameters?.resource || '').trim().toLowerCase();
 
   if (resource === 'classrooms' && event.httpMethod === 'GET') {
+    // Newest batches first (created_at). Ordering only by start_date pushed rows with null/older
+    // dates past .limit(500) so new classrooms could disappear while still in the database.
     let q = supabase
       .from('batches')
       .select('batch_id, batch_name, course_id, trainer, start_date, end_date')
-      .order('start_date', { ascending: false, nullsFirst: false })
+      .order('created_at', { ascending: false })
+      .order('batch_id', { ascending: false })
       .limit(500);
     if (auth.role !== 'admin') {
       const { data: maps, error: me } = await supabase.from('trainer_course_access').select('course_id').eq('trainer_username', username);
