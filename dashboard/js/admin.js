@@ -2,14 +2,30 @@ import {
   jsonFetch,
   getAuthHeaders,
   authUsername,
-  DEMO_WHATSAPP_SUPPORT_NUMBER,
   normalizePhone,
+  COPY,
 } from './shared.js';
+
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function mobileField(label, value) {
+  return `<div class="ops-mobile-card-field"><span class="ops-mobile-card-label">${esc(label)}</span><span class="ops-mobile-card-value">${esc(
+    value == null || value === '' ? '—' : value,
+  )}</span></div>`;
+}
 
 export async function loadUsers() {
   const tbody = document.getElementById('usersTableBody');
+  const cards = document.getElementById('usersCards');
   if (!tbody) return;
   tbody.innerHTML = '';
+  if (cards) cards.innerHTML = '';
   try {
     const data = await jsonFetch('/.netlify/functions/list-users', { headers: getAuthHeaders() });
     const users = data.users || [];
@@ -26,6 +42,21 @@ export async function loadUsers() {
         `;
       tbody.appendChild(tr);
     });
+    if (cards) {
+      cards.innerHTML = users
+        .map((u) => {
+          const canDelete = u.role !== 'admin' && u.username !== authUsername;
+          return `<article class="ops-mobile-card">
+          <h4 class="ops-mobile-card-title">${esc(u.username)}</h4>
+          <div class="ops-mobile-card-grid">${mobileField('Role', u.role || '')}</div>
+          <div class="ops-mobile-card-actions">
+            <button class="btn btn-secondary btn-sm btn-reset" data-user="${esc(u.username)}">Reset password</button>
+            ${canDelete ? `<button class="btn btn-secondary btn-sm btn-del" data-user="${esc(u.username)}">Delete</button>` : ''}
+          </div>
+        </article>`;
+        })
+        .join('');
+    }
     tbody.querySelectorAll('.btn-reset').forEach((btn) => {
       btn.addEventListener('click', async () => {
         const username = btn.getAttribute('data-user');
@@ -36,7 +67,7 @@ export async function loadUsers() {
           headers: getAuthHeaders(),
           body: JSON.stringify({ username, newPassword }),
         });
-        document.getElementById('createUserMsg').textContent = 'Password updated.';
+        document.getElementById('createUserMsg').textContent = 'Password updated successfully.';
       });
     });
     tbody.querySelectorAll('.btn-del').forEach((btn) => {
@@ -60,23 +91,43 @@ let auditPage = 1;
 
 export async function loadFinanceAudit() {
   const tbody = document.getElementById('financeAuditBody');
+  const cards = document.getElementById('financeAuditCards');
   const info = document.getElementById('auditPageInfo');
   if (!tbody) return;
   const role = localStorage.getItem('sbs_role') || '';
   if (role !== 'admin') {
     tbody.innerHTML = '';
+    if (cards) cards.innerHTML = '';
     return;
   }
   try {
     const data = await jsonFetch(`/.netlify/functions/finance-data?resource=audit&page=${auditPage}&pageSize=30`, {
       headers: getAuthHeaders(),
     });
-    tbody.innerHTML = (data.items || [])
+    const items = data.items || [];
+    tbody.innerHTML = items
       .map((r) => {
         const payload = r.payload != null ? JSON.stringify(r.payload) : '';
         return `<tr><td>${r.created_at || ''}</td><td>${r.actor || ''}</td><td>${r.action || ''}</td><td>${r.entity || ''}</td><td>${r.entity_id || ''}</td><td class="audit-payload">${payload.slice(0, 200)}${payload.length > 200 ? '…' : ''}</td></tr>`;
       })
       .join('');
+    if (cards) {
+      cards.innerHTML = items
+        .map((r) => {
+          const payload = r.payload != null ? JSON.stringify(r.payload) : '';
+          return `<article class="ops-mobile-card">
+          <h4 class="ops-mobile-card-title">${esc(r.action || 'Action')}</h4>
+          <div class="ops-mobile-card-grid">
+            ${mobileField('When', r.created_at || '')}
+            ${mobileField('Actor', r.actor || '')}
+            ${mobileField('Entity', r.entity || '')}
+            ${mobileField('ID', r.entity_id || '')}
+            ${mobileField('Payload', `${payload.slice(0, 200)}${payload.length > 200 ? '…' : ''}`)}
+          </div>
+        </article>`;
+        })
+        .join('');
+    }
     const total = data.total != null ? data.total : 0;
     const pages = Math.max(1, Math.ceil(total / 30));
     if (info) info.textContent = `Page ${auditPage} of ${pages}`;
@@ -93,10 +144,16 @@ export function setAuditPage(page) {
   auditPage = page;
 }
 
-function loadDemoSupportNumber() {
+async function loadDemoSupportNumber() {
   const input = document.getElementById('demoSupportWhatsappNumber');
+  const msg = document.getElementById('demoSupportMsg');
   if (!input) return;
-  input.value = localStorage.getItem(DEMO_WHATSAPP_SUPPORT_NUMBER) || '';
+  try {
+    const data = await jsonFetch('/.netlify/functions/demo-support-config');
+    input.value = String(data.number || '').trim();
+  } catch (err) {
+    if (msg) msg.textContent = err.message || 'Could not load configuration.';
+  }
 }
 
 function initDemoSupportForm() {
@@ -104,8 +161,8 @@ function initDemoSupportForm() {
   const msg = document.getElementById('demoSupportMsg');
   const input = document.getElementById('demoSupportWhatsappNumber');
   if (!form || !msg || !input) return;
-  loadDemoSupportNumber();
-  form.addEventListener('submit', (e) => {
+  void loadDemoSupportNumber();
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
     msg.textContent = '';
     const normalized = normalizePhone(input.value);
@@ -118,10 +175,18 @@ function initDemoSupportForm() {
       msg.textContent = 'Use a valid international number, e.g. +201234567890.';
       return;
     }
-    localStorage.setItem(DEMO_WHATSAPP_SUPPORT_NUMBER, normalized);
-    input.value = normalized;
-    msg.textContent = 'Saved.';
-    window.dispatchEvent(new CustomEvent('sbs:demo-support-number-updated'));
+    try {
+      await jsonFetch('/.netlify/functions/demo-support-config', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ number: normalized }),
+      });
+      input.value = normalized;
+      msg.textContent = COPY.common.changesSaved;
+      window.dispatchEvent(new CustomEvent('sbs:demo-support-number-updated'));
+    } catch (err) {
+      msg.textContent = err.message || 'Could not save configuration.';
+    }
   });
 }
 
@@ -139,7 +204,7 @@ export function initAdmin() {
         headers: getAuthHeaders(),
         body: JSON.stringify({ username, password, role }),
       });
-      document.getElementById('createUserMsg').textContent = 'User added.';
+      document.getElementById('createUserMsg').textContent = 'User created successfully.';
       document.getElementById('createUserForm').reset();
       loadUsers();
     } catch (err) {

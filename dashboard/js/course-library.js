@@ -1,4 +1,4 @@
-import { jsonFetch, getAuthHeaders, showToast, detectFileKind, RESOURCE_UPLOAD_ACCEPT, RESOURCE_UPLOAD_MAX_MB } from './shared.js';
+import { jsonFetch, getAuthHeaders, showToast, detectFileKind, RESOURCE_UPLOAD_ACCEPT, RESOURCE_UPLOAD_MAX_MB, COPY, requiredFieldMessage, couldNotMessage } from './shared.js';
 
 const API = '/.netlify/functions/course-library-data';
 const UPLOAD_API = '/.netlify/functions/course-library-upload';
@@ -44,16 +44,16 @@ function clearMaterialForm() {
   if (hid) hid.value = '';
   $('courseLibraryMaterialForm')?.reset();
   const sub = $('courseLibraryMatSubmit');
-  if (sub) sub.textContent = 'Add link';
+  if (sub) sub.textContent = 'Create material';
   $('courseLibraryMatCancelEdit')?.classList.add('hidden');
   const h = $('courseLibraryMatHeading');
-  if (h) h.textContent = 'Add resource link';
+  if (h) h.textContent = 'Create material';
   const f = $('courseLibraryMatFile');
   if (f) f.value = '';
   const panel = $('courseLibraryMatFormPanel');
   if (panel) panel.removeAttribute('open');
   const tog = $('courseLibraryMatFormToggle');
-  if (tog) tog.textContent = '+ Add resource link';
+  if (tog) tog.textContent = '+ Create material';
 }
 
 function beginMaterialEdit(m) {
@@ -69,7 +69,7 @@ function beginMaterialEdit(m) {
   }
   $('courseLibraryMatSubmit').textContent = 'Save changes';
   $('courseLibraryMatCancelEdit')?.classList.remove('hidden');
-  $('courseLibraryMatHeading').textContent = 'Edit resource link';
+  $('courseLibraryMatHeading').textContent = 'Update material';
   const panel = $('courseLibraryMatFormPanel');
   if (panel) panel.setAttribute('open', '');
   const tog = $('courseLibraryMatFormToggle');
@@ -98,7 +98,7 @@ function fillChapterSelect(chapters, uncategorizedLabel) {
 
 function renderMaterialRows(materials) {
   if (!materials || !materials.length) {
-    return '<div class="empty-state" style="padding:24px 0"><p class="empty-state__title">No links yet</p><p class="empty-state__hint">Use the form below to add a resource link.</p></div>';
+    return '<div class="empty-state" style="padding:24px 0"><p class="empty-state__title">No materials available</p><p class="empty-state__hint">Use the form below to create a material.</p></div>';
   }
   return `<ul class="course-library-mat-list">${materials
     .map((m) => {
@@ -214,7 +214,7 @@ function renderTree(data) {
     btn.addEventListener('click', async () => {
       const id = btn.getAttribute('data-id');
       if (!id || !currentCourseId) return;
-      if (!confirm('Remove this link?')) return;
+      if (!confirm('Remove this material?')) return;
       try {
         await jsonFetch(`${API}?resource=materials&id=${encodeURIComponent(id)}`, {
           method: 'DELETE',
@@ -223,7 +223,7 @@ function renderTree(data) {
         if (String($('courseLibraryMatEditId')?.value || '') === id) clearMaterialForm();
         await loadLibrary(currentCourseId);
       } catch (e) {
-        showToast(e.message || 'Action failed.', 'error');
+        showToast(e.message || COPY.common.actionFailed, 'error');
       }
     });
   });
@@ -242,7 +242,7 @@ function renderTree(data) {
   host.querySelectorAll('.course-lib-del-ch').forEach((btn) => {
     btn.addEventListener('click', async () => {
       const id = btn.getAttribute('data-id');
-      if (!id || !confirm('Remove this chapter? Its links become uncategorized.')) return;
+      if (!id || !confirm('Remove this chapter? Its materials will become uncategorized.')) return;
       try {
         await jsonFetch(`${API}?resource=chapters&id=${encodeURIComponent(id)}`, {
           method: 'DELETE',
@@ -251,7 +251,7 @@ function renderTree(data) {
         if (selectedChapterId === id) selectedChapterId = '__uncategorized__';
         await loadLibrary(currentCourseId);
       } catch (e) {
-        showToast(e.message || 'Action failed.', 'error');
+        showToast(e.message || COPY.common.actionFailed, 'error');
       }
     });
   });
@@ -292,7 +292,7 @@ export async function loadLibrary(courseId) {
   } catch (e) {
     librarySnapshot = null;
     if (tree) tree.innerHTML = '';
-    if (msg) msg.textContent = e.message || 'Could not load library.';
+    if (msg) msg.textContent = e.message || couldNotMessage('load the library');
   }
 }
 
@@ -305,14 +305,14 @@ export async function loadCourseLibrary() {
     const items = data.items || [];
     const prev = sel.value;
     sel.innerHTML =
-      '<option value="">— Select a course —</option>' +
+      '<option value="">Select a course</option>' +
       items.map((c) => `<option value="${escapeHtml(c.course_id)}">${escapeHtml(c.course_name)} (${escapeHtml(c.course_id)})</option>`).join('');
     if (prev && items.some((c) => c.course_id === prev)) sel.value = prev;
     else if (currentCourseId && items.some((c) => c.course_id === currentCourseId)) sel.value = currentCourseId;
     if (msg) msg.textContent = '';
   } catch (e) {
-    sel.innerHTML = '<option value="">— Select a course —</option>';
-    if (msg) msg.textContent = e.message || 'Could not load courses.';
+    sel.innerHTML = '<option value="">Select a course</option>';
+    if (msg) msg.textContent = e.message || couldNotMessage('load courses');
   }
 }
 
@@ -320,7 +320,7 @@ export function initCourseLibrary() {
   const fileInput = $('courseLibraryMatFile');
   if (fileInput) fileInput.setAttribute('accept', RESOURCE_UPLOAD_ACCEPT);
   const hint = $('courseLibraryUploadHint');
-  if (hint) hint.textContent = `Allowed: PDF, Office docs, text, video, audio. Max ${RESOURCE_UPLOAD_MAX_MB} MB per file.`;
+  if (hint) hint.textContent = `Allowed file types: PDF, Office documents, text, video, and audio. Max ${RESOURCE_UPLOAD_MAX_MB} MB per file.`;
 
   $('courseLibrarySelect')?.addEventListener('change', (ev) => {
     const v = String(ev.target.value || '').trim();
@@ -341,7 +341,7 @@ export function initCourseLibrary() {
       e.target.reset();
       await loadLibrary(currentCourseId);
     } catch (err) {
-      $('courseLibraryMsg').textContent = err.message || 'Could not add chapter.';
+      $('courseLibraryMsg').textContent = err.message || couldNotMessage('create the chapter');
     }
   });
 
@@ -359,7 +359,7 @@ export function initCourseLibrary() {
       $('courseLibraryRenamePanel')?.classList.add('hidden');
       await loadLibrary(currentCourseId);
     } catch (err) {
-      $('courseLibraryMsg').textContent = err.message || 'Rename failed.';
+      $('courseLibraryMsg').textContent = err.message || couldNotMessage('rename the chapter');
     }
   });
 
@@ -384,7 +384,7 @@ export function initCourseLibrary() {
         $('courseLibraryMatUrl').value = up.publicUrl;
         pendingStorageKey = up.path;
       } catch (err) {
-        $('courseLibraryMsg').textContent = err.message || 'Upload failed.';
+        $('courseLibraryMsg').textContent = err.message || couldNotMessage('upload the file');
         return;
       }
     }
@@ -392,7 +392,7 @@ export function initCourseLibrary() {
     const currentEditItem = editId ? findMaterialById(editId) : null;
     const finalUrl = String($('courseLibraryMatUrl')?.value || '').trim() || String(currentEditItem?.url || '').trim();
     if (!title || !finalUrl) {
-      $('courseLibraryMsg').textContent = 'Title and URL are required (add a link or upload a file).';
+      $('courseLibraryMsg').textContent = `${requiredFieldMessage('Title')} URL or file upload is required.`;
       return;
     }
 
@@ -428,7 +428,7 @@ export function initCourseLibrary() {
       await loadLibrary(currentCourseId);
       $('courseLibraryMsg').textContent = '';
     } catch (err) {
-      $('courseLibraryMsg').textContent = err.message || 'Save failed.';
+      $('courseLibraryMsg').textContent = err.message || couldNotMessage('save the material');
     }
   });
 

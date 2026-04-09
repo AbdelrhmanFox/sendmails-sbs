@@ -5,6 +5,9 @@ import {
   detectFileKind,
   RESOURCE_UPLOAD_ACCEPT,
   RESOURCE_UPLOAD_MAX_MB,
+  COPY,
+  requiredFieldMessage,
+  couldNotMessage,
 } from './shared.js';
 
 const CLASSROOM = '/.netlify/functions/classroom-data';
@@ -70,14 +73,14 @@ function clearMaterialEditing() {
   const chapterSel = $('classroomMatChapterId');
   if (chapterSel) chapterSel.value = '';
   const sub = $('classroomMatSubmit');
-  if (sub) sub.textContent = 'Add resource';
+  if (sub) sub.textContent = 'Create material';
   $('classroomMatCancelEdit')?.classList.add('hidden');
   const h = $('classroomMatFormHeading');
-  if (h) h.textContent = 'Add resource';
+  if (h) h.textContent = 'Create material';
   const panel = $('classroomMatFormPanel');
   if (panel) panel.removeAttribute('open');
   const summary = panel?.querySelector('summary');
-  if (summary) summary.textContent = '+ Add resource';
+  if (summary) summary.textContent = '+ Create material';
 }
 
 function clearAssignmentEditing() {
@@ -186,7 +189,7 @@ function renderMaterialChapterChips() {
         });
         await loadMaterialsList();
       } catch (e) {
-        showToast(e.message || 'Action failed.', 'error');
+        showToast(e.message || COPY.common.actionFailed, 'error');
       }
     });
   });
@@ -315,7 +318,7 @@ async function loadShareLink() {
   } catch (e) {
     input.placeholder = '';
     input.value = '';
-    input.placeholder = e.message || 'Could not load link';
+    input.placeholder = e.message || couldNotMessage('load the share link');
   }
 }
 
@@ -456,7 +459,7 @@ async function loadSubmissionsBoard() {
   const host = $('classroomSubmissionsAssignments');
   if (!host) return;
   if (!assignmentsCache.length) {
-    host.innerHTML = '<p class="muted" style="font-size:13px">No assignments yet — add one in the Classwork tab.</p>';
+    host.innerHTML = '<p class="muted" style="font-size:13px">No assignments available. Create one in the Classwork tab.</p>';
     submissionsAssignmentId = '';
     submissionsCache = [];
     renderSubmissionsList();
@@ -540,7 +543,7 @@ async function loadAssignmentsList() {
                 (f) =>
                   `<li>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;opacity:.6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                    <a href="${escapeHtml(f.file_url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(f.title || 'Attachment')}</a>
+                    <a href="${escapeHtml(f.file_url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(f.title || 'File')}</a>
                     <button type="button" class="btn btn-ghost btn-sm classroom-del-asg-file" data-id="${escapeHtml(f.id)}" data-aid="${escapeHtml(a.id)}" title="Remove file">✕</button>
                   </li>`,
               )
@@ -570,7 +573,7 @@ async function loadAssignmentsList() {
     host.querySelectorAll('.classroom-del-asg').forEach((btn) => {
       btn.addEventListener('click', async () => {
         const id = btn.getAttribute('data-id');
-        if (!id || !confirm('Remove this assignment and its files?')) return;
+        if (!id || !confirm('Remove this assignment and all related files?')) return;
         try {
           await jsonFetch(`${CLASSROOM}?resource=assignments&id=${encodeURIComponent(id)}`, {
             method: 'DELETE',
@@ -579,7 +582,7 @@ async function loadAssignmentsList() {
           if (String($('classroomAsgEditId')?.value || '') === id) clearAssignmentEditing();
           await refreshClassroomData();
         } catch (e) {
-          showToast(e.message || 'Action failed.', 'error');
+          showToast(e.message || COPY.common.actionFailed, 'error');
         }
       });
     });
@@ -594,7 +597,7 @@ async function loadAssignmentsList() {
           });
           await loadAssignmentsList();
         } catch (e) {
-          showToast(e.message || 'Action failed.', 'error');
+          showToast(e.message || COPY.common.actionFailed, 'error');
         }
       });
     });
@@ -620,7 +623,7 @@ async function loadMaterialsList() {
     if (!items.length) {
       host.innerHTML = `<li style="list-style:none"><div class="empty-state" style="padding:20px 0">
         <p class="empty-state__title">No resource links yet</p>
-        <p class="empty-state__hint">Use the form below to add links or file uploads for trainees.</p>
+        <p class="empty-state__hint">Use the form below to create links or upload files for trainees.</p>
       </div></li>`;
       if (msg) msg.textContent = '';
       return;
@@ -649,7 +652,7 @@ async function loadMaterialsList() {
               <a href="${escapeHtml(m.url)}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm" ${m.storage_object_key ? 'download' : ''}>
                 ${m.storage_object_key ? 'Download' : 'Open'}
               </a>
-              <button type="button" class="btn btn-ghost btn-sm classroom-edit-mat" data-id="${escapeHtml(m.id)}">Edit</button>
+              <button type="button" class="btn btn-ghost btn-sm classroom-edit-mat" data-id="${escapeHtml(m.id)}">Update</button>
               <button type="button" class="btn btn-ghost btn-sm btn-danger classroom-del-mat" data-id="${escapeHtml(m.id)}">Remove</button>
             </div>
           </li>`;
@@ -688,7 +691,7 @@ async function loadMaterialsList() {
           if (String($('classroomMatEditId')?.value || '') === id) clearMaterialEditing();
           await loadMaterialsList();
         } catch (e) {
-          showToast(e.message || 'Action failed.', 'error');
+          showToast(e.message || COPY.common.actionFailed, 'error');
         }
       });
     });
@@ -727,7 +730,7 @@ export function initClassroom() {
   if (matInput) matInput.setAttribute('accept', RESOURCE_UPLOAD_ACCEPT);
   const matHint = document.querySelector('#classroomPaneMaterials .muted.small-margin.full');
   if (matHint) {
-    matHint.textContent = `Same file types as classwork attachments (PDF, Office, video, audio). You can upload multiple files at once. Leave URL empty when uploading files. Max ${RESOURCE_UPLOAD_MAX_MB} MB per file.`;
+    matHint.textContent = `Allowed file types: PDF, Office documents, video, and audio. You can upload multiple files at once. Leave URL empty when uploading files. Max ${RESOURCE_UPLOAD_MAX_MB} MB per file.`;
   }
 
   $('classroomBackBtn')?.addEventListener('click', () => closeClassroomRoom());
@@ -799,7 +802,7 @@ export function initClassroom() {
       if (fileInput) fileInput.value = '';
       await refreshClassroomData();
     } catch (err) {
-      $('classroomClassworkMsg').textContent = err.message || 'Failed to save assignment.';
+      $('classroomClassworkMsg').textContent = err.message || couldNotMessage('save the assignment');
     }
   });
 
@@ -817,17 +820,17 @@ export function initClassroom() {
     const editId = String($('classroomMatEditId')?.value || '').trim();
     const msg = $('classroomMaterialsMsg');
     if (!title) {
-      if (msg) msg.textContent = 'Title is required.';
+      if (msg) msg.textContent = requiredFieldMessage('Title');
       return;
     }
     const currentEditItem = editId ? materialsCache.find((x) => x.id === editId) : null;
     if (!files.length && !url && !currentEditItem?.url) {
-      if (msg) msg.textContent = 'Add a URL or choose a file to upload.';
+      if (msg) msg.textContent = 'URL or file upload is required.';
       return;
     }
     try {
       if (editId && files.length > 1) {
-        if (msg) msg.textContent = 'When editing, please upload one file only.';
+        if (msg) msg.textContent = 'When updating, upload one file only.';
         return;
       }
       let createdCount = 0;
@@ -899,9 +902,9 @@ export function initClassroom() {
       }
       if (fileInput) fileInput.value = '';
       await loadMaterialsList();
-      if (msg) msg.textContent = createdCount > 1 ? `${createdCount} files uploaded.` : '';
+      if (msg) msg.textContent = createdCount > 1 ? `${createdCount} files uploaded successfully.` : '';
     } catch (err) {
-      if (msg) msg.textContent = err.message || 'Failed to save resource.';
+      if (msg) msg.textContent = err.message || couldNotMessage('save the material');
     }
   });
 
@@ -921,7 +924,7 @@ export function initClassroom() {
       e.target.reset();
       await loadMaterialsList();
     } catch (err) {
-      showToast(err.message || 'Could not create session.', 'error');
+      showToast(err.message || couldNotMessage('create the session'), 'error');
     }
   });
 
@@ -941,10 +944,10 @@ export function initClassroom() {
           feedback: feedback || null,
         }),
       });
-      if (msg) msg.textContent = 'Review saved.';
+      if (msg) msg.textContent = COPY.common.changesSaved;
       if (submissionsAssignmentId) await loadSubmissionsForAssignment(submissionsAssignmentId);
     } catch (err) {
-      if (msg) msg.textContent = err.message || 'Could not save review.';
+      if (msg) msg.textContent = err.message || couldNotMessage('save the review');
     }
   });
 

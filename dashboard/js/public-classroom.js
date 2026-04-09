@@ -1,4 +1,4 @@
-﻿import { jsonFetch, detectFileKind, isDownloadResource, RESOURCE_UPLOAD_ACCEPT, RESOURCE_UPLOAD_MAX_MB } from './shared.js';
+﻿import { jsonFetch, detectFileKind, isDownloadResource, RESOURCE_UPLOAD_ACCEPT, RESOURCE_UPLOAD_MAX_MB, requiredFieldMessage, couldNotMessage } from './shared.js';
 
 function escapeHtml(s) {
   return String(s)
@@ -118,11 +118,11 @@ function wireSubmissionForms(token) {
       const file = fileInput && fileInput.files && fileInput.files[0];
 
       if (!traineeName) {
-        if (msg) msg.textContent = 'Your name is required.';
+        if (msg) msg.textContent = requiredFieldMessage('Name');
         return;
       }
       if (!submissionText && !file) {
-        if (msg) msg.textContent = 'Add text/link or upload a file.';
+        if (msg) msg.textContent = 'Submission text/link or file upload is required.';
         return;
       }
 
@@ -152,7 +152,7 @@ function wireSubmissionForms(token) {
           }),
         });
 
-        if (msg) msg.textContent = res.updated ? 'Updated successfully.' : 'Submitted!';
+        if (msg) msg.textContent = res.updated ? 'Submission updated successfully.' : 'Submission received successfully.';
         if (fileInput) fileInput.value = '';
 
         // Update badge and close details panel
@@ -162,7 +162,7 @@ function wireSubmissionForms(token) {
         const summaryEl = details?.querySelector('summary');
         if (summaryEl) summaryEl.textContent = 'Edit submission';
       } catch (err) {
-        if (msg) msg.textContent = err.message || 'Submit failed.';
+        if (msg) msg.textContent = err.message || couldNotMessage('submit your response');
       } finally {
         if (submitBtn) submitBtn.disabled = false;
       }
@@ -217,7 +217,7 @@ function wireReviewLookup(token) {
 
       if (msg) msg.textContent = items.length ? `Found ${items.length} submission${items.length > 1 ? 's' : ''}.` : 'No submissions found for this email.';
     } catch (err) {
-      if (msg) msg.textContent = err.message || 'Could not load review.';
+      if (msg) msg.textContent = err.message || couldNotMessage('load review details');
     }
   });
 }
@@ -267,7 +267,7 @@ export async function initPublicClassroom(token) {
     asgHost.innerHTML = '';
     if (matHost) matHost.innerHTML = '';
     if (courseLibHost) courseLibHost.innerHTML = '';
-    if (msg) { msg.textContent = 'Missing classroom link.'; msg.hidden = false; }
+    if (msg) { msg.textContent = requiredFieldMessage('Classroom link'); msg.hidden = false; }
     return;
   }
 
@@ -302,7 +302,7 @@ export async function initPublicClassroom(token) {
       asgHost.innerHTML = `<div class="empty-state">
         <svg class="empty-state__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12h8"/></svg>
         <p class="empty-state__title">No assignments yet</p>
-        <p class="empty-state__hint">Your trainer hasn't posted any assignments for this batch.</p>
+        <p class="empty-state__hint">No assignments have been published for this batch.</p>
       </div>`;
     } else {
       asgHost.innerHTML = assignments
@@ -334,13 +334,13 @@ export async function initPublicClassroom(token) {
             ${inst}
             ${atHtml}
             <details class="pub-asg-submit-panel">
-              <summary>Submit my answer</summary>
+              <summary>Submit response</summary>
               <div class="pub-asg-submit-body">
                 <form class="public-submission-form" data-assignment-id="${escapeHtml(a.id)}">
                   <div class="public-submission-grid">
                     <label>Name <input type="text" required class="public-submission-name" maxlength="200" placeholder="Your full name" /></label>
                     <label>Email <input type="email" class="public-submission-email" maxlength="200" placeholder="your@email.com" /></label>
-                    <label class="full">Your solution (text, link, or both)
+                    <label class="full">Response details (text, link, or both)
                       <textarea class="public-submission-text" rows="3" maxlength="5000" placeholder="Write answer or paste links…"></textarea>
                     </label>
                     <label class="full">Attach file (optional)
@@ -349,7 +349,7 @@ export async function initPublicClassroom(token) {
                     <p class="muted small-margin full" style="font-size:12px">PDF, Word, Excel, PowerPoint, text, video, or audio — max ${RESOURCE_UPLOAD_MAX_MB} MB per file.</p>
                   </div>
                   <div class="public-submission-actions">
-                    <button type="submit" class="btn btn-primary public-submission-submit">Submit</button>
+                    <button type="submit" class="btn btn-primary public-submission-submit">Submit response</button>
                     <span class="inline-note public-submission-msg"></span>
                   </div>
                 </form>
@@ -382,7 +382,7 @@ export async function initPublicClassroom(token) {
         }
         courseLibHost.innerHTML = blocks.join('');
       } else {
-        courseLibHost.innerHTML = '<p class="muted" style="font-size:13px">No course content yet.</p>';
+        courseLibHost.innerHTML = '<p class="muted" style="font-size:13px">No course materials available.</p>';
       }
     }
 
@@ -394,7 +394,7 @@ export async function initPublicClassroom(token) {
     if (metaMaterials) metaMaterials.textContent = String(materials.length || 0);
     if (matHost) {
       if (!materials.length) {
-        matHost.innerHTML = '<p class="muted" style="font-size:13px">No batch materials yet.</p>';
+        matHost.innerHTML = '<p class="muted" style="font-size:13px">No batch materials available.</p>';
       } else {
         const groupedBlocks = [];
         materialChapters.forEach((ch) => {
@@ -422,7 +422,7 @@ export async function initPublicClassroom(token) {
     if (asgHost) asgHost.innerHTML = '';
     if (matHost) matHost.innerHTML = '';
     if (courseLibHost) courseLibHost.innerHTML = '';
-    if (msg) { msg.textContent = e.message || 'Could not load classroom.'; msg.hidden = false; }
+    if (msg) { msg.textContent = e.message || couldNotMessage('load the classroom'); msg.hidden = false; }
     if (heading) heading.textContent = 'Classroom';
     if (metaCourse) metaCourse.textContent = '-';
     if (metaBatch) metaBatch.textContent = '-';

@@ -1,6 +1,20 @@
-import { jsonFetch, getAuthHeaders, authRole, authUsername } from './shared.js';
+import { jsonFetch, getAuthHeaders, authRole, authUsername, COPY, requiredFieldMessage, couldNotMessage } from './shared.js';
 
 let attendanceRowsCache = [];
+
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function mobileField(label, value) {
+  return `<div class="ops-mobile-card-field"><span class="ops-mobile-card-label">${esc(label)}</span><span class="ops-mobile-card-value">${esc(
+    value == null || value === '' ? '—' : value,
+  )}</span></div>`;
+}
 
 export function initTrainingTools() {
   document.getElementById('btnLoadSessionsForTools')?.addEventListener('click', loadSessionsForTools);
@@ -76,7 +90,7 @@ async function saveAttendanceRow() {
       headers: getAuthHeaders(),
       body: JSON.stringify({ group_id, participant_name, attendance_date, status }),
     });
-    if (msg) msg.textContent = 'Saved.';
+    if (msg) msg.textContent = COPY.common.changesSaved;
     loadAttendanceRows();
   } catch (err) {
     if (msg) msg.textContent = err.message;
@@ -85,10 +99,11 @@ async function saveAttendanceRow() {
 
 async function loadAttendanceRows() {
   const body = document.getElementById('attendanceBody');
+  const cards = document.getElementById('attendanceCards');
   const msg = document.getElementById('toolsAttMsg');
   const group_id = String(document.getElementById('toolsGroupId').value || '').trim();
   if (!group_id) {
-    if (msg) msg.textContent = 'Enter group id.';
+    if (msg) msg.textContent = requiredFieldMessage('Group ID');
     return;
   }
   try {
@@ -102,7 +117,33 @@ async function loadAttendanceRows() {
           `<tr><td>${r.attendance_date || ''}</td><td>${r.participant_name || ''}</td><td>${r.status || ''}</td><td><button type="button" class="btn btn-secondary btn-att-del" data-id="${r.id}">Remove</button></td></tr>`,
       )
       .join('');
+    if (cards) {
+      cards.innerHTML = attendanceRowsCache
+        .map(
+          (r) => `<article class="ops-mobile-card">
+          <h4 class="ops-mobile-card-title">${esc(r.participant_name || 'Participant')}</h4>
+          <div class="ops-mobile-card-grid">
+            ${mobileField('Date', r.attendance_date || '')}
+            ${mobileField('Status', r.status || '')}
+          </div>
+          <div class="ops-mobile-card-actions">
+            <button type="button" class="btn btn-secondary btn-sm btn-att-del" data-id="${esc(r.id)}">Remove</button>
+          </div>
+        </article>`,
+        )
+        .join('');
+    }
     body.querySelectorAll('.btn-att-del').forEach((b) => {
+      b.addEventListener('click', async () => {
+        const id = b.getAttribute('data-id');
+        await jsonFetch(`/.netlify/functions/training-data?resource=attendance&id=${encodeURIComponent(id)}`, {
+          method: 'DELETE',
+          headers: getAuthHeaders(),
+        });
+        loadAttendanceRows();
+      });
+    });
+    cards?.querySelectorAll('.btn-att-del').forEach((b) => {
       b.addEventListener('click', async () => {
         const id = b.getAttribute('data-id');
         await jsonFetch(`/.netlify/functions/training-data?resource=attendance&id=${encodeURIComponent(id)}`, {
@@ -157,11 +198,11 @@ async function addMaterial() {
   const title = String(document.getElementById('toolsMatTitle').value || '').trim();
   const url = String(document.getElementById('toolsMatUrl').value || '').trim();
   if (!title || !url) {
-    if (msg) msg.textContent = 'Title and URL required.';
+    if (msg) msg.textContent = `${requiredFieldMessage('Title')} URL is required.`;
     return;
   }
   if (!session_id && !group_id) {
-    if (msg) msg.textContent = 'Provide session ID or group ID.';
+    if (msg) msg.textContent = 'Session ID or Group ID is required.';
     return;
   }
   try {
@@ -170,7 +211,7 @@ async function addMaterial() {
       headers: getAuthHeaders(),
       body: JSON.stringify({ session_id: session_id || null, group_id: group_id || null, title, url }),
     });
-    if (msg) msg.textContent = 'Material added.';
+    if (msg) msg.textContent = 'Material created successfully.';
     loadMaterialsRows();
   } catch (err) {
     if (msg) msg.textContent = err.message;
@@ -1362,8 +1403,8 @@ async function showSessionGroupPickerFlow(sessionId) {
       });
     }
   } catch (e) {
-    setTrainingParticipantHero('Session', String(e.message || 'Could not load session.'));
-    if (errEl) errEl.textContent = e.message || 'Could not load groups.';
+    setTrainingParticipantHero('Session', String(e.message || couldNotMessage('load the session')));
+    if (errEl) errEl.textContent = e.message || couldNotMessage('load groups');
     if (picker) picker.classList.remove('hidden');
   }
 }
@@ -1438,7 +1479,7 @@ async function loadTrainerSessions() {
     list.innerHTML = '';
     if (msg) msg.textContent = '';
     if (!sessions.length) {
-      if (msg) msg.textContent = 'No sessions yet. Create one above.';
+      if (msg) msg.textContent = 'No sessions available. Create one above.';
       return;
     }
     const base = `${window.location.origin}${window.location.pathname}`;
@@ -1463,7 +1504,7 @@ async function loadTrainerSessions() {
       link.className = 'btn btn-secondary';
       link.target = '_blank';
       link.rel = 'noopener';
-      link.textContent = 'Student link';
+      link.textContent = 'Participant link';
       row.appendChild(link);
       const del = document.createElement('button');
       del.type = 'button';
@@ -1541,7 +1582,7 @@ export async function initTraining() {
               sorted.length > 1 ? `<p class="muted small-margin">Students choose their group after opening this link.</p>` : ''
             }<p class="muted small-margin">Participants use <strong>Join voice</strong> in the chat header for in-page audio (requires Supabase Realtime).</p>`
           : '';
-      msg.textContent = 'Session created.';
+      msg.textContent = 'Session created successfully.';
       loadTrainerSessions();
     } catch (err) {
       msg.textContent = err.message;

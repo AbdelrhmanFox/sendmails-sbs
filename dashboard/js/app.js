@@ -2,7 +2,6 @@ import {
   AUTH_TOKEN,
   AUTH_ROLE,
   AUTH_USER,
-  DEMO_WHATSAPP_SUPPORT_NUMBER,
   authToken,
   authRole,
   authUsername,
@@ -21,6 +20,7 @@ import { initFinance } from './finance.js';
 
 const loginError = document.getElementById('loginError');
 let lastDemoError = '';
+let demoSupportNumberCache = '';
 
 const loggedInUserEl = document.getElementById('loggedInUser');
 if (loggedInUserEl && authUsername) loggedInUserEl.textContent = `${authUsername} (${authRole || 'user'})`;
@@ -105,10 +105,18 @@ function buildDemoIssueMessage() {
   return lines.join('\n');
 }
 
-function updateDemoWhatsappCta() {
+async function updateDemoWhatsappCta() {
   const cta = document.getElementById('demoWhatsappCta');
   if (!cta) return;
-  const number = String(localStorage.getItem(DEMO_WHATSAPP_SUPPORT_NUMBER) || '').trim();
+  if (!demoSupportNumberCache) {
+    try {
+      const data = await jsonFetch('/.netlify/functions/demo-support-config');
+      demoSupportNumberCache = String(data.number || '').trim();
+    } catch (_) {
+      demoSupportNumberCache = '';
+    }
+  }
+  const number = demoSupportNumberCache;
   if (!number) {
     cta.classList.add('disabled');
     cta.setAttribute('aria-disabled', 'true');
@@ -128,25 +136,25 @@ function pulseDemoWhatsappCta(errorText) {
   const cta = document.getElementById('demoWhatsappCta');
   if (!cta) return;
   if (errorText) lastDemoError = String(errorText).replace(/\s+/g, ' ').slice(0, 220);
-  updateDemoWhatsappCta();
+  void updateDemoWhatsappCta();
   cta.classList.add('attention');
   window.setTimeout(() => cta.classList.remove('attention'), 5500);
 }
 
 function initDemoSupportCta() {
-  updateDemoWhatsappCta();
+  void updateDemoWhatsappCta();
   document.addEventListener('click', (e) => {
     const cta = document.getElementById('demoWhatsappCta');
     if (!cta) return;
     if (e.target instanceof Node && cta.contains(e.target)) {
       if (cta.classList.contains('disabled')) e.preventDefault();
-      else updateDemoWhatsappCta();
+      else void updateDemoWhatsappCta();
     }
   });
-  window.addEventListener('storage', (e) => {
-    if (e.key === DEMO_WHATSAPP_SUPPORT_NUMBER) updateDemoWhatsappCta();
+  window.addEventListener('sbs:demo-support-number-updated', () => {
+    demoSupportNumberCache = '';
+    void updateDemoWhatsappCta();
   });
-  window.addEventListener('sbs:demo-support-number-updated', () => updateDemoWhatsappCta());
   window.addEventListener('error', (ev) => {
     const msg = ev && ev.message ? ev.message : 'Unhandled error';
     pulseDemoWhatsappCta(msg);

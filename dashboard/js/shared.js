@@ -82,6 +82,57 @@ export const RESOURCE_UPLOAD_ACCEPT =
   '.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,' +
   '.mp4,.webm,.mov,.mkv,.avi,.m4v,.mp3,.wav,.m4a,.aac,.ogg,.flac';
 
+export const ENTERPRISE_TERMS = {
+  trainee: 'Trainee',
+  course: 'Course',
+  batch: 'Batch',
+  enrollment: 'Enrollment',
+  material: 'Material',
+  session: 'Session',
+};
+
+export const COPY = {
+  actions: {
+    create: 'Create',
+    update: 'Update',
+    remove: 'Remove',
+    view: 'View',
+    assign: 'Assign',
+    saveChanges: 'Save changes',
+  },
+  status: {
+    active: 'Active',
+    archived: 'Archived',
+    pending: 'Pending',
+    completed: 'Completed',
+    failed: 'Failed',
+  },
+  common: {
+    actionFailed: 'Could not complete the action.',
+    changesSaved: 'Changes saved successfully.',
+    loading: 'Loading...',
+  },
+};
+
+export function requiredFieldMessage(fieldLabel) {
+  return `${String(fieldLabel || 'Field').trim() || 'Field'} is required.`;
+}
+
+export function createdMessage(entityLabel) {
+  const entity = String(entityLabel || 'Record').trim() || 'Record';
+  return `${entity} created successfully.`;
+}
+
+export function removedMessage(entityLabel) {
+  const entity = String(entityLabel || 'Record').trim() || 'Record';
+  return `${entity} removed successfully.`;
+}
+
+export function couldNotMessage(actionLabel) {
+  const action = String(actionLabel || 'complete this action').trim() || 'complete this action';
+  return `Could not ${action}.`;
+}
+
 export function extractFileExtension(value) {
   const txt = String(value || '').toLowerCase().split(/[?#]/)[0];
   const m = txt.match(/\.([a-z0-9]{2,8})$/i);

@@ -1,4 +1,4 @@
-import { jsonFetch, getAuthHeaders } from './shared.js';
+import { jsonFetch, getAuthHeaders, COPY, couldNotMessage } from './shared.js';
 import { loadFinanceAudit, getAuditPage, setAuditPage } from './admin.js';
 
 let ledgerPage = 1;
@@ -7,6 +7,20 @@ let financeChartRevenue = null;
 let financeChartMethods = null;
 let financeChartTrainees = null;
 let financeChartAr = null;
+
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function mobileField(label, value) {
+  return `<div class="ops-mobile-card-field"><span class="ops-mobile-card-label">${esc(label)}</span><span class="ops-mobile-card-value">${esc(
+    value == null || value === '' ? '—' : value,
+  )}</span></div>`;
+}
 
 function ledgerToCsv(items) {
   const headers = ['received_at', 'amount', 'currency', 'method', 'enrollment_id', 'trainee_id', 'reference'];
@@ -68,11 +82,11 @@ async function refreshFinanceCharts() {
   const cAr = document.getElementById('chartArAging');
   if (!cRev || !cMeth || !cTrainees || !cAr) return;
   if (typeof Chart === 'undefined') {
-    if (msg) msg.textContent = 'Chart library failed to load.';
+    if (msg) msg.textContent = couldNotMessage('load the chart library');
     return;
   }
   destroyFinanceCharts();
-  if (msg) msg.textContent = 'Loading…';
+  if (msg) msg.textContent = COPY.common.loading;
   const textColor = getComputedStyle(document.documentElement).getPropertyValue('--brand-text').trim() || '#f4f3fb';
   const mutedColor = getComputedStyle(document.documentElement).getPropertyValue('--brand-muted').trim() || '#b4b0c8';
   const gridColor = 'rgba(180, 176, 200, 0.14)';
@@ -292,10 +306,10 @@ async function refreshFinanceCharts() {
     });
 
     const asOf = ar.as_of ? String(ar.as_of).slice(0, 10) : '';
-    if (msg) msg.textContent = asOf ? `Charts updated. AR aging as of ${asOf}.` : 'Charts updated.';
+    if (msg) msg.textContent = asOf ? `Analytics updated. AR aging as of ${asOf}.` : 'Analytics updated.';
   } catch (e) {
     destroyFinanceCharts();
-    if (msg) msg.textContent = e.message || 'Could not load charts.';
+    if (msg) msg.textContent = e.message || couldNotMessage('load finance analytics');
   }
 }
 
@@ -331,17 +345,36 @@ function buildLedgerQuery(extra) {
 
 async function refreshLedger() {
   const body = document.getElementById('ledgerBody');
+  const cards = document.getElementById('ledgerCards');
   const msg = document.getElementById('financeLedgerMsg');
   const pageInfo = document.getElementById('ledgerPageInfo');
   if (!body) return;
   try {
     const data = await jsonFetch(`/.netlify/functions/finance-data?${buildLedgerQuery()}`, { headers: getAuthHeaders() });
-    body.innerHTML = (data.items || [])
+    const items = data.items || [];
+    body.innerHTML = items
       .map((row) => {
         const e = row.enrollments || {};
         return `<tr><td>${row.received_at || ''}</td><td>${row.amount ?? ''}</td><td>${row.method ?? ''}</td><td>${e.enrollment_id ?? ''}</td><td>${e.trainee_id ?? ''}</td><td>${row.reference ?? ''}</td></tr>`;
       })
       .join('');
+    if (cards) {
+      cards.innerHTML = items
+        .map((row) => {
+          const e = row.enrollments || {};
+          return `<article class="ops-mobile-card">
+          <h4 class="ops-mobile-card-title">${esc(row.reference || row.method || 'Payment')}</h4>
+          <div class="ops-mobile-card-grid">
+            ${mobileField('Received', row.received_at || '')}
+            ${mobileField('Amount', row.amount ?? '')}
+            ${mobileField('Method', row.method ?? '')}
+            ${mobileField('Enrollment', e.enrollment_id ?? '')}
+            ${mobileField('Trainee', e.trainee_id ?? '')}
+          </div>
+        </article>`;
+        })
+        .join('');
+    }
     const total = data.total != null ? data.total : 0;
     const pages = Math.max(1, Math.ceil(total / LEDGER_PAGE_SIZE));
     if (pageInfo) pageInfo.textContent = `Page ${data.page || ledgerPage} of ${pages} (${total} rows)`;
@@ -374,6 +407,7 @@ let ledgerItemsCache = [];
 
 async function refreshInvoices() {
   const tbody = document.getElementById('invoicesBody');
+  const cards = document.getElementById('invoicesCards');
   const msg = document.getElementById('financeInvMsg');
   const role = localStorage.getItem('sbs_role') || 'user';
   const canWrite = ['admin', 'accountant'].includes(role);
@@ -381,7 +415,8 @@ async function refreshInvoices() {
   try {
     const data = await jsonFetch('/.netlify/functions/finance-data?resource=invoices', { headers: getAuthHeaders() });
     ledgerItemsCache = data.items || [];
-    tbody.innerHTML = (data.items || [])
+    const items = data.items || [];
+    tbody.innerHTML = items
       .map((inv) => {
         const del = canWrite ? `<button type="button" class="btn btn-secondary btn-inv-del" data-id="${inv.id}">Delete</button>` : '';
         return `<tr>
@@ -408,6 +443,40 @@ async function refreshInvoices() {
         refreshInvoices();
       });
     });
+    if (cards) {
+      cards.innerHTML = items
+        .map((inv) => {
+          const del = canWrite ? `<button type="button" class="btn btn-secondary btn-sm btn-inv-del" data-id="${esc(inv.id)}">Delete</button>` : '';
+          return `<article class="ops-mobile-card">
+          <h4 class="ops-mobile-card-title">${esc(inv.invoice_number || 'Invoice')}</h4>
+          <div class="ops-mobile-card-grid">
+            ${mobileField('Status', inv.status || '')}
+            ${mobileField('Issue', inv.issue_date || '')}
+            ${mobileField('Due', inv.due_date || '')}
+            ${mobileField('Total', inv.total ?? '')}
+          </div>
+          <div class="ops-mobile-card-actions">
+            <button type="button" class="btn btn-secondary btn-sm btn-inv-edit" data-id="${esc(inv.id)}">Edit</button>
+            ${del}
+          </div>
+        </article>`;
+        })
+        .join('');
+      cards.querySelectorAll('.btn-inv-edit').forEach((btn) => {
+        btn.addEventListener('click', () => fillInvoiceForm(btn.getAttribute('data-id')));
+      });
+      cards.querySelectorAll('.btn-inv-del').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const id = btn.getAttribute('data-id');
+          if (!id || !confirm('Delete this invoice?')) return;
+          await jsonFetch(`/.netlify/functions/finance-data?resource=invoices&id=${encodeURIComponent(id)}`, {
+            method: 'DELETE',
+            headers: getAuthHeaders(),
+          });
+          refreshInvoices();
+        });
+      });
+    }
     if (msg) msg.textContent = '';
   } catch (err) {
     if (msg) msg.textContent = err.message;
@@ -574,7 +643,7 @@ export function initFinance() {
         headers: getAuthHeaders(),
         body: JSON.stringify(body),
       });
-      if (msg) msg.textContent = 'Payment saved.';
+      if (msg) msg.textContent = 'Payment recorded successfully.';
       document.getElementById('financePaymentForm').reset();
       refreshFinanceAll();
     } catch (err) {
@@ -614,7 +683,7 @@ export function initFinance() {
       document.getElementById('invoiceForm').reset();
       clearInvoiceLinesEditor();
       addInvoiceLineRow(null);
-      if (msg) msg.textContent = 'Invoice saved.';
+      if (msg) msg.textContent = 'Invoice saved successfully.';
       refreshInvoices();
       refreshFinanceKpis();
       refreshAr();

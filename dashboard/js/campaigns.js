@@ -45,7 +45,7 @@ async function loadColumns() {
     select.innerHTML = (data.columns || []).map((c) => `<option value="{{${c}}}">{{${c}}}</option>`).join('');
     document.getElementById('btnSend').disabled = !(data.columns || []).length;
     renderCampaignPreview();
-    showCampaignMessage('Columns loaded.');
+    showCampaignMessage('Columns loaded successfully.');
   } catch (err) {
     showCampaignMessage(err.message, true);
   }
@@ -62,7 +62,7 @@ async function startCampaign() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'send', sheetUrl, subject, bodyHtml: quill?.root?.innerHTML || '' }),
     });
-    showCampaignMessage('Sending started.');
+    showCampaignMessage('Campaign dispatch started.');
     refreshCampaignStatus();
   } catch (err) {
     showCampaignMessage(err.message, true);
@@ -98,7 +98,7 @@ export function initCampaigns() {
   if (savedWebhook) document.getElementById('webhookUrl').value = savedWebhook;
   document.getElementById('btnSaveWebhook')?.addEventListener('click', () => {
     localStorage.setItem('sbs_sendmails_webhook', document.getElementById('webhookUrl').value || '');
-    showCampaignMessage('Webhook URL saved.');
+    showCampaignMessage('Webhook URL saved successfully.');
   });
   document.getElementById('btnLoadColumns')?.addEventListener('click', loadColumns);
   document.getElementById('btnSend')?.addEventListener('click', startCampaign);

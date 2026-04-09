@@ -1,4 +1,4 @@
-import { jsonFetch, getAuthHeaders, AUTH_ROLE, showToast } from './shared.js';
+import { jsonFetch, getAuthHeaders, AUTH_ROLE, showToast, COPY, couldNotMessage } from './shared.js';
 import { loadClassrooms } from './classroom.js';
 
 const OPS = '/.netlify/functions/operations-data';
@@ -159,7 +159,7 @@ async function runGlobalSearch(q) {
     const data = await jsonFetch(`${OPS}?resource=search&q=${encodeURIComponent(q)}&limit=8`, { headers: getAuthHeaders() });
     const rows = data.results || [];
     if (!rows.length) {
-      box.innerHTML = '<p class="muted ops-search-empty">No matches.</p>';
+      box.innerHTML = '<p class="muted ops-search-empty">No matching trainees found.</p>';
       box.classList.remove('hidden');
       return;
     }
@@ -180,7 +180,7 @@ async function runGlobalSearch(q) {
     });
     box.classList.remove('hidden');
   } catch (_) {
-    box.innerHTML = '<p class="inline-error">Search failed.</p>';
+    box.innerHTML = `<p class="inline-error">${couldNotMessage('run the search')}</p>`;
     box.classList.remove('hidden');
   }
 }
@@ -262,7 +262,7 @@ export async function loadTraineesList() {
           await loadTraineesList();
           void loadClassrooms();
         } catch (e) {
-          alert(e.message || 'Delete failed');
+          showToast(e.message || couldNotMessage('remove the trainee'), 'error');
         }
       });
     });
@@ -299,7 +299,7 @@ export async function loadTraineesList() {
             await loadTraineesList();
             void loadClassrooms();
           } catch (e) {
-            alert(e.message || 'Delete failed');
+            showToast(e.message || couldNotMessage('remove the trainee'), 'error');
           }
         });
       });
@@ -321,7 +321,7 @@ export async function loadTraineesList() {
       });
     });
   } catch (err) {
-    if (info) info.textContent = err.message || 'Failed to load trainees';
+    if (info) info.textContent = err.message || couldNotMessage('load trainees');
   }
 }
 
@@ -336,7 +336,7 @@ function showTraineeForm(show) {
 
 function openTraineeFormNew() {
   setupTraineeFormRefs();
-  document.getElementById('traineeFormTitle').textContent = 'New trainee';
+  document.getElementById('traineeFormTitle').textContent = 'Create trainee';
   document.getElementById('traineeFormInternalId').value = '';
   document.getElementById('traineeForm').reset();
   document.getElementById('tf_trainee_id_ro').value = '';
@@ -366,7 +366,7 @@ async function submitTraineeForm(e) {
     notes: document.getElementById('tf_notes').value.trim() || null,
   };
   if (!payload.full_name || !payload.phone || !payload.email) {
-    if (msg) msg.textContent = 'Full name, phone, and email are required.';
+    if (msg) msg.textContent = 'Full name, phone number, and email are required.';
     return;
   }
   if (internalId) {
@@ -380,7 +380,7 @@ async function submitTraineeForm(e) {
       headers: getAuthHeaders(),
       body: JSON.stringify(payload),
     });
-    if (msg) msg.textContent = 'Saved.';
+    if (msg) msg.textContent = COPY.common.changesSaved;
     if (!internalId && data.item?.trainee_id) document.getElementById('tf_trainee_id_ro').value = data.item.trainee_id;
     await loadTraineesList();
     setTimeout(() => showTraineeForm(false), 600);
@@ -612,7 +612,7 @@ async function loadCoursesList() {
           await loadCoursesList();
           void loadClassrooms();
         } catch (e) {
-          alert(e.message || 'Delete failed');
+          showToast(e.message || couldNotMessage('remove the course'), 'error');
         }
       });
     });
@@ -658,7 +658,7 @@ async function loadCoursesList() {
             await loadCoursesList();
             void loadClassrooms();
           } catch (e) {
-            alert(e.message || 'Delete failed');
+            showToast(e.message || couldNotMessage('remove the course'), 'error');
           }
         });
       });
@@ -860,7 +860,7 @@ async function loadBatchesList() {
           await loadBatchesList();
           void loadClassrooms();
         } catch (e) {
-          alert(e.message || 'Delete failed');
+          showToast(e.message || couldNotMessage('remove the batch'), 'error');
         }
       });
     });
@@ -914,7 +914,7 @@ async function loadBatchesList() {
             await loadBatchesList();
             void loadClassrooms();
           } catch (e) {
-            alert(e.message || 'Delete failed');
+            showToast(e.message || couldNotMessage('remove the batch'), 'error');
           }
         });
       });
@@ -1691,7 +1691,7 @@ export function initOperations() {
       try {
         await jsonFetch(`${OPS}?entity=trainees&id=${encodeURIComponent(id)}`, { method: 'DELETE', headers: getAuthHeaders() });
       } catch (e) {
-        alert(e.message || 'Delete failed');
+        showToast(e.message || couldNotMessage('remove the enrollment'), 'error');
         break;
       }
     }

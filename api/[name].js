@@ -16,6 +16,7 @@ const HANDLERS = {
   'create-user': require('../netlify/functions/create-user').handler,
   'list-users': require('../netlify/functions/list-users').handler,
   'public-config': require('../netlify/functions/public-config').handler,
+  'demo-support-config': require('../netlify/functions/demo-support-config').handler,
   'public-training-session': require('../netlify/functions/public-training-session').handler,
   'public-classroom': require('../netlify/functions/public-classroom').handler,
   'public-classroom-upload': require('../netlify/functions/public-classroom-upload').handler,
