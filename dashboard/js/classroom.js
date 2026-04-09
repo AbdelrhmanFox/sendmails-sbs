@@ -3,6 +3,7 @@ import {
   getAuthHeaders,
   showToast,
   detectFileKind,
+  renderFileTypeIcon,
   RESOURCE_UPLOAD_ACCEPT,
   RESOURCE_UPLOAD_MAX_MB,
   COPY,
@@ -642,7 +643,7 @@ async function loadMaterialsList() {
           const fileKind = detectFileKind(m.url, m.title, m.mime_type);
           return `<li class="classroom-material-row">
             <div class="classroom-material-main">
-              <a href="${escapeHtml(m.url)}" target="_blank" rel="noopener noreferrer" class="classroom-mat-link">${escapeHtml(fileKind.icon)} ${escapeHtml(
+              <a href="${escapeHtml(m.url)}" target="_blank" rel="noopener noreferrer" class="classroom-mat-link">${renderFileTypeIcon(fileKind.iconKey, fileKind.label)} ${escapeHtml(
                 m.title,
               )}</a>
               ${m.storage_object_key ? ` <span class="badge badge--muted">${escapeHtml(fileKind.label)}</span>` : ''}

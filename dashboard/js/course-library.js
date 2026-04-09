@@ -1,4 +1,15 @@
-import { jsonFetch, getAuthHeaders, showToast, detectFileKind, RESOURCE_UPLOAD_ACCEPT, RESOURCE_UPLOAD_MAX_MB, COPY, requiredFieldMessage, couldNotMessage } from './shared.js';
+import {
+  jsonFetch,
+  getAuthHeaders,
+  showToast,
+  detectFileKind,
+  renderFileTypeIcon,
+  RESOURCE_UPLOAD_ACCEPT,
+  RESOURCE_UPLOAD_MAX_MB,
+  COPY,
+  requiredFieldMessage,
+  couldNotMessage,
+} from './shared.js';
 
 const API = '/.netlify/functions/course-library-data';
 const UPLOAD_API = '/.netlify/functions/course-library-upload';
@@ -106,7 +117,7 @@ function renderMaterialRows(materials) {
       const desc = m.description ? `<p class="muted" style="font-size:12px;margin:2px 0 0">${escapeHtml(m.description)}</p>` : '';
       return `<li class="course-library-mat-row">
         <div class="course-library-mat-main">
-          <a href="${escapeHtml(m.url)}" target="_blank" rel="noopener noreferrer" class="course-library-link">${escapeHtml(fileKind.icon)} ${escapeHtml(m.title)}</a>
+          <a href="${escapeHtml(m.url)}" target="_blank" rel="noopener noreferrer" class="course-library-link">${renderFileTypeIcon(fileKind.iconKey, fileKind.label)} ${escapeHtml(m.title)}</a>
           <p class="muted" style="font-size:12px;margin:2px 0 0">${escapeHtml(fileKind.label)}</p>
           ${desc}
         </div>

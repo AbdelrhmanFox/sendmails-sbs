@@ -1,4 +1,13 @@
-﻿import { jsonFetch, detectFileKind, isDownloadResource, RESOURCE_UPLOAD_ACCEPT, RESOURCE_UPLOAD_MAX_MB, requiredFieldMessage, couldNotMessage } from './shared.js';
+﻿import {
+  jsonFetch,
+  detectFileKind,
+  renderFileTypeIcon,
+  isDownloadResource,
+  RESOURCE_UPLOAD_ACCEPT,
+  RESOURCE_UPLOAD_MAX_MB,
+  requiredFieldMessage,
+  couldNotMessage,
+} from './shared.js';
 
 function escapeHtml(s) {
   return String(s)
@@ -22,7 +31,7 @@ function renderResourceCards(items, label) {
       const isDownload = isDownloadResource(m.url, m.storage_object_key);
       return `<article class="pub-resource-card">
         <div class="pub-resource-head">
-          <h4 class="pub-resource-title">${escapeHtml(fileKind.icon)} ${title}</h4>
+          <h4 class="pub-resource-title">${renderFileTypeIcon(fileKind.iconKey, fileKind.label)} ${title}</h4>
           ${tag}
         </div>
         <p class="muted" style="font-size:12px;margin:0 0 8px">${escapeHtml(fileKind.label)}</p>

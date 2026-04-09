@@ -264,9 +264,14 @@ document.getElementById('btnLogout')?.addEventListener('click', () => {
 function initLoginCharacterHero() {
   const el = document.getElementById('login-screen');
   if (!el) return;
-  const img = new Image();
-  img.onload = () => el.classList.add('login-screen--with-character');
-  img.src = 'assets/brand/characters/hero-login.png';
+  const heroPath = 'assets/brand/characters/hero-login.png';
+  fetch(heroPath, { method: 'HEAD' })
+    .then((res) => {
+      if (res.ok) el.classList.add('login-screen--with-character');
+    })
+    .catch(() => {
+      // Ignore optional asset lookup failures to keep console clean.
+    });
 }
 initLoginCharacterHero();
 initChangePasswordForm();

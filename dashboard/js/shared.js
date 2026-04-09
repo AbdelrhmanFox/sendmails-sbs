@@ -142,13 +142,33 @@ export function extractFileExtension(value) {
 export function detectFileKind(url, title, mimeType) {
   const ext = extractFileExtension(url) || extractFileExtension(title);
   const mime = String(mimeType || '').toLowerCase();
-  if (ext === 'pdf' || mime.includes('pdf')) return { icon: '📄', label: 'PDF' };
-  if (['ppt', 'pptx'].includes(ext) || mime.includes('presentation')) return { icon: '📊', label: 'PPT' };
-  if (['doc', 'docx'].includes(ext) || mime.includes('word')) return { icon: '📝', label: 'DOC' };
-  if (['xls', 'xlsx', 'csv'].includes(ext) || mime.includes('sheet')) return { icon: '📈', label: 'XLS' };
-  if (['mp4', 'webm', 'mov', 'mkv', 'avi', 'm4v'].includes(ext) || mime.includes('video')) return { icon: '🎬', label: 'VIDEO' };
-  if (['mp3', 'wav', 'm4a', 'aac', 'ogg', 'flac'].includes(ext) || mime.includes('audio')) return { icon: '🎵', label: 'AUDIO' };
-  return { icon: '📎', label: 'FILE' };
+  if (ext === 'pdf' || mime.includes('pdf')) return { icon: 'PDF', iconKey: 'pdf', label: 'PDF' };
+  if (['ppt', 'pptx'].includes(ext) || mime.includes('presentation')) return { icon: 'PPT', iconKey: 'ppt', label: 'PPT' };
+  if (['doc', 'docx'].includes(ext) || mime.includes('word')) return { icon: 'DOC', iconKey: 'doc', label: 'DOC' };
+  if (['xls', 'xlsx', 'csv'].includes(ext) || mime.includes('sheet')) return { icon: 'XLS', iconKey: 'xls', label: 'XLS' };
+  if (['mp4', 'webm', 'mov', 'mkv', 'avi', 'm4v'].includes(ext) || mime.includes('video')) return { icon: 'VID', iconKey: 'video', label: 'VIDEO' };
+  if (['mp3', 'wav', 'm4a', 'aac', 'ogg', 'flac'].includes(ext) || mime.includes('audio')) return { icon: 'AUD', iconKey: 'audio', label: 'AUDIO' };
+  return { icon: 'FILE', iconKey: 'file', label: 'FILE' };
+}
+
+export function renderFileTypeIcon(iconKey, label) {
+  const key = String(iconKey || 'file').toLowerCase();
+  const txt = String(label || 'FILE').slice(0, 4).toUpperCase();
+  const tone =
+    key === 'pdf'
+      ? '#d92d20'
+      : key === 'ppt'
+        ? '#c2410c'
+        : key === 'doc'
+          ? '#155eef'
+          : key === 'xls'
+            ? '#067647'
+            : key === 'video'
+              ? '#7a5af8'
+              : key === 'audio'
+                ? '#0e9384'
+                : '#667085';
+  return `<span class="file-kind-icon" aria-hidden="true" style="display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:18px;padding:0 6px;border-radius:6px;background:${tone};color:#fff;font-size:10px;font-weight:700;letter-spacing:.2px;line-height:1">${txt}</span>`;
 }
 
 export function isDownloadResource(url, storageObjectKey = null) {
