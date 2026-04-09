@@ -3664,6 +3664,7 @@ body.participant-join .app-top-bar__burger {
   justify-content: space-between;
   align-items: flex-start;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .pub-resource-title {
@@ -3671,10 +3672,14 @@ body.participant-join .app-top-bar__burger {
   font-size: 14px;
   line-height: 1.35;
   color: var(--brand-text);
+  flex: 1 1 220px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .pub-resource-tag {
-  flex-shrink: 0;
+  flex: 0 0 auto;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.03em;
@@ -3682,6 +3687,7 @@ body.participant-join .app-top-bar__burger {
   border: 1px solid color-mix(in oklab, var(--brand-border) 55%, transparent);
   border-radius: 999px;
   padding: 2px 7px;
+  max-width: 100%;
 }
 
 .pub-resource-desc {
