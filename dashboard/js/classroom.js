@@ -9,6 +9,7 @@ let currentBatchLabel = '';
 let currentClassroomCourseId = '';
 let assignmentsCache = [];
 let materialsCache = [];
+let materialChaptersCache = [];
 let submissionsAssignmentId = '';
 let submissionsCache = [];
 let assignmentFilesCache = {};
@@ -59,6 +60,8 @@ function clearMaterialEditing() {
   $('classroomMaterialForm')?.reset();
   const fIn = $('classroomMatFile');
   if (fIn) fIn.value = '';
+  const chapterSel = $('classroomMatChapterId');
+  if (chapterSel) chapterSel.value = '';
   const sub = $('classroomMatSubmit');
   if (sub) sub.textContent = 'Add resource';
   $('classroomMatCancelEdit')?.classList.add('hidden');
@@ -91,9 +94,11 @@ function beginMaterialEdit(m) {
   const t = $('classroomMatTitle');
   const u = $('classroomMatUrl');
   const d = $('classroomMatDesc');
+  const chapterSel = $('classroomMatChapterId');
   if (t) t.value = m.title || '';
   if (u) u.value = m.url || '';
   if (d) d.value = m.description || '';
+  if (chapterSel) chapterSel.value = m.chapter_id || '';
   const sub = $('classroomMatSubmit');
   if (sub) sub.textContent = 'Save changes';
   $('classroomMatCancelEdit')?.classList.remove('hidden');
@@ -140,6 +145,72 @@ function escapeHtml(s) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+function extractExtension(value) {
+  const txt = String(value || '').toLowerCase().split(/[?#]/)[0];
+  const m = txt.match(/\.([a-z0-9]{2,8})$/i);
+  return m ? m[1] : '';
+}
+
+function detectFileKind(url, title, mimeType) {
+  const ext = extractExtension(url) || extractExtension(title);
+  const mime = String(mimeType || '').toLowerCase();
+  if (ext === 'pdf' || mime.includes('pdf')) return { icon: '📄', label: 'PDF' };
+  if (['ppt', 'pptx'].includes(ext) || mime.includes('presentation')) return { icon: '📊', label: 'PPT' };
+  if (['doc', 'docx'].includes(ext) || mime.includes('word')) return { icon: '📝', label: 'DOC' };
+  if (['xls', 'xlsx', 'csv'].includes(ext) || mime.includes('sheet')) return { icon: '📈', label: 'XLS' };
+  if (['mp4', 'webm', 'mov', 'mkv', 'avi', 'm4v'].includes(ext) || mime.includes('video')) return { icon: '🎬', label: 'VIDEO' };
+  if (['mp3', 'wav', 'm4a', 'aac', 'ogg', 'flac'].includes(ext) || mime.includes('audio')) return { icon: '🎵', label: 'AUDIO' };
+  return { icon: '📎', label: 'FILE' };
+}
+
+function refreshMaterialChapterSelect() {
+  const sel = $('classroomMatChapterId');
+  if (!sel) return;
+  sel.innerHTML = [`<option value="">Uncategorized</option>`]
+    .concat((materialChaptersCache || []).map((ch) => `<option value="${escapeHtml(ch.id)}">${escapeHtml(ch.title)}</option>`))
+    .join('');
+}
+
+function renderMaterialChapterChips() {
+  const host = $('classroomMatChapterChips');
+  if (!host) return;
+  host.innerHTML = (materialChaptersCache || [])
+    .map((ch) => `<button type="button" class="classroom-asg-chip classroom-edit-mat-chapter" data-id="${escapeHtml(ch.id)}">${escapeHtml(ch.title)}</button>`)
+    .join('');
+  host.querySelectorAll('.classroom-edit-mat-chapter').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const id = String(btn.getAttribute('data-id') || '').trim();
+      if (!id) return;
+      const curr = materialChaptersCache.find((x) => x.id === id);
+      if (!curr) return;
+      const next = prompt('Rename session', curr.title || '');
+      if (next == null) return;
+      const title = String(next || '').trim();
+      if (!title) return;
+      try {
+        await jsonFetch(`${CLASSROOM}?resource=material-chapters&id=${encodeURIComponent(id)}`, {
+          method: 'PATCH',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ title }),
+        });
+        await loadMaterialsList();
+      } catch (e) {
+        showToast(e.message || 'Action failed.', 'error');
+      }
+    });
+  });
+}
+
+async function loadMaterialChapters() {
+  if (!currentBatchId) return;
+  const data = await jsonFetch(`${CLASSROOM}?resource=material-chapters&batch_id=${encodeURIComponent(currentBatchId)}`, {
+    headers: getAuthHeaders(),
+  });
+  materialChaptersCache = data.items || [];
+  refreshMaterialChapterSelect();
+  renderMaterialChapterChips();
 }
 
 function $(id) {
@@ -282,6 +353,7 @@ function closeClassroomRoom() {
   currentClassroomCourseId = '';
   assignmentsCache = [];
   materialsCache = [];
+  materialChaptersCache = [];
   submissionsAssignmentId = '';
   submissionsCache = [];
   clearAssignmentEditing();
@@ -295,6 +367,7 @@ async function refreshClassroomData() {
   if (!sync.ok) {
     assignmentsCache = [];
     materialsCache = [];
+    materialChaptersCache = [];
     assignmentFilesCache = {};
     const asgHost = $('classroomAssignmentsList');
     if (asgHost) asgHost.innerHTML = '';
@@ -549,6 +622,7 @@ async function loadMaterialsList() {
   if (!host || !currentBatchId) return;
   host.innerHTML = '<li class="skeleton-row skeleton-row--sm" style="list-style:none"></li><li class="skeleton-row skeleton-row--sm" style="list-style:none"></li>';
   try {
+    await loadMaterialChapters();
     const data = await jsonFetch(`${CLASSROOM}?resource=materials&batch_id=${encodeURIComponent(currentBatchId)}`, {
       headers: getAuthHeaders(),
     });
@@ -562,13 +636,24 @@ async function loadMaterialsList() {
       if (msg) msg.textContent = '';
       return;
     }
-    host.innerHTML = items
-      .map(
-        (m) =>
-          `<li class="classroom-material-row">
+    const byChapter = new Map();
+    (materialChaptersCache || []).forEach((ch) => byChapter.set(ch.id, []));
+    const uncategorized = [];
+    items.forEach((m) => {
+      const cid = String(m.chapter_id || '').trim();
+      if (cid && byChapter.has(cid)) byChapter.get(cid).push(m);
+      else uncategorized.push(m);
+    });
+    const renderRows = (rows) =>
+      rows
+        .map((m) => {
+          const fileKind = detectFileKind(m.url, m.title, m.mime_type);
+          return `<li class="classroom-material-row">
             <div class="classroom-material-main">
-              <a href="${escapeHtml(m.url)}" target="_blank" rel="noopener noreferrer" class="classroom-mat-link">${escapeHtml(m.title)}</a>
-              ${m.storage_object_key ? ` <span class="badge badge--muted">File</span>` : ''}
+              <a href="${escapeHtml(m.url)}" target="_blank" rel="noopener noreferrer" class="classroom-mat-link">${escapeHtml(fileKind.icon)} ${escapeHtml(
+                m.title,
+              )}</a>
+              ${m.storage_object_key ? ` <span class="badge badge--muted">${escapeHtml(fileKind.label)}</span>` : ''}
               ${m.description ? `<p class="muted small-margin" style="font-size:12px">${escapeHtml(m.description)}</p>` : ''}
             </div>
             <div class="classroom-inline-actions">
@@ -578,9 +663,23 @@ async function loadMaterialsList() {
               <button type="button" class="btn btn-ghost btn-sm classroom-edit-mat" data-id="${escapeHtml(m.id)}">Edit</button>
               <button type="button" class="btn btn-ghost btn-sm btn-danger classroom-del-mat" data-id="${escapeHtml(m.id)}">Remove</button>
             </div>
-          </li>`,
-      )
-      .join('');
+          </li>`;
+        })
+        .join('');
+    const groupedHtml = [];
+    (materialChaptersCache || []).forEach((ch) => {
+      const rows = byChapter.get(ch.id) || [];
+      if (!rows.length) return;
+      groupedHtml.push(`<li style="list-style:none"><details class="card" open><summary><strong>${escapeHtml(ch.title)}</strong></summary><ul class="classroom-materials-list">${renderRows(
+        rows,
+      )}</ul></details></li>`);
+    });
+    if (uncategorized.length) {
+      groupedHtml.push(`<li style="list-style:none"><details class="card" open><summary><strong>Uncategorized</strong></summary><ul class="classroom-materials-list">${renderRows(
+        uncategorized,
+      )}</ul></details></li>`);
+    }
+    host.innerHTML = groupedHtml.join('');
     host.querySelectorAll('.classroom-edit-mat').forEach((btn) => {
       btn.addEventListener('click', () => {
         const id = btn.getAttribute('data-id');
@@ -714,6 +813,7 @@ export function initClassroom() {
     const title = String($('classroomMatTitle')?.value || '').trim();
     let url = String($('classroomMatUrl')?.value || '').trim();
     const description = String($('classroomMatDesc')?.value || '').trim();
+    const chapterId = String($('classroomMatChapterId')?.value || '').trim() || null;
     const fileInput = $('classroomMatFile');
     const files = fileInput && fileInput.files ? Array.from(fileInput.files) : [];
     const editId = String($('classroomMatEditId')?.value || '').trim();
@@ -722,7 +822,8 @@ export function initClassroom() {
       if (msg) msg.textContent = 'Title is required.';
       return;
     }
-    if (!files.length && !url) {
+    const currentEditItem = editId ? materialsCache.find((x) => x.id === editId) : null;
+    if (!files.length && !url && !currentEditItem?.url) {
       if (msg) msg.textContent = 'Add a URL or choose a file to upload.';
       return;
     }
@@ -735,6 +836,7 @@ export function initClassroom() {
       let payload = {
         title,
         description: description || null,
+        chapter_id: chapterId,
       };
       if (files.length) {
         if (editId) {
@@ -755,6 +857,7 @@ export function initClassroom() {
                 batch_id: currentBatchId,
                 title: fileTitle,
                 url: up.publicUrl,
+                chapter_id: chapterId,
                 storage_object_key: up.path,
                 mime_type: f.type || null,
                 file_size_bytes: f.size ?? null,
@@ -765,9 +868,10 @@ export function initClassroom() {
           }
         }
       } else {
-        payload.url = url;
+        // Keep existing file URL on edit if user only changes title/description.
+        payload.url = url || String(currentEditItem?.url || '').trim();
         if (editId) {
-          const m = materialsCache.find((x) => x.id === editId);
+          const m = currentEditItem;
           const prevUrl = m ? String(m.url || '').trim() : '';
           if (m && url !== prevUrl) {
             payload.storage_object_key = null;
@@ -804,6 +908,24 @@ export function initClassroom() {
   });
 
   $('classroomMatCancelEdit')?.addEventListener('click', () => clearMaterialEditing());
+
+  $('classroomMatChapterForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!currentBatchId) return;
+    const title = String($('classroomMatChapterTitle')?.value || '').trim();
+    if (!title) return;
+    try {
+      await jsonFetch(`${CLASSROOM}?resource=material-chapters`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ batch_id: currentBatchId, title }),
+      });
+      e.target.reset();
+      await loadMaterialsList();
+    } catch (err) {
+      showToast(err.message || 'Could not create session.', 'error');
+    }
+  });
 
   $('classroomSubmissionReviewForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();

@@ -61,11 +61,18 @@ exports.handler = async (event) => {
 
   const { data: materials, error: me } = await supabase
     .from('classroom_materials')
-    .select('id, title, url, description, sort_order')
+    .select('id, chapter_id, title, url, description, sort_order, mime_type, storage_object_key')
     .eq('batch_id', batchId)
     .order('sort_order', { ascending: true })
     .order('created_at', { ascending: true });
   if (me) return json({ error: 'Could not load materials' }, 500);
+  const { data: materialChapters, error: mce } = await supabase
+    .from('classroom_material_chapters')
+    .select('id, title, sort_order')
+    .eq('batch_id', batchId)
+    .order('sort_order', { ascending: true })
+    .order('created_at', { ascending: true });
+  if (mce) return json({ error: 'Could not load material chapters' }, 500);
 
   let course_library = null;
   if (batch.course_id) {
@@ -112,7 +119,45 @@ exports.handler = async (event) => {
       ...a,
       attachments: filesByAssignment[a.id] || [],
     })),
-    materials: materials || [],
+    materials: (materials || []).map((m) => ({
+      id: m.id,
+      chapter_id: m.chapter_id || null,
+      title: m.title,
+      url: m.url,
+      description: m.description,
+      sort_order: m.sort_order,
+      mime_type: m.mime_type || null,
+      storage_object_key: m.storage_object_key || null,
+    })),
+    material_chapters: (materialChapters || []).map((ch) => ({
+      id: ch.id,
+      title: ch.title,
+      sort_order: ch.sort_order,
+      materials: (materials || [])
+        .filter((m) => m.chapter_id === ch.id)
+        .map((m) => ({
+          id: m.id,
+          chapter_id: m.chapter_id || null,
+          title: m.title,
+          url: m.url,
+          description: m.description,
+          sort_order: m.sort_order,
+          mime_type: m.mime_type || null,
+          storage_object_key: m.storage_object_key || null,
+        })),
+    })),
+    material_uncategorized: (materials || [])
+      .filter((m) => !m.chapter_id)
+      .map((m) => ({
+        id: m.id,
+        chapter_id: null,
+        title: m.title,
+        url: m.url,
+        description: m.description,
+        sort_order: m.sort_order,
+        mime_type: m.mime_type || null,
+        storage_object_key: m.storage_object_key || null,
+      })),
     course_library,
   });
 };

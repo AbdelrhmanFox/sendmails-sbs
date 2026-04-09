@@ -24,6 +24,21 @@ async function assertBatchAccess(supabase, auth, batchId) {
   return { ok: false, status: 403, error: 'Forbidden' };
 }
 
+async function validateMaterialChapter(supabase, batchId, chapterId) {
+  const cid = String(chapterId || '').trim();
+  if (!cid) return { ok: true, chapter_id: null };
+  const { data, error } = await supabase
+    .from('classroom_material_chapters')
+    .select('id, batch_id')
+    .eq('id', cid)
+    .maybeSingle();
+  if (error) return { ok: false, status: 500, error: error.message || 'Chapter lookup failed' };
+  if (!data || String(data.batch_id || '').trim() !== String(batchId || '').trim()) {
+    return { ok: false, status: 400, error: 'Invalid chapter' };
+  }
+  return { ok: true, chapter_id: data.id };
+}
+
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: cors };
 
@@ -392,12 +407,19 @@ exports.handler = async (event) => {
       const url = String(body.url || '').trim();
       if (!title || !url) return json({ error: 'title and url required' }, 400);
       const skRaw = body.storage_object_key != null ? String(body.storage_object_key).trim() : '';
+      let chapterId = null;
+      if (Object.prototype.hasOwnProperty.call(body, 'chapter_id')) {
+        const chapterCheck = await validateMaterialChapter(supabase, bid, body.chapter_id);
+        if (!chapterCheck.ok) return json({ error: chapterCheck.error }, chapterCheck.status);
+        chapterId = chapterCheck.chapter_id;
+      }
       const row = {
         batch_id: bid,
         title,
         url,
         description: body.description != null ? String(body.description) : null,
         sort_order: body.sort_order != null ? Number(body.sort_order) : 0,
+        chapter_id: chapterId,
         storage_object_key: skRaw || null,
         mime_type:
           body.mime_type != null && String(body.mime_type).trim()
@@ -437,10 +459,17 @@ exports.handler = async (event) => {
       if (body.description !== undefined) {
         description = body.description != null ? String(body.description) : null;
       }
+      let chapterId = prev.chapter_id || null;
+      if (Object.prototype.hasOwnProperty.call(body, 'chapter_id')) {
+        const chapterCheck = await validateMaterialChapter(supabase, prev.batch_id, body.chapter_id);
+        if (!chapterCheck.ok) return json({ error: chapterCheck.error }, chapterCheck.status);
+        chapterId = chapterCheck.chapter_id;
+      }
       const updates = {
         title,
         url,
         description,
+        chapter_id: chapterId,
         storage_object_key: newSk,
       };
       if (Object.prototype.hasOwnProperty.call(body, 'mime_type')) {
@@ -483,6 +512,94 @@ exports.handler = async (event) => {
       if (row.storage_object_key) {
         await supabase.storage.from('classroom-material-files').remove([row.storage_object_key]);
       }
+      return json({ ok: true });
+    }
+
+    return json({ error: 'Method not allowed' }, 405);
+  }
+
+  if (resource === 'material-chapters') {
+    const batchId = String(event.queryStringParameters?.batch_id || '').trim();
+    if (event.httpMethod === 'GET') {
+      const gate = await assertBatchAccess(supabase, auth, batchId);
+      if (!gate.ok) return json({ error: gate.error }, gate.status);
+      const { data, error } = await supabase
+        .from('classroom_material_chapters')
+        .select('*')
+        .eq('batch_id', batchId)
+        .order('sort_order', { ascending: true })
+        .order('created_at', { ascending: true });
+      if (error) return json({ error: error.message || 'Could not load material chapters' }, 500);
+      return json({ items: data || [] });
+    }
+
+    if (event.httpMethod === 'POST') {
+      let body;
+      try {
+        body = JSON.parse(event.body || '{}');
+      } catch (_) {
+        return json({ error: 'Invalid JSON' }, 400);
+      }
+      const bid = String(body.batch_id || batchId || '').trim();
+      const gate = await assertBatchAccess(supabase, auth, bid);
+      if (!gate.ok) return json({ error: gate.error }, gate.status);
+      const title = String(body.title || '').trim();
+      if (!title) return json({ error: 'title required' }, 400);
+      const row = {
+        batch_id: bid,
+        title,
+        sort_order: body.sort_order != null && !Number.isNaN(Number(body.sort_order)) ? Number(body.sort_order) : 0,
+      };
+      const { data, error } = await supabase.from('classroom_material_chapters').insert(row).select('*').single();
+      if (error) return json({ error: error.message || 'Insert failed' }, 500);
+      return json({ ok: true, item: data });
+    }
+
+    if (event.httpMethod === 'PATCH') {
+      const id = String(event.queryStringParameters?.id || '').trim();
+      if (!id) return json({ error: 'id required' }, 400);
+      let body;
+      try {
+        body = JSON.parse(event.body || '{}');
+      } catch (_) {
+        return json({ error: 'Invalid JSON' }, 400);
+      }
+      const { data: prev, error: pe } = await supabase
+        .from('classroom_material_chapters')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+      if (pe || !prev) return json({ error: 'Chapter not found' }, 404);
+      const gate = await assertBatchAccess(supabase, auth, prev.batch_id);
+      if (!gate.ok) return json({ error: gate.error }, gate.status);
+      const updates = {};
+      if (body.title !== undefined) {
+        const title = String(body.title || '').trim();
+        if (!title) return json({ error: 'title required' }, 400);
+        updates.title = title;
+      }
+      if (body.sort_order != null && !Number.isNaN(Number(body.sort_order))) {
+        updates.sort_order = Number(body.sort_order);
+      }
+      if (!Object.keys(updates).length) return json({ error: 'No fields to update' }, 400);
+      const { data, error } = await supabase.from('classroom_material_chapters').update(updates).eq('id', id).select('*').single();
+      if (error) return json({ error: error.message || 'Update failed' }, 500);
+      return json({ ok: true, item: data });
+    }
+
+    if (event.httpMethod === 'DELETE') {
+      const id = String(event.queryStringParameters?.id || '').trim();
+      if (!id) return json({ error: 'id required' }, 400);
+      const { data: prev, error: pe } = await supabase
+        .from('classroom_material_chapters')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+      if (pe || !prev) return json({ error: 'Chapter not found' }, 404);
+      const gate = await assertBatchAccess(supabase, auth, prev.batch_id);
+      if (!gate.ok) return json({ error: gate.error }, gate.status);
+      const { error } = await supabase.from('classroom_material_chapters').delete().eq('id', id);
+      if (error) return json({ error: error.message || 'Delete failed' }, 500);
       return json({ ok: true });
     }
 

@@ -39,6 +39,23 @@ function escapeHtml(s) {
     .replace(/"/g, '&quot;');
 }
 
+function extractExtension(value) {
+  const txt = String(value || '').toLowerCase().split(/[?#]/)[0];
+  const m = txt.match(/\.([a-z0-9]{2,8})$/i);
+  return m ? m[1] : '';
+}
+
+function detectFileKind(url, title) {
+  const ext = extractExtension(url) || extractExtension(title);
+  if (ext === 'pdf') return { icon: '📄', label: 'PDF' };
+  if (['ppt', 'pptx'].includes(ext)) return { icon: '📊', label: 'PPT' };
+  if (['doc', 'docx'].includes(ext)) return { icon: '📝', label: 'DOC' };
+  if (['xls', 'xlsx', 'csv'].includes(ext)) return { icon: '📈', label: 'XLS' };
+  if (['mp4', 'webm', 'mov', 'mkv', 'avi', 'm4v'].includes(ext)) return { icon: '🎬', label: 'VIDEO' };
+  if (['mp3', 'wav', 'm4a', 'aac', 'ogg', 'flac'].includes(ext)) return { icon: '🎵', label: 'AUDIO' };
+  return { icon: '📎', label: 'FILE' };
+}
+
 function clearMaterialForm() {
   const hid = $('courseLibraryMatEditId');
   if (hid) hid.value = '';
@@ -102,10 +119,12 @@ function renderMaterialRows(materials) {
   }
   return `<ul class="course-library-mat-list">${materials
     .map((m) => {
+      const fileKind = detectFileKind(m.url, m.title);
       const desc = m.description ? `<p class="muted" style="font-size:12px;margin:2px 0 0">${escapeHtml(m.description)}</p>` : '';
       return `<li class="course-library-mat-row">
         <div class="course-library-mat-main">
-          <a href="${escapeHtml(m.url)}" target="_blank" rel="noopener noreferrer" class="course-library-link">${escapeHtml(m.title)}</a>
+          <a href="${escapeHtml(m.url)}" target="_blank" rel="noopener noreferrer" class="course-library-link">${escapeHtml(fileKind.icon)} ${escapeHtml(m.title)}</a>
+          <p class="muted" style="font-size:12px;margin:2px 0 0">${escapeHtml(fileKind.label)}</p>
           ${desc}
         </div>
         <div class="course-library-mat-actions">
@@ -382,7 +401,8 @@ export function initCourseLibrary() {
       }
     }
 
-    const finalUrl = String($('courseLibraryMatUrl')?.value || '').trim();
+    const currentEditItem = editId ? findMaterialById(editId) : null;
+    const finalUrl = String($('courseLibraryMatUrl')?.value || '').trim() || String(currentEditItem?.url || '').trim();
     if (!title || !finalUrl) {
       $('courseLibraryMsg').textContent = 'Title and URL are required (add a link or upload a file).';
       return;

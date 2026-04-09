@@ -20,6 +20,24 @@ function isDownloadResource(url) {
   return /\.(pdf|doc|docx|ppt|pptx|xls|xlsx|txt|mp4|webm|mov|mkv|avi|m4v|mp3|wav|m4a|aac|ogg|flac)(\?|#|$)/i.test(u);
 }
 
+function extractExtension(value) {
+  const txt = String(value || '').toLowerCase().split(/[?#]/)[0];
+  const m = txt.match(/\.([a-z0-9]{2,8})$/i);
+  return m ? m[1] : '';
+}
+
+function detectFileKind(url, title, mimeType) {
+  const ext = extractExtension(url) || extractExtension(title);
+  const mime = String(mimeType || '').toLowerCase();
+  if (ext === 'pdf' || mime.includes('pdf')) return { icon: '📄', label: 'PDF' };
+  if (['ppt', 'pptx'].includes(ext) || mime.includes('presentation')) return { icon: '📊', label: 'PPT' };
+  if (['doc', 'docx'].includes(ext) || mime.includes('word')) return { icon: '📝', label: 'DOC' };
+  if (['xls', 'xlsx', 'csv'].includes(ext) || mime.includes('sheet')) return { icon: '📈', label: 'XLS' };
+  if (['mp4', 'webm', 'mov', 'mkv', 'avi', 'm4v'].includes(ext) || mime.includes('video')) return { icon: '🎬', label: 'VIDEO' };
+  if (['mp3', 'wav', 'm4a', 'aac', 'ogg', 'flac'].includes(ext) || mime.includes('audio')) return { icon: '🎵', label: 'AUDIO' };
+  return { icon: '📎', label: 'FILE' };
+}
+
 function renderResourceCards(items, label) {
   const rows = Array.isArray(items) ? items : [];
   if (!rows.length) return '';
@@ -27,14 +45,16 @@ function renderResourceCards(items, label) {
     .map((m) => {
       const title = escapeHtml(m.title || 'Resource');
       const url = escapeHtml(m.url || '#');
+      const fileKind = detectFileKind(m.url, m.title, m.mime_type);
       const desc = m.description ? `<p class="pub-resource-desc">${escapeHtml(m.description)}</p>` : '';
       const tag = label ? `<span class="pub-resource-tag">${escapeHtml(label)}</span>` : '';
       const isDownload = isDownloadResource(m.url);
       return `<article class="pub-resource-card">
         <div class="pub-resource-head">
-          <h4 class="pub-resource-title">${title}</h4>
+          <h4 class="pub-resource-title">${escapeHtml(fileKind.icon)} ${title}</h4>
           ${tag}
         </div>
+        <p class="muted" style="font-size:12px;margin:0 0 8px">${escapeHtml(fileKind.label)}</p>
         ${desc}
         <div class="pub-resource-actions">
           <a href="${url}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm" ${isDownload ? 'download' : ''}>
@@ -296,8 +316,7 @@ export async function initPublicClassroom(token) {
       : [courseName, batchLabel].filter(Boolean).join(' · ') || b.batch_id || 'Classroom';
     if (heading) heading.textContent = title;
     if (sub) {
-      const extra = b.trainer ? ` · Trainer: ${escapeHtml(b.trainer)}` : '';
-      sub.textContent = `Participant view · no sign-in required${extra}`;
+      sub.textContent = b.trainer ? `Trainer: ${escapeHtml(b.trainer)}` : '';
     }
     if (metaCourse) metaCourse.textContent = courseName || '-';
     if (metaBatch) metaBatch.textContent = batchLabel || '-';
@@ -398,13 +417,30 @@ export async function initPublicClassroom(token) {
 
     // Batch materials tab
     const materials = data.materials || [];
+    const materialChapters = data.material_chapters || [];
+    const materialUncategorized = data.material_uncategorized || [];
     if (metaAssignments) metaAssignments.textContent = String(assignments.length || 0);
     if (metaMaterials) metaMaterials.textContent = String(materials.length || 0);
     if (matHost) {
       if (!materials.length) {
         matHost.innerHTML = '<p class="muted" style="font-size:13px">No batch materials yet.</p>';
       } else {
-        matHost.innerHTML = renderResourceCards(materials, 'Batch material');
+        const groupedBlocks = [];
+        materialChapters.forEach((ch) => {
+          const rows = ch.materials || [];
+          if (!rows.length) return;
+          groupedBlocks.push(`<details class="card" open><summary><strong>${escapeHtml(ch.title || 'Session')}</strong></summary>${renderResourceCards(
+            rows,
+            'Batch material',
+          )}</details>`);
+        });
+        if (materialUncategorized.length) {
+          groupedBlocks.push(`<details class="card" open><summary><strong>Other resources</strong></summary>${renderResourceCards(
+            materialUncategorized,
+            'Batch material',
+          )}</details>`);
+        }
+        matHost.innerHTML = groupedBlocks.join('') || renderResourceCards(materials, 'Batch material');
       }
     }
 

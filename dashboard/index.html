@@ -1304,6 +1304,14 @@
           </div>
 
           <div id="classroomPaneMaterials" class="classroom-pane hidden" role="tabpanel" aria-labelledby="classroomTabMaterials" hidden>
+            <div class="card" style="margin-bottom:10px">
+              <p class="course-library-eyebrow" style="margin:0 0 8px">Sessions</p>
+              <form id="classroomMatChapterForm" class="row">
+                <input type="text" id="classroomMatChapterTitle" maxlength="200" placeholder="Session title (e.g. Session 1)" />
+                <button type="submit" class="btn btn-secondary btn-sm">Add session</button>
+              </form>
+              <div id="classroomMatChapterChips" class="classroom-asg-chips" style="margin-top:8px"></div>
+            </div>
             <ul id="classroomMaterialsList" class="classroom-materials-list"></ul>
             <details class="form-collapse-panel" id="classroomMatFormPanel">
               <summary>+ Add resource</summary>
@@ -1313,6 +1321,11 @@
                   <input type="hidden" id="classroomMatEditId" value="" />
                   <label>Title <input type="text" id="classroomMatTitle" required maxlength="200" /></label>
                   <label>URL <input type="url" id="classroomMatUrl" placeholder="https://… (optional if you upload a file)" /></label>
+                  <label>Session
+                    <select id="classroomMatChapterId">
+                      <option value="">Uncategorized</option>
+                    </select>
+                  </label>
                   <label class="full">Files (optional, max 100 MB each)
                     <input type="file" id="classroomMatFile" multiple accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.mp4,.webm,.mov,.mkv,.avi,.m4v,.mp3,.wav,.m4a,.aac,.ogg,.flac" />
                   </label>
@@ -1420,7 +1433,7 @@
                       </select>
                     </label>
                     <label>Title <input type="text" id="courseLibraryMatTitle" required maxlength="200" /></label>
-                    <label class="full">URL <input type="url" id="courseLibraryMatUrl" required placeholder="https://..." /></label>
+                    <label class="full">URL <input type="url" id="courseLibraryMatUrl" placeholder="https://... (optional if you upload a file)" /></label>
                     <label class="full">Description <input type="text" id="courseLibraryMatDesc" maxlength="500" /></label>
                     <div class="full course-library-upload-row" id="courseLibraryUploadRow">
                       <label class="course-library-file-label">Or upload a file
@@ -1446,7 +1459,7 @@
             <div class="public-classroom-hero-head">
               <div class="view-hero-text">
                 <h2 id="publicClassroomHeading">Classroom</h2>
-                <p class="subtitle" id="publicClassroomSub">Participant view · no sign-in required</p>
+                <p class="subtitle" id="publicClassroomSub"></p>
               </div>
               <p class="pub-classroom-eyebrow">Classroom</p>
             </div>
