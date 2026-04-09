@@ -76,3 +76,34 @@ export function showToast(message, tone = 'info') {
     setTimeout(() => item.remove(), 260);
   }, 2800);
 }
+
+export const RESOURCE_UPLOAD_MAX_MB = 100;
+export const RESOURCE_UPLOAD_ACCEPT =
+  '.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,' +
+  '.mp4,.webm,.mov,.mkv,.avi,.m4v,.mp3,.wav,.m4a,.aac,.ogg,.flac';
+
+export function extractFileExtension(value) {
+  const txt = String(value || '').toLowerCase().split(/[?#]/)[0];
+  const m = txt.match(/\.([a-z0-9]{2,8})$/i);
+  return m ? m[1] : '';
+}
+
+export function detectFileKind(url, title, mimeType) {
+  const ext = extractFileExtension(url) || extractFileExtension(title);
+  const mime = String(mimeType || '').toLowerCase();
+  if (ext === 'pdf' || mime.includes('pdf')) return { icon: '📄', label: 'PDF' };
+  if (['ppt', 'pptx'].includes(ext) || mime.includes('presentation')) return { icon: '📊', label: 'PPT' };
+  if (['doc', 'docx'].includes(ext) || mime.includes('word')) return { icon: '📝', label: 'DOC' };
+  if (['xls', 'xlsx', 'csv'].includes(ext) || mime.includes('sheet')) return { icon: '📈', label: 'XLS' };
+  if (['mp4', 'webm', 'mov', 'mkv', 'avi', 'm4v'].includes(ext) || mime.includes('video')) return { icon: '🎬', label: 'VIDEO' };
+  if (['mp3', 'wav', 'm4a', 'aac', 'ogg', 'flac'].includes(ext) || mime.includes('audio')) return { icon: '🎵', label: 'AUDIO' };
+  return { icon: '📎', label: 'FILE' };
+}
+
+export function isDownloadResource(url, storageObjectKey = null) {
+  if (String(storageObjectKey || '').trim()) return true;
+  const u = String(url || '').toLowerCase();
+  if (!u) return false;
+  if (u.includes('/storage/v1/object/public/')) return true;
+  return /\.(pdf|doc|docx|ppt|pptx|xls|xlsx|txt|mp4|webm|mov|mkv|avi|m4v|mp3|wav|m4a|aac|ogg|flac)(\?|#|$)/i.test(u);
+}

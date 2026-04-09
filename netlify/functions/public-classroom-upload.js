@@ -1,6 +1,7 @@
 ﻿const crypto = require('crypto');
 const { cors, json, getSupabaseServiceClient, getSupabaseApiUrl } = require('../lib/_shared');
 const { validateClassroomUpload } = require('../lib/classroom-upload-allowlist');
+const { safeFilename, uploadResponse } = require('../lib/upload-shared');
 
 async function resolveAssignmentByToken(supabase, token, assignmentId) {
   const tok = String(token || '').trim();
@@ -23,11 +24,6 @@ async function resolveAssignmentByToken(supabase, token, assignmentId) {
   return { ok: true, assignment: asg };
 }
 
-function safeFilename(name) {
-  const base = String(name || 'file').split(/[/\\]/).pop() || 'file';
-  return base.replace(/[^a-zA-Z0-9._-]+/g, '_').slice(0, 120) || 'file';
-}
-
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: cors };
   if (event.httpMethod !== 'POST') return json({ error: 'Method not allowed' }, 405);
@@ -45,7 +41,7 @@ exports.handler = async (event) => {
   const gate = await resolveAssignmentByToken(supabase, body.token, body.assignment_id);
   if (!gate.ok) return json({ error: gate.error }, gate.status);
 
-  const filename = safeFilename(body.filename);
+  const filename = safeFilename(body.filename, 140);
   const typeCheck = validateClassroomUpload(filename, body.contentType);
   if (!typeCheck.ok) return json({ error: typeCheck.error }, 400);
 
@@ -57,8 +53,5 @@ exports.handler = async (event) => {
 
   const base = getSupabaseApiUrl();
   if (!base) return json({ error: 'Server config missing' }, 500);
-  const pathKey = data.path || objectPath;
-  const publicUrl = `${base}/storage/v1/object/public/classroom-submissions/${pathKey}`;
-
-  return json({ signedUrl: data.signedUrl, token: data.token || null, path: pathKey, publicUrl });
+  return json(uploadResponse(data, objectPath, base, 'classroom-submissions'));
 };

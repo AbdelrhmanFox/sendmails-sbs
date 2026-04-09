@@ -1,4 +1,11 @@
-import { jsonFetch, getAuthHeaders, showToast } from './shared.js';
+import {
+  jsonFetch,
+  getAuthHeaders,
+  showToast,
+  detectFileKind,
+  RESOURCE_UPLOAD_ACCEPT,
+  RESOURCE_UPLOAD_MAX_MB,
+} from './shared.js';
 
 const CLASSROOM = '/.netlify/functions/classroom-data';
 const CLASSROOM_UPLOAD = '/.netlify/functions/classroom-assignment-upload';
@@ -145,24 +152,6 @@ function escapeHtml(s) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
-}
-
-function extractExtension(value) {
-  const txt = String(value || '').toLowerCase().split(/[?#]/)[0];
-  const m = txt.match(/\.([a-z0-9]{2,8})$/i);
-  return m ? m[1] : '';
-}
-
-function detectFileKind(url, title, mimeType) {
-  const ext = extractExtension(url) || extractExtension(title);
-  const mime = String(mimeType || '').toLowerCase();
-  if (ext === 'pdf' || mime.includes('pdf')) return { icon: '📄', label: 'PDF' };
-  if (['ppt', 'pptx'].includes(ext) || mime.includes('presentation')) return { icon: '📊', label: 'PPT' };
-  if (['doc', 'docx'].includes(ext) || mime.includes('word')) return { icon: '📝', label: 'DOC' };
-  if (['xls', 'xlsx', 'csv'].includes(ext) || mime.includes('sheet')) return { icon: '📈', label: 'XLS' };
-  if (['mp4', 'webm', 'mov', 'mkv', 'avi', 'm4v'].includes(ext) || mime.includes('video')) return { icon: '🎬', label: 'VIDEO' };
-  if (['mp3', 'wav', 'm4a', 'aac', 'ogg', 'flac'].includes(ext) || mime.includes('audio')) return { icon: '🎵', label: 'AUDIO' };
-  return { icon: '📎', label: 'FILE' };
 }
 
 function refreshMaterialChapterSelect() {
@@ -732,6 +721,15 @@ function switchClassroomTab(which) {
 }
 
 export function initClassroom() {
+  const asgInput = $('classroomAsgFiles');
+  if (asgInput) asgInput.setAttribute('accept', RESOURCE_UPLOAD_ACCEPT);
+  const matInput = $('classroomMatFile');
+  if (matInput) matInput.setAttribute('accept', RESOURCE_UPLOAD_ACCEPT);
+  const matHint = document.querySelector('#classroomPaneMaterials .muted.small-margin.full');
+  if (matHint) {
+    matHint.textContent = `Same file types as classwork attachments (PDF, Office, video, audio). You can upload multiple files at once. Leave URL empty when uploading files. Max ${RESOURCE_UPLOAD_MAX_MB} MB per file.`;
+  }
+
   $('classroomBackBtn')?.addEventListener('click', () => closeClassroomRoom());
 
   document.addEventListener('sbs:classroom-batch-updated', (e) => {

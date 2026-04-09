@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const { cors, json, getSupabaseServiceClient, verifyAuth, getSupabaseApiUrl } = require('../lib/_shared');
-
-const TRAINER_ROLES = ['admin', 'trainer'];
+const { validateClassroomUpload } = require('../lib/classroom-upload-allowlist');
+const { ensureUploadRole, safeFilename, uploadResponse } = require('../lib/upload-shared');
 
 async function assertCourseAccess(supabase, auth, courseId) {
   const cid = String(courseId || '').trim();
@@ -12,19 +12,14 @@ async function assertCourseAccess(supabase, auth, courseId) {
   if (auth.role === 'admin') return { ok: true, course_id: cid };
   const uname = String(auth.username || '').trim();
   const { data: rows, error: be } = await supabase
-    .from('batches')
-    .select('batch_id')
+    .from('trainer_course_access')
+    .select('id')
+    .eq('trainer_username', uname)
     .eq('course_id', cid)
-    .eq('trainer', uname)
     .limit(1);
   if (be) return { ok: false, status: 500, error: be.message || 'Access check failed' };
   if (rows && rows.length) return { ok: true, course_id: cid };
   return { ok: false, status: 403, error: 'Forbidden' };
-}
-
-function safeFilename(name) {
-  const base = String(name || 'file').split(/[/\\]/).pop() || 'file';
-  return base.replace(/[^a-zA-Z0-9._-]+/g, '_').slice(0, 120) || 'file';
 }
 
 /**
@@ -36,7 +31,9 @@ exports.handler = async (event) => {
 
   const auth = verifyAuth(event);
   if (!auth) return json({ error: 'Unauthorized' }, 401);
-  if (!TRAINER_ROLES.includes(auth.role)) return json({ error: 'Trainer or admin role required' }, 403);
+  const roleCheck = ensureUploadRole(auth.role);
+  if (!roleCheck.ok) return json({ error: 'Trainer or admin role required' }, 403);
+  const normalizedAuth = { ...auth, role: roleCheck.role };
 
   const supabase = getSupabaseServiceClient();
   if (!supabase) return json({ error: 'Server config missing' }, 500);
@@ -49,10 +46,12 @@ exports.handler = async (event) => {
   }
 
   const courseId = String(body.course_id || '').trim();
-  const gate = await assertCourseAccess(supabase, auth, courseId);
+  const gate = await assertCourseAccess(supabase, normalizedAuth, courseId);
   if (!gate.ok) return json({ error: gate.error }, gate.status);
 
-  const filename = safeFilename(body.filename);
+  const filename = safeFilename(body.filename, 140);
+  const typeCheck = validateClassroomUpload(filename, body.contentType);
+  if (!typeCheck.ok) return json({ error: typeCheck.error }, 400);
   const contentType = String(body.contentType || 'application/octet-stream').slice(0, 200);
   const objectPath = `${courseId}/${crypto.randomUUID()}_${filename}`;
 
@@ -62,14 +61,8 @@ exports.handler = async (event) => {
 
   const base = getSupabaseApiUrl();
   if (!base) return json({ error: 'Server config missing' }, 500);
-  const pathKey = data.path || objectPath;
-  const publicUrl = `${base}/storage/v1/object/public/course-materials/${pathKey}`;
-
   return json({
-    signedUrl: data.signedUrl,
-    path: pathKey,
-    token: data.token || null,
-    publicUrl,
+    ...uploadResponse(data, objectPath, base, 'course-materials'),
     contentType,
   });
 };

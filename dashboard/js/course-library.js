@@ -1,4 +1,4 @@
-import { jsonFetch, getAuthHeaders } from './shared.js';
+import { jsonFetch, getAuthHeaders, showToast, detectFileKind, RESOURCE_UPLOAD_ACCEPT, RESOURCE_UPLOAD_MAX_MB } from './shared.js';
 
 const API = '/.netlify/functions/course-library-data';
 const UPLOAD_API = '/.netlify/functions/course-library-upload';
@@ -37,23 +37,6 @@ function escapeHtml(s) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
-}
-
-function extractExtension(value) {
-  const txt = String(value || '').toLowerCase().split(/[?#]/)[0];
-  const m = txt.match(/\.([a-z0-9]{2,8})$/i);
-  return m ? m[1] : '';
-}
-
-function detectFileKind(url, title) {
-  const ext = extractExtension(url) || extractExtension(title);
-  if (ext === 'pdf') return { icon: '📄', label: 'PDF' };
-  if (['ppt', 'pptx'].includes(ext)) return { icon: '📊', label: 'PPT' };
-  if (['doc', 'docx'].includes(ext)) return { icon: '📝', label: 'DOC' };
-  if (['xls', 'xlsx', 'csv'].includes(ext)) return { icon: '📈', label: 'XLS' };
-  if (['mp4', 'webm', 'mov', 'mkv', 'avi', 'm4v'].includes(ext)) return { icon: '🎬', label: 'VIDEO' };
-  if (['mp3', 'wav', 'm4a', 'aac', 'ogg', 'flac'].includes(ext)) return { icon: '🎵', label: 'AUDIO' };
-  return { icon: '📎', label: 'FILE' };
 }
 
 function clearMaterialForm() {
@@ -119,7 +102,7 @@ function renderMaterialRows(materials) {
   }
   return `<ul class="course-library-mat-list">${materials
     .map((m) => {
-      const fileKind = detectFileKind(m.url, m.title);
+      const fileKind = detectFileKind(m.url, m.title, null);
       const desc = m.description ? `<p class="muted" style="font-size:12px;margin:2px 0 0">${escapeHtml(m.description)}</p>` : '';
       return `<li class="course-library-mat-row">
         <div class="course-library-mat-main">
@@ -240,7 +223,7 @@ function renderTree(data) {
         if (String($('courseLibraryMatEditId')?.value || '') === id) clearMaterialForm();
         await loadLibrary(currentCourseId);
       } catch (e) {
-        alert(e.message);
+        showToast(e.message || 'Action failed.', 'error');
       }
     });
   });
@@ -268,7 +251,7 @@ function renderTree(data) {
         if (selectedChapterId === id) selectedChapterId = '__uncategorized__';
         await loadLibrary(currentCourseId);
       } catch (e) {
-        alert(e.message);
+        showToast(e.message || 'Action failed.', 'error');
       }
     });
   });
@@ -334,6 +317,11 @@ export async function loadCourseLibrary() {
 }
 
 export function initCourseLibrary() {
+  const fileInput = $('courseLibraryMatFile');
+  if (fileInput) fileInput.setAttribute('accept', RESOURCE_UPLOAD_ACCEPT);
+  const hint = $('courseLibraryUploadHint');
+  if (hint) hint.textContent = `Allowed: PDF, Office docs, text, video, audio. Max ${RESOURCE_UPLOAD_MAX_MB} MB per file.`;
+
   $('courseLibrarySelect')?.addEventListener('change', (ev) => {
     const v = String(ev.target.value || '').trim();
     void loadLibrary(v);

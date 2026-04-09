@@ -1,4 +1,4 @@
-﻿const { cors, json, getSupabaseServiceClient } = require('../lib/_shared');
+﻿const { cors, json, getSupabaseServiceClient, getSupabaseApiUrl } = require('../lib/_shared');
 
 async function resolveAssignmentByToken(supabase, token, assignmentId) {
   const tok = String(token || '').trim();
@@ -47,6 +47,17 @@ exports.handler = async (event) => {
 
   if (!traineeName) return json({ error: 'trainee_name is required' }, 400);
   if (!submissionText && !fileUrl) return json({ error: 'Provide submission_text or file_url' }, 400);
+  if (fileUrl || fileStorageKey) {
+    const base = getSupabaseApiUrl();
+    if (!base) return json({ error: 'Server config missing' }, 500);
+    const expectedPrefix = `${base}/storage/v1/object/public/classroom-submissions/`;
+    const key = String(fileStorageKey || '').trim();
+    const url = String(fileUrl || '').trim();
+    if (!key || !url) return json({ error: 'file_url and file_storage_key must be provided together' }, 400);
+    if (!url.startsWith(expectedPrefix)) return json({ error: 'Invalid file_url for classroom submissions' }, 400);
+    if (!key.startsWith(`${assignmentId}/`)) return json({ error: 'Invalid file_storage_key for assignment' }, 400);
+    if (!url.endsWith(key)) return json({ error: 'file_url and file_storage_key mismatch' }, 400);
+  }
 
   let existing = null;
   if (traineeEmail) {

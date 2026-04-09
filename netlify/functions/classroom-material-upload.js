@@ -1,8 +1,7 @@
 const crypto = require('crypto');
 const { cors, json, getSupabaseServiceClient, getSupabaseApiUrl, verifyAuth } = require('../lib/_shared');
 const { validateClassroomUpload } = require('../lib/classroom-upload-allowlist');
-
-const TRAINER_ROLES = ['admin', 'trainer'];
+const { ensureUploadRole, safeFilename, uploadResponse } = require('../lib/upload-shared');
 
 async function assertBatchAccess(supabase, auth, batchId) {
   const bid = String(batchId || '').trim();
@@ -26,19 +25,15 @@ async function assertBatchAccess(supabase, auth, batchId) {
   return { ok: false, status: 403, error: 'Forbidden' };
 }
 
-function safeFilename(name) {
-  const base = String(name || 'file').split(/[/\\]/).pop() || 'file';
-  return base.replace(/[^a-zA-Z0-9._-]+/g, '_').slice(0, 140) || 'file';
-}
-
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: cors };
   if (event.httpMethod !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
   let auth = verifyAuth(event);
   if (!auth) return json({ error: 'Unauthorized' }, 401);
-  auth = { ...auth, role: String(auth.role || '').trim().toLowerCase() };
-  if (!TRAINER_ROLES.includes(auth.role)) return json({ error: 'Trainer or admin role required' }, 403);
+  const roleCheck = ensureUploadRole(auth.role);
+  if (!roleCheck.ok) return json({ error: 'Trainer or admin role required' }, 403);
+  auth = { ...auth, role: roleCheck.role };
 
   const supabase = getSupabaseServiceClient();
   if (!supabase) return json({ error: 'Server config missing' }, 500);
@@ -54,7 +49,7 @@ exports.handler = async (event) => {
   const gate = await assertBatchAccess(supabase, auth, batchId);
   if (!gate.ok) return json({ error: gate.error }, gate.status);
 
-  const filename = safeFilename(body.filename);
+  const filename = safeFilename(body.filename, 140);
   const typeCheck = validateClassroomUpload(filename, body.contentType);
   if (!typeCheck.ok) return json({ error: typeCheck.error }, 400);
 
@@ -65,7 +60,5 @@ exports.handler = async (event) => {
 
   const base = getSupabaseApiUrl();
   if (!base) return json({ error: 'Server config missing' }, 500);
-  const pathKey = data.path || objectPath;
-  const publicUrl = `${base}/storage/v1/object/public/classroom-material-files/${pathKey}`;
-  return json({ signedUrl: data.signedUrl, token: data.token || null, path: pathKey, publicUrl });
+  return json(uploadResponse(data, objectPath, base, 'classroom-material-files'));
 };

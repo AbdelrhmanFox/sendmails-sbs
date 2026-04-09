@@ -1,9 +1,4 @@
-﻿import { jsonFetch } from './shared.js';
-
-/** Keep in sync with netlify/lib/classroom-upload-allowlist.js (ACCEPT_ATTR). */
-const PUBLIC_SUBMISSION_ACCEPT =
-  '.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,' +
-  '.mp4,.webm,.mov,.mkv,.avi,.m4v,.mp3,.wav,.m4a,.aac,.ogg,.flac';
+﻿import { jsonFetch, detectFileKind, isDownloadResource, RESOURCE_UPLOAD_ACCEPT, RESOURCE_UPLOAD_MAX_MB } from './shared.js';
 
 function escapeHtml(s) {
   return String(s)
@@ -13,30 +8,6 @@ function escapeHtml(s) {
     .replace(/"/g, '&quot;');
 }
 
-function isDownloadResource(url) {
-  const u = String(url || '').toLowerCase();
-  if (!u) return false;
-  if (u.includes('/storage/v1/object/public/')) return true;
-  return /\.(pdf|doc|docx|ppt|pptx|xls|xlsx|txt|mp4|webm|mov|mkv|avi|m4v|mp3|wav|m4a|aac|ogg|flac)(\?|#|$)/i.test(u);
-}
-
-function extractExtension(value) {
-  const txt = String(value || '').toLowerCase().split(/[?#]/)[0];
-  const m = txt.match(/\.([a-z0-9]{2,8})$/i);
-  return m ? m[1] : '';
-}
-
-function detectFileKind(url, title, mimeType) {
-  const ext = extractExtension(url) || extractExtension(title);
-  const mime = String(mimeType || '').toLowerCase();
-  if (ext === 'pdf' || mime.includes('pdf')) return { icon: '📄', label: 'PDF' };
-  if (['ppt', 'pptx'].includes(ext) || mime.includes('presentation')) return { icon: '📊', label: 'PPT' };
-  if (['doc', 'docx'].includes(ext) || mime.includes('word')) return { icon: '📝', label: 'DOC' };
-  if (['xls', 'xlsx', 'csv'].includes(ext) || mime.includes('sheet')) return { icon: '📈', label: 'XLS' };
-  if (['mp4', 'webm', 'mov', 'mkv', 'avi', 'm4v'].includes(ext) || mime.includes('video')) return { icon: '🎬', label: 'VIDEO' };
-  if (['mp3', 'wav', 'm4a', 'aac', 'ogg', 'flac'].includes(ext) || mime.includes('audio')) return { icon: '🎵', label: 'AUDIO' };
-  return { icon: '📎', label: 'FILE' };
-}
 
 function renderResourceCards(items, label) {
   const rows = Array.isArray(items) ? items : [];
@@ -48,7 +19,7 @@ function renderResourceCards(items, label) {
       const fileKind = detectFileKind(m.url, m.title, m.mime_type);
       const desc = m.description ? `<p class="pub-resource-desc">${escapeHtml(m.description)}</p>` : '';
       const tag = label ? `<span class="pub-resource-tag">${escapeHtml(label)}</span>` : '';
-      const isDownload = isDownloadResource(m.url);
+      const isDownload = isDownloadResource(m.url, m.storage_object_key);
       return `<article class="pub-resource-card">
         <div class="pub-resource-head">
           <h4 class="pub-resource-title">${escapeHtml(fileKind.icon)} ${title}</h4>
@@ -373,9 +344,9 @@ export async function initPublicClassroom(token) {
                       <textarea class="public-submission-text" rows="3" maxlength="5000" placeholder="Write answer or paste links…"></textarea>
                     </label>
                     <label class="full">Attach file (optional)
-                      <input type="file" class="public-submission-file" accept="${PUBLIC_SUBMISSION_ACCEPT}" />
+                      <input type="file" class="public-submission-file" accept="${RESOURCE_UPLOAD_ACCEPT}" />
                     </label>
-                    <p class="muted small-margin full" style="font-size:12px">PDF, Word, Excel, PowerPoint, text, video, or audio — max 100 MB per file.</p>
+                    <p class="muted small-margin full" style="font-size:12px">PDF, Word, Excel, PowerPoint, text, video, or audio — max ${RESOURCE_UPLOAD_MAX_MB} MB per file.</p>
                   </div>
                   <div class="public-submission-actions">
                     <button type="submit" class="btn btn-primary public-submission-submit">Submit</button>
