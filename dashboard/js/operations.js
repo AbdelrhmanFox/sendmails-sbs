@@ -1,8 +1,9 @@
-import { jsonFetch, getAuthHeaders, AUTH_ROLE } from './shared.js';
+import { jsonFetch, getAuthHeaders, AUTH_ROLE, showToast } from './shared.js';
 import { loadClassrooms } from './classroom.js';
 
 const OPS = '/.netlify/functions/operations-data';
 const LMS_ANALYTICS = '/.netlify/functions/lms-analytics';
+const LMS_ASSESSMENTS = '/.netlify/functions/assessment-data';
 const BULK_IMPORT_CHUNK = 75;
 
 const TRAINEE_TYPES = ['Student', 'Doctor', 'IT', 'Corporate'];
@@ -2222,6 +2223,177 @@ export async function loadLmsInsights() {
   }
 }
 
+function setInlineMsg(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = text || '';
+}
+
+function toIsoOrNull(value) {
+  const txt = String(value || '').trim();
+  if (!txt) return null;
+  const dt = new Date(txt);
+  if (Number.isNaN(dt.getTime())) return null;
+  return dt.toISOString();
+}
+
+function safeJsonParse(value) {
+  const txt = String(value || '').trim();
+  if (!txt) return null;
+  return JSON.parse(txt);
+}
+
+function renderAssessmentOptions(items) {
+  const opts = [`<option value="">Choose assessment...</option>`]
+    .concat(items.map((a) => `<option value="${escapeHtml(a.id)}">${escapeHtml(a.title || a.id)}</option>`))
+    .join('');
+  const qSel = document.getElementById('lmsQuestionAssessmentId');
+  const aSel = document.getElementById('lmsAttemptsAssessmentId');
+  if (qSel) qSel.innerHTML = opts;
+  if (aSel) aSel.innerHTML = opts;
+}
+
+export async function loadLmsAssessments() {
+  const body = document.getElementById('lmsAssessmentsBody');
+  if (!body) return;
+  try {
+    const data = await jsonFetch(`${LMS_ASSESSMENTS}?resource=assessments`, { headers: getAuthHeaders() });
+    const items = Array.isArray(data.items) ? data.items : [];
+    body.innerHTML = items
+      .map(
+        (a) =>
+          `<tr><td>${escapeHtml(a.title || '')}</td><td>${escapeHtml(a.assessment_type || '')}</td><td>${escapeHtml(a.batch_id || '')}</td><td>${escapeHtml(
+            a.course_id || '',
+          )}</td><td>${escapeHtml(a.status || '')}</td><td>${escapeHtml(a.max_score ?? '')} / ${escapeHtml(a.pass_score ?? '')}</td></tr>`,
+      )
+      .join('');
+    renderAssessmentOptions(items);
+    setInlineMsg('lmsAssessmentsMsg', '');
+  } catch (err) {
+    setInlineMsg('lmsAssessmentsMsg', err.message || 'Could not load assessments.');
+  }
+}
+
+export async function createLmsAssessment(event) {
+  event.preventDefault();
+  const payload = {
+    title: document.getElementById('lmsAsgTitle')?.value?.trim() || '',
+    assessment_type: document.getElementById('lmsAsgType')?.value || 'quiz',
+    batch_id: String(document.getElementById('lmsAsgBatchId')?.value || '').trim() || null,
+    course_id: String(document.getElementById('lmsAsgCourseId')?.value || '').trim() || null,
+    description: String(document.getElementById('lmsAsgDescription')?.value || '').trim() || null,
+    status: document.getElementById('lmsAsgStatus')?.value || 'draft',
+    max_score: Number(document.getElementById('lmsAsgMaxScore')?.value || 0) || 0,
+    pass_score: Number(document.getElementById('lmsAsgPassScore')?.value || 0) || 0,
+    due_at: toIsoOrNull(document.getElementById('lmsAsgDueAt')?.value),
+  };
+  if (!payload.title) {
+    showToast('Assessment title is required.', 'error');
+    return;
+  }
+  try {
+    await jsonFetch(`${LMS_ASSESSMENTS}?resource=assessments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      body: JSON.stringify(payload),
+    });
+    showToast('Assessment created successfully.', 'success');
+    document.getElementById('lmsAssessmentForm')?.reset();
+    await loadLmsAssessments();
+  } catch (err) {
+    showToast(err.message || 'Could not create assessment.', 'error');
+  }
+}
+
+export async function loadLmsQuestions() {
+  const body = document.getElementById('lmsQuestionsBody');
+  const assessmentId = String(document.getElementById('lmsQuestionAssessmentId')?.value || '').trim();
+  if (!body) return;
+  if (!assessmentId) {
+    body.innerHTML = '';
+    setInlineMsg('lmsQuestionsMsg', 'Choose an assessment to load questions.');
+    return;
+  }
+  try {
+    const data = await jsonFetch(`${LMS_ASSESSMENTS}?resource=questions&assessment_id=${encodeURIComponent(assessmentId)}`, {
+      headers: getAuthHeaders(),
+    });
+    const items = Array.isArray(data.items) ? data.items : [];
+    body.innerHTML = items
+      .map((q) => `<tr><td>${escapeHtml(q.prompt || '')}</td><td>${escapeHtml(q.question_type || '')}</td><td>${escapeHtml(q.points ?? '')}</td></tr>`)
+      .join('');
+    setInlineMsg('lmsQuestionsMsg', '');
+  } catch (err) {
+    setInlineMsg('lmsQuestionsMsg', err.message || 'Could not load questions.');
+  }
+}
+
+export async function createLmsQuestion(event) {
+  event.preventDefault();
+  const assessmentId = String(document.getElementById('lmsQuestionAssessmentId')?.value || '').trim();
+  const prompt = String(document.getElementById('lmsQuestionPrompt')?.value || '').trim();
+  if (!assessmentId || !prompt) {
+    showToast('Assessment and prompt are required.', 'error');
+    return;
+  }
+  let optionsJson = null;
+  let answerJson = null;
+  try {
+    optionsJson = safeJsonParse(document.getElementById('lmsQuestionOptions')?.value);
+    answerJson = safeJsonParse(document.getElementById('lmsQuestionAnswer')?.value);
+  } catch (err) {
+    showToast('Options/answer must be valid JSON.', 'error');
+    return;
+  }
+  try {
+    await jsonFetch(`${LMS_ASSESSMENTS}?resource=questions&assessment_id=${encodeURIComponent(assessmentId)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      body: JSON.stringify({
+        prompt,
+        question_type: document.getElementById('lmsQuestionType')?.value || 'mcq',
+        points: Number(document.getElementById('lmsQuestionPoints')?.value || 1) || 1,
+        options: optionsJson,
+        correct_answer: answerJson,
+      }),
+    });
+    showToast('Question added.', 'success');
+    document.getElementById('lmsQuestionPrompt').value = '';
+    document.getElementById('lmsQuestionOptions').value = '';
+    document.getElementById('lmsQuestionAnswer').value = '';
+    await loadLmsQuestions();
+  } catch (err) {
+    showToast(err.message || 'Could not create question.', 'error');
+  }
+}
+
+export async function loadLmsAttempts() {
+  const body = document.getElementById('lmsAttemptsBody');
+  const assessmentId = String(document.getElementById('lmsAttemptsAssessmentId')?.value || '').trim();
+  if (!body) return;
+  if (!assessmentId) {
+    body.innerHTML = '';
+    setInlineMsg('lmsAttemptsMsg', 'Choose an assessment to view attempts.');
+    return;
+  }
+  try {
+    const data = await jsonFetch(`${LMS_ASSESSMENTS}?resource=attempts&assessment_id=${encodeURIComponent(assessmentId)}`, {
+      headers: getAuthHeaders(),
+    });
+    const items = Array.isArray(data.items) ? data.items : [];
+    body.innerHTML = items
+      .map(
+        (a) =>
+          `<tr><td>${escapeHtml(a.trainee_id || '')}</td><td>${escapeHtml(a.attempt_no ?? '')}</td><td>${escapeHtml(a.status || '')}</td><td>${escapeHtml(
+            a.score ?? '',
+          )}</td><td>${escapeHtml(a.submitted_at || '')}</td></tr>`,
+      )
+      .join('');
+    setInlineMsg('lmsAttemptsMsg', '');
+  } catch (err) {
+    setInlineMsg('lmsAttemptsMsg', err.message || 'Could not load attempts.');
+  }
+}
+
 function initInsightsTabs() {
   const tabs = [
     { tabId: 'insightsTabPipeline', paneId: 'insightsPanePipeline', key: 'pipeline', onActivate: loadPipeline },
@@ -2271,9 +2443,17 @@ export function initOpsInsights() {
   document.getElementById('btnRefreshCapacity')?.addEventListener('click', loadCapacity);
   document.getElementById('btnRefreshQuality')?.addEventListener('click', loadQuality);
   document.getElementById('btnRefreshLmsInsights')?.addEventListener('click', loadLmsInsights);
+  document.getElementById('btnRefreshLmsAssessments')?.addEventListener('click', loadLmsAssessments);
+  document.getElementById('btnRefreshLmsQuestions')?.addEventListener('click', loadLmsQuestions);
+  document.getElementById('btnRefreshLmsAttempts')?.addEventListener('click', loadLmsAttempts);
+  document.getElementById('lmsAssessmentForm')?.addEventListener('submit', createLmsAssessment);
+  document.getElementById('lmsQuestionForm')?.addEventListener('submit', createLmsQuestion);
+  document.getElementById('lmsQuestionAssessmentId')?.addEventListener('change', loadLmsQuestions);
+  document.getElementById('lmsAttemptsAssessmentId')?.addEventListener('change', loadLmsAttempts);
   document.getElementById('opsHomeAnalyticsDetails')?.addEventListener('click', () => {
     document.dispatchEvent(new CustomEvent('sbs:goto-view', { detail: { viewId: 'operations-insights' } }));
   });
   initInsightsTabs();
   initCoursesSubtabs();
+  loadLmsAssessments();
 }

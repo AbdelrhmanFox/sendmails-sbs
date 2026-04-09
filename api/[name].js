@@ -31,6 +31,7 @@ const HANDLERS = {
   'course-library-data': require('../netlify/functions/course-library-data').handler,
   'course-library-upload': require('../netlify/functions/course-library-upload').handler,
   'assessment-data': require('../netlify/functions/assessment-data').handler,
+  'lms-admin-data': require('../netlify/functions/lms-admin-data').handler,
   'lms-analytics': require('../netlify/functions/lms-analytics').handler,
   'integration-events': require('../netlify/functions/integration-events').handler,
 };

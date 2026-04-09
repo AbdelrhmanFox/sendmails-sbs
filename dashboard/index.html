@@ -825,6 +825,93 @@
             </div>
             <p id="lmsInsightsMsg" class="inline-note"></p>
           </div>
+          <div class="card">
+            <h3>Assessments</h3>
+            <form id="lmsAssessmentForm" class="form-grid form-grid--two">
+              <label>Title <input id="lmsAsgTitle" required maxlength="200" /></label>
+              <label>Type
+                <select id="lmsAsgType">
+                  <option value="quiz">Quiz</option>
+                  <option value="exam">Exam</option>
+                  <option value="assignment">Assignment</option>
+                </select>
+              </label>
+              <label>Batch ID <input id="lmsAsgBatchId" placeholder="SBS-BA-..." /></label>
+              <label>Course ID <input id="lmsAsgCourseId" placeholder="SBS-CO-..." /></label>
+              <label>Max score <input id="lmsAsgMaxScore" type="number" step="0.01" /></label>
+              <label>Pass score <input id="lmsAsgPassScore" type="number" step="0.01" /></label>
+              <label>Due at <input id="lmsAsgDueAt" type="datetime-local" /></label>
+              <label>Status
+                <select id="lmsAsgStatus">
+                  <option value="draft">Draft</option>
+                  <option value="published">Published</option>
+                  <option value="closed">Closed</option>
+                </select>
+              </label>
+              <label class="full">Description <textarea id="lmsAsgDescription" rows="2" maxlength="2000"></textarea></label>
+              <div class="full form-actions">
+                <button type="submit" class="btn btn-primary">Create assessment</button>
+                <button type="button" class="btn btn-secondary" id="btnRefreshLmsAssessments">Refresh list</button>
+              </div>
+            </form>
+            <p id="lmsAssessmentsMsg" class="inline-note"></p>
+            <div class="ops-table-desktop table-wrap">
+              <table>
+                <thead><tr><th>Title</th><th>Type</th><th>Batch</th><th>Course</th><th>Status</th><th>Max/Pass</th></tr></thead>
+                <tbody id="lmsAssessmentsBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Assessment Questions</h3>
+            <form id="lmsQuestionForm" class="form-grid form-grid--two">
+              <label class="full">Assessment
+                <select id="lmsQuestionAssessmentId" required>
+                  <option value="">Choose assessment...</option>
+                </select>
+              </label>
+              <label>Question type
+                <select id="lmsQuestionType">
+                  <option value="mcq">MCQ</option>
+                  <option value="text">Text</option>
+                  <option value="true_false">True/False</option>
+                </select>
+              </label>
+              <label>Points <input id="lmsQuestionPoints" type="number" step="0.01" value="1" /></label>
+              <label class="full">Prompt <textarea id="lmsQuestionPrompt" rows="2" required maxlength="2000"></textarea></label>
+              <label class="full">Options JSON (optional) <textarea id="lmsQuestionOptions" rows="2" placeholder='["A","B","C"]'></textarea></label>
+              <label class="full">Correct answer JSON (optional) <textarea id="lmsQuestionAnswer" rows="2" placeholder='"A" or ["A","C"]'></textarea></label>
+              <div class="full form-actions">
+                <button type="submit" class="btn btn-primary">Add question</button>
+                <button type="button" class="btn btn-secondary" id="btnRefreshLmsQuestions">Refresh questions</button>
+              </div>
+            </form>
+            <p id="lmsQuestionsMsg" class="inline-note"></p>
+            <div class="ops-table-desktop table-wrap">
+              <table>
+                <thead><tr><th>Prompt</th><th>Type</th><th>Points</th></tr></thead>
+                <tbody id="lmsQuestionsBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Assessment Attempts</h3>
+            <div class="row">
+              <select id="lmsAttemptsAssessmentId">
+                <option value="">Choose assessment...</option>
+              </select>
+              <button type="button" class="btn btn-secondary" id="btnRefreshLmsAttempts">Refresh attempts</button>
+            </div>
+            <p id="lmsAttemptsMsg" class="inline-note"></p>
+            <div class="ops-table-desktop table-wrap">
+              <table>
+                <thead><tr><th>Trainee</th><th>Attempt</th><th>Status</th><th>Score</th><th>Submitted</th></tr></thead>
+                <tbody id="lmsAttemptsBody"></tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </section>
 
