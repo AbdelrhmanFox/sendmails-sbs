@@ -2763,6 +2763,39 @@ body.participant-join .app-top-bar__burger {
 .ops-back {
   margin-bottom: 8px;
 }
+.ops-mobile-card-title {
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: 700;
+}
+.ops-mobile-card-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+.ops-mobile-card-field {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 10px;
+  align-items: start;
+}
+.ops-mobile-card-label {
+  color: var(--brand-muted);
+  font-size: 12px;
+}
+.ops-mobile-card-value {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.ops-mobile-card-actions {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ops-mobile-card-actions .btn {
+  min-height: 38px;
+}
 
 @media (max-width: 720px) {
   .ops-dual-layout .ops-table-desktop {
@@ -2784,6 +2817,13 @@ body.participant-join .app-top-bar__burger {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 6px;
+  }
+  .ops-mobile-card {
+    padding: 14px;
+  }
+  .demo-whatsapp-cta {
+    right: 12px;
+    bottom: 12px;
   }
 }
 
@@ -3100,8 +3140,11 @@ body.participant-join .app-top-bar__burger {
   align-items: flex-start;
   justify-content: space-between;
   gap: 8px 12px;
-  padding: 8px 0;
-  border-bottom: 1px solid color-mix(in oklab, var(--brand-border) 40%, transparent);
+  padding: 10px 12px;
+  border: 1px solid color-mix(in oklab, var(--brand-border) 45%, transparent);
+  border-radius: 12px;
+  background: color-mix(in oklab, var(--brand-surface) 92%, white 8%);
+  margin-bottom: 8px;
 }
 
 .classroom-material-main {

@@ -1094,10 +1094,10 @@
                   <input type="hidden" id="classroomMatEditId" value="" />
                   <label>Title <input type="text" id="classroomMatTitle" required maxlength="200" /></label>
                   <label>URL <input type="url" id="classroomMatUrl" placeholder="https://… (optional if you upload a file)" /></label>
-                  <label class="full">File (optional, max 100 MB)
-                    <input type="file" id="classroomMatFile" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.mp4,.webm,.mov,.mkv,.avi,.m4v,.mp3,.wav,.m4a,.aac,.ogg,.flac" />
+                  <label class="full">Files (optional, max 100 MB each)
+                    <input type="file" id="classroomMatFile" multiple accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.mp4,.webm,.mov,.mkv,.avi,.m4v,.mp3,.wav,.m4a,.aac,.ogg,.flac" />
                   </label>
-                  <p class="muted small-margin full" style="font-size:12px">Same file types as classwork attachments (PDF, Office, video, audio). Leave URL empty when uploading a file.</p>
+                  <p class="muted small-margin full" style="font-size:12px">Same file types as classwork attachments (PDF, Office, video, audio). You can upload multiple files at once. Leave URL empty when uploading files.</p>
                   <label class="full">Description <input type="text" id="classroomMatDesc" maxlength="500" /></label>
                   <div class="form-actions full">
                     <button type="submit" class="btn btn-primary" id="classroomMatSubmit">Add resource</button>

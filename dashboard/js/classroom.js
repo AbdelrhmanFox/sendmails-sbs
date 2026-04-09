@@ -572,6 +572,9 @@ async function loadMaterialsList() {
               ${m.description ? `<p class="muted small-margin" style="font-size:12px">${escapeHtml(m.description)}</p>` : ''}
             </div>
             <div class="classroom-inline-actions">
+              <a href="${escapeHtml(m.url)}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm" ${m.storage_object_key ? 'download' : ''}>
+                ${m.storage_object_key ? 'Download' : 'Open'}
+              </a>
               <button type="button" class="btn btn-ghost btn-sm classroom-edit-mat" data-id="${escapeHtml(m.id)}">Edit</button>
               <button type="button" class="btn btn-ghost btn-sm btn-danger classroom-del-mat" data-id="${escapeHtml(m.id)}">Remove</button>
             </div>
@@ -724,17 +727,43 @@ export function initClassroom() {
       return;
     }
     try {
+      if (editId && files.length > 1) {
+        if (msg) msg.textContent = 'When editing, please upload one file only.';
+        return;
+      }
+      let createdCount = 0;
       let payload = {
         title,
         description: description || null,
       };
       if (files.length) {
-        const up = await uploadClassroomMaterialFile(currentBatchId, files[0]);
-        url = up.publicUrl;
-        payload.url = up.publicUrl;
-        payload.storage_object_key = up.path;
-        payload.mime_type = files[0].type || null;
-        payload.file_size_bytes = files[0].size ?? null;
+        if (editId) {
+          const f = files[0];
+          const up = await uploadClassroomMaterialFile(currentBatchId, f);
+          payload.url = up.publicUrl;
+          payload.storage_object_key = up.path;
+          payload.mime_type = f.type || null;
+          payload.file_size_bytes = f.size ?? null;
+        } else {
+          for (const f of files) {
+            const up = await uploadClassroomMaterialFile(currentBatchId, f);
+            const fileTitle = files.length === 1 ? title : `${title} - ${f.name}`;
+            await jsonFetch(`${CLASSROOM}?resource=materials`, {
+              method: 'POST',
+              headers: getAuthHeaders(),
+              body: JSON.stringify({
+                batch_id: currentBatchId,
+                title: fileTitle,
+                url: up.publicUrl,
+                storage_object_key: up.path,
+                mime_type: f.type || null,
+                file_size_bytes: f.size ?? null,
+                description: description || null,
+              }),
+            });
+            createdCount += 1;
+          }
+        }
       } else {
         payload.url = url;
         if (editId) {
@@ -753,19 +782,22 @@ export function initClassroom() {
         });
         clearMaterialEditing();
       } else {
-        await jsonFetch(`${CLASSROOM}?resource=materials`, {
-          method: 'POST',
-          headers: getAuthHeaders(),
-          body: JSON.stringify({
-            batch_id: currentBatchId,
-            ...payload,
-          }),
-        });
+        if (!files.length) {
+          await jsonFetch(`${CLASSROOM}?resource=materials`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({
+              batch_id: currentBatchId,
+              ...payload,
+            }),
+          });
+          createdCount = 1;
+        }
         clearMaterialEditing();
       }
       if (fileInput) fileInput.value = '';
       await loadMaterialsList();
-      if (msg) msg.textContent = '';
+      if (msg) msg.textContent = createdCount > 1 ? `${createdCount} files uploaded.` : '';
     } catch (err) {
       if (msg) msg.textContent = err.message || 'Failed to save resource.';
     }
