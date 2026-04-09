@@ -1255,6 +1255,21 @@
             </aside>
 
             <div class="public-classroom-main">
+              <div class="card public-classroom-block" id="publicResourcesBlock">
+                <div class="pub-resources-tabs" role="tablist">
+                  <button type="button" class="pub-res-tab active" id="pubTabCourse" role="tab" aria-selected="true" aria-controls="pubPaneCourse">Course content</button>
+                  <button type="button" class="pub-res-tab" id="pubTabBatch" role="tab" aria-selected="false" aria-controls="pubPaneBatch">Batch materials</button>
+                </div>
+                <div id="pubPaneCourse" class="pub-res-pane" role="tabpanel">
+                  <p class="muted pub-classroom-course-hint">Shared for this program across all batches.</p>
+                  <div id="publicClassroomCourseLibrary" class="public-classroom-body"></div>
+                </div>
+                <div id="pubPaneBatch" class="pub-res-pane hidden" role="tabpanel">
+                  <p class="muted pub-classroom-batch-hint">Added specifically for this group.</p>
+                  <div id="publicClassroomMaterials" class="public-classroom-body"></div>
+                </div>
+              </div>
+
               <div class="card public-classroom-block">
                 <div class="pub-classwork-header">
                   <h3>Classwork</h3>
@@ -1270,21 +1285,6 @@
                   </div>
                 </div>
                 <div id="publicClassroomAssignments" class="public-classroom-body"></div>
-              </div>
-
-              <div class="card public-classroom-block" id="publicResourcesBlock">
-                <div class="pub-resources-tabs" role="tablist">
-                  <button type="button" class="pub-res-tab active" id="pubTabCourse" role="tab" aria-selected="true" aria-controls="pubPaneCourse">Course content</button>
-                  <button type="button" class="pub-res-tab" id="pubTabBatch" role="tab" aria-selected="false" aria-controls="pubPaneBatch">Batch materials</button>
-                </div>
-                <div id="pubPaneCourse" class="pub-res-pane" role="tabpanel">
-                  <p class="muted pub-classroom-course-hint">Shared for this program across all batches.</p>
-                  <div id="publicClassroomCourseLibrary" class="public-classroom-body"></div>
-                </div>
-                <div id="pubPaneBatch" class="pub-res-pane hidden" role="tabpanel">
-                  <p class="muted pub-classroom-batch-hint">Added specifically for this group.</p>
-                  <div id="publicClassroomMaterials" class="public-classroom-body"></div>
-                </div>
               </div>
             </div>
           </div>

@@ -3423,10 +3423,16 @@ body.participant-join .app-top-bar__burger {
   border: 1px solid color-mix(in oklab, var(--brand-border) 45%, transparent);
   background: color-mix(in oklab, var(--brand-surface-2) 75%, transparent);
   margin-bottom: 10px;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
 }
 
 .pub-asg-card:last-child { margin-bottom: 0; }
+
+.pub-asg-card:hover {
+  border-color: color-mix(in oklab, var(--brand-primary) 40%, var(--brand-border));
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
+  transform: translateY(-1px);
+}
 
 .pub-asg-card__head {
   display: flex;
@@ -3629,14 +3635,67 @@ body.participant-join .app-top-bar__burger {
   color: color-mix(in oklab, var(--brand-text) 80%, var(--brand-muted));
 }
 
-.public-classroom-materials-ul {
-  margin: 0;
-  padding-left: 1.25rem;
+.pub-resource-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
 }
 
-.public-classroom-materials-ul li {
-  margin-bottom: 8px;
+.pub-resource-card {
+  padding: 12px;
+  border: 1px solid color-mix(in oklab, var(--brand-border) 42%, transparent);
+  border-radius: 12px;
+  background: color-mix(in oklab, var(--brand-surface-2) 80%, transparent);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 118px;
+  transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+}
+
+.pub-resource-card:hover {
+  border-color: color-mix(in oklab, var(--brand-primary) 55%, var(--brand-border));
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.14);
+  transform: translateY(-1px);
+}
+
+.pub-resource-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.pub-resource-title {
+  margin: 0;
   font-size: 14px;
+  line-height: 1.35;
+  color: var(--brand-text);
+}
+
+.pub-resource-tag {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--brand-muted);
+  border: 1px solid color-mix(in oklab, var(--brand-border) 55%, transparent);
+  border-radius: 999px;
+  padding: 2px 7px;
+}
+
+.pub-resource-desc {
+  margin: 0;
+  color: var(--brand-muted);
+  font-size: 12px;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.pub-resource-actions {
+  margin-top: auto;
+  display: flex;
+  justify-content: flex-end;
 }
 
 .public-classroom-course-hint,
@@ -3647,6 +3706,12 @@ body.participant-join .app-top-bar__burger {
 
 .public-submission-form {
   margin-top: 0;
+}
+
+@media (max-width: 900px) {
+  .pub-resource-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .public-submission-grid {

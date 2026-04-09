@@ -13,6 +13,39 @@ function escapeHtml(s) {
     .replace(/"/g, '&quot;');
 }
 
+function isDownloadResource(url) {
+  const u = String(url || '').toLowerCase();
+  if (!u) return false;
+  if (u.includes('/storage/v1/object/public/')) return true;
+  return /\.(pdf|doc|docx|ppt|pptx|xls|xlsx|txt|mp4|webm|mov|mkv|avi|m4v|mp3|wav|m4a|aac|ogg|flac)(\?|#|$)/i.test(u);
+}
+
+function renderResourceCards(items, label) {
+  const rows = Array.isArray(items) ? items : [];
+  if (!rows.length) return '';
+  return `<div class="pub-resource-grid">${rows
+    .map((m) => {
+      const title = escapeHtml(m.title || 'Resource');
+      const url = escapeHtml(m.url || '#');
+      const desc = m.description ? `<p class="pub-resource-desc">${escapeHtml(m.description)}</p>` : '';
+      const tag = label ? `<span class="pub-resource-tag">${escapeHtml(label)}</span>` : '';
+      const isDownload = isDownloadResource(m.url);
+      return `<article class="pub-resource-card">
+        <div class="pub-resource-head">
+          <h4 class="pub-resource-title">${title}</h4>
+          ${tag}
+        </div>
+        ${desc}
+        <div class="pub-resource-actions">
+          <a href="${url}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm" ${isDownload ? 'download' : ''}>
+            ${isDownload ? 'Download' : 'Open'}
+          </a>
+        </div>
+      </article>`;
+    })
+    .join('')}</div>`;
+}
+
 async function uploadSubmissionFile(token, assignmentId, file) {
   const meta = await jsonFetch('/.netlify/functions/public-classroom-upload', {
     method: 'POST',
@@ -350,22 +383,12 @@ export async function initPublicClassroom(token) {
         (cl.chapters || []).forEach((ch) => {
           const mats = ch.materials || [];
           if (!mats.length) return;
-          const lis = mats
-            .map((m) => {
-              const desc = m.description ? `<span class="muted"> — ${escapeHtml(m.description)}</span>` : '';
-              return `<li><a href="${escapeHtml(m.url)}" target="_blank" rel="noopener noreferrer" class="pub-lib-link">${escapeHtml(m.title)}</a>${desc}</li>`;
-            })
-            .join('');
-          blocks.push(`<div class="pub-lib-chapter"><h4 class="pub-lib-chapter-title">${escapeHtml(ch.title)}</h4><ul class="public-classroom-materials-ul">${lis}</ul></div>`);
+          const cards = renderResourceCards(mats, 'Course content');
+          blocks.push(`<div class="pub-lib-chapter"><h4 class="pub-lib-chapter-title">${escapeHtml(ch.title)}</h4>${cards}</div>`);
         });
         if (cl.uncategorized && cl.uncategorized.length) {
-          const lis = cl.uncategorized
-            .map((m) => {
-              const desc = m.description ? `<span class="muted"> — ${escapeHtml(m.description)}</span>` : '';
-              return `<li><a href="${escapeHtml(m.url)}" target="_blank" rel="noopener noreferrer" class="pub-lib-link">${escapeHtml(m.title)}</a>${desc}</li>`;
-            })
-            .join('');
-          blocks.push(`<div class="pub-lib-chapter"><h4 class="pub-lib-chapter-title">Other resources</h4><ul class="public-classroom-materials-ul">${lis}</ul></div>`);
+          const cards = renderResourceCards(cl.uncategorized, 'Course content');
+          blocks.push(`<div class="pub-lib-chapter"><h4 class="pub-lib-chapter-title">Other resources</h4>${cards}</div>`);
         }
         courseLibHost.innerHTML = blocks.join('');
       } else {
@@ -381,12 +404,7 @@ export async function initPublicClassroom(token) {
       if (!materials.length) {
         matHost.innerHTML = '<p class="muted" style="font-size:13px">No batch materials yet.</p>';
       } else {
-        matHost.innerHTML = `<ul class="public-classroom-materials-ul">${materials
-          .map((m) => {
-            const desc = m.description ? `<span class="muted"> — ${escapeHtml(m.description)}</span>` : '';
-            return `<li><a href="${escapeHtml(m.url)}" target="_blank" rel="noopener noreferrer" class="pub-lib-link">${escapeHtml(m.title)}</a>${desc}</li>`;
-          })
-          .join('')}</ul>`;
+        matHost.innerHTML = renderResourceCards(materials, 'Batch material');
       }
     }
 
