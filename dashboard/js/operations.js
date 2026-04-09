@@ -2,6 +2,7 @@ import { jsonFetch, getAuthHeaders, AUTH_ROLE } from './shared.js';
 import { loadClassrooms } from './classroom.js';
 
 const OPS = '/.netlify/functions/operations-data';
+const LMS_ANALYTICS = '/.netlify/functions/lms-analytics';
 const BULK_IMPORT_CHUNK = 75;
 
 const TRAINEE_TYPES = ['Student', 'Doctor', 'IT', 'Corporate'];
@@ -2188,11 +2189,45 @@ export async function loadQuality() {
   }
 }
 
+export async function loadLmsInsights() {
+  const grid = document.getElementById('lmsOverviewGrid');
+  const body = document.getElementById('lmsCompletionBody');
+  const msg = document.getElementById('lmsInsightsMsg');
+  if (!grid || !body) return;
+  try {
+    const [overview, completion] = await Promise.all([
+      jsonFetch(`${LMS_ANALYTICS}?resource=overview`, { headers: getAuthHeaders() }),
+      jsonFetch(`${LMS_ANALYTICS}?resource=completion-by-course`, { headers: getAuthHeaders() }),
+    ]);
+    grid.innerHTML = [
+      { k: 'Progress records', v: overview.progress_records ?? 0 },
+      { k: 'Assessments', v: overview.assessments ?? 0 },
+      { k: 'Attempts', v: overview.attempts ?? 0 },
+      { k: 'Certificates', v: overview.certificates ?? 0 },
+    ]
+      .map((x) => `<div class="stat"><span class="k">${escapeHtml(x.k)}</span><span class="v">${escapeHtml(x.v)}</span></div>`)
+      .join('');
+    const items = completion.items || [];
+    body.innerHTML = items
+      .map(
+        (r) =>
+          `<tr><td>${escapeHtml(r.course_id || '')}</td><td>${escapeHtml(r.learners_total ?? 0)}</td><td>${escapeHtml(
+            r.learners_completed ?? 0,
+          )}</td><td>${escapeHtml(r.completion_rate_pct != null ? `${r.completion_rate_pct}%` : '')}</td></tr>`,
+      )
+      .join('');
+    if (msg) msg.textContent = '';
+  } catch (err) {
+    if (msg) msg.textContent = err.message || 'Could not load LMS insights.';
+  }
+}
+
 function initInsightsTabs() {
   const tabs = [
     { tabId: 'insightsTabPipeline', paneId: 'insightsPanePipeline', key: 'pipeline', onActivate: loadPipeline },
     { tabId: 'insightsTabCapacity', paneId: 'insightsPaneCapacity', key: 'capacity', onActivate: loadCapacity },
     { tabId: 'insightsTabQuality', paneId: 'insightsPaneQuality', key: 'quality', onActivate: loadQuality },
+    { tabId: 'insightsTabLms', paneId: 'insightsPaneLms', key: 'lms', onActivate: loadLmsInsights },
   ];
 
   function activateInsightsTab(key) {
@@ -2235,6 +2270,7 @@ export function initOpsInsights() {
   document.getElementById('btnRefreshPipeline')?.addEventListener('click', loadPipeline);
   document.getElementById('btnRefreshCapacity')?.addEventListener('click', loadCapacity);
   document.getElementById('btnRefreshQuality')?.addEventListener('click', loadQuality);
+  document.getElementById('btnRefreshLmsInsights')?.addEventListener('click', loadLmsInsights);
   document.getElementById('opsHomeAnalyticsDetails')?.addEventListener('click', () => {
     document.dispatchEvent(new CustomEvent('sbs:goto-view', { detail: { viewId: 'operations-insights' } }));
   });
