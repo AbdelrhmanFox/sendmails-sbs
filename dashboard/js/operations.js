@@ -4,6 +4,7 @@ import { loadClassrooms } from './classroom.js';
 const OPS = '/.netlify/functions/operations-data';
 const LMS_ANALYTICS = '/.netlify/functions/lms-analytics';
 const LMS_ASSESSMENTS = '/.netlify/functions/assessment-data';
+const LMS_ADMIN = '/.netlify/functions/lms-admin-data';
 const BULK_IMPORT_CHUNK = 75;
 
 const TRAINEE_TYPES = ['Student', 'Doctor', 'IT', 'Corporate'];
@@ -2394,6 +2395,212 @@ export async function loadLmsAttempts() {
   }
 }
 
+let lmsProgramsCache = [];
+
+function renderProgramPickOptions(items) {
+  const sel = document.getElementById('lmsCohortProgramId');
+  if (!sel) return;
+  sel.innerHTML = [`<option value="">No program</option>`]
+    .concat(items.map((p) => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.program_name || p.program_code || p.id)}</option>`))
+    .join('');
+}
+
+export async function loadLmsPrograms() {
+  const body = document.getElementById('lmsProgramsBody');
+  if (!body) return;
+  try {
+    const data = await jsonFetch(`${LMS_ADMIN}?resource=programs`, { headers: getAuthHeaders() });
+    const items = Array.isArray(data.items) ? data.items : [];
+    lmsProgramsCache = items;
+    renderProgramPickOptions(items);
+    body.innerHTML = items
+      .map(
+        (p) =>
+          `<tr><td>${escapeHtml(p.program_code || '')}</td><td>${escapeHtml(p.program_name || '')}</td><td>${escapeHtml(p.status || '')}</td><td>${escapeHtml(
+            p.created_at || '',
+          )}</td></tr>`,
+      )
+      .join('');
+    setInlineMsg('lmsProgramsMsg', '');
+  } catch (err) {
+    setInlineMsg('lmsProgramsMsg', err.message || 'Could not load programs.');
+  }
+}
+
+export async function createLmsProgram(event) {
+  event.preventDefault();
+  const payload = {
+    program_code: String(document.getElementById('lmsProgramCode')?.value || '').trim(),
+    program_name: String(document.getElementById('lmsProgramName')?.value || '').trim(),
+    description: String(document.getElementById('lmsProgramDescription')?.value || '').trim() || null,
+    status: document.getElementById('lmsProgramStatus')?.value || 'active',
+  };
+  if (!payload.program_code || !payload.program_name) {
+    showToast('Program code and name are required.', 'error');
+    return;
+  }
+  try {
+    await jsonFetch(`${LMS_ADMIN}?resource=programs`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      body: JSON.stringify(payload),
+    });
+    showToast('Program created.', 'success');
+    document.getElementById('lmsProgramForm')?.reset();
+    await loadLmsPrograms();
+  } catch (err) {
+    showToast(err.message || 'Could not create program.', 'error');
+  }
+}
+
+export async function loadLmsCohorts() {
+  const body = document.getElementById('lmsCohortsBody');
+  if (!body) return;
+  try {
+    const data = await jsonFetch(`${LMS_ADMIN}?resource=cohorts`, { headers: getAuthHeaders() });
+    const items = Array.isArray(data.items) ? data.items : [];
+    const programNameById = new Map(lmsProgramsCache.map((p) => [p.id, p.program_name || p.program_code || p.id]));
+    body.innerHTML = items
+      .map(
+        (c) =>
+          `<tr><td>${escapeHtml(c.cohort_code || '')}</td><td>${escapeHtml(c.cohort_name || '')}</td><td>${escapeHtml(
+            programNameById.get(c.program_id) || c.program_id || '',
+          )}</td><td>${escapeHtml(c.status || '')}</td><td>${escapeHtml(c.start_date || '')}</td><td>${escapeHtml(c.end_date || '')}</td></tr>`,
+      )
+      .join('');
+    setInlineMsg('lmsCohortsMsg', '');
+  } catch (err) {
+    setInlineMsg('lmsCohortsMsg', err.message || 'Could not load cohorts.');
+  }
+}
+
+export async function createLmsCohort(event) {
+  event.preventDefault();
+  const payload = {
+    cohort_code: String(document.getElementById('lmsCohortCode')?.value || '').trim(),
+    cohort_name: String(document.getElementById('lmsCohortName')?.value || '').trim(),
+    program_id: String(document.getElementById('lmsCohortProgramId')?.value || '').trim() || null,
+    status: document.getElementById('lmsCohortStatus')?.value || 'planned',
+    start_date: String(document.getElementById('lmsCohortStart')?.value || '').trim() || null,
+    end_date: String(document.getElementById('lmsCohortEnd')?.value || '').trim() || null,
+  };
+  if (!payload.cohort_code || !payload.cohort_name) {
+    showToast('Cohort code and name are required.', 'error');
+    return;
+  }
+  try {
+    await jsonFetch(`${LMS_ADMIN}?resource=cohorts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      body: JSON.stringify(payload),
+    });
+    showToast('Cohort created.', 'success');
+    document.getElementById('lmsCohortForm')?.reset();
+    await loadLmsCohorts();
+  } catch (err) {
+    showToast(err.message || 'Could not create cohort.', 'error');
+  }
+}
+
+export async function loadLmsCertificates() {
+  const body = document.getElementById('lmsCertificatesBody');
+  if (!body) return;
+  try {
+    const data = await jsonFetch(`${LMS_ADMIN}?resource=certificates`, { headers: getAuthHeaders() });
+    const items = Array.isArray(data.items) ? data.items : [];
+    body.innerHTML = items
+      .map(
+        (c) =>
+          `<tr><td>${escapeHtml(c.certificate_no || '')}</td><td>${escapeHtml(c.trainee_id || '')}</td><td>${escapeHtml(c.course_id || '')}</td><td>${escapeHtml(
+            c.status || '',
+          )}</td><td>${escapeHtml(c.issued_at || '')}</td></tr>`,
+      )
+      .join('');
+    setInlineMsg('lmsCertificatesMsg', '');
+  } catch (err) {
+    setInlineMsg('lmsCertificatesMsg', err.message || 'Could not load certificates.');
+  }
+}
+
+export async function issueLmsCertificate(event) {
+  event.preventDefault();
+  const payload = {
+    trainee_id: String(document.getElementById('lmsCertTraineeId')?.value || '').trim(),
+    course_id: String(document.getElementById('lmsCertCourseId')?.value || '').trim(),
+    batch_id: String(document.getElementById('lmsCertBatchId')?.value || '').trim() || null,
+    certificate_no: String(document.getElementById('lmsCertNo')?.value || '').trim(),
+    status: document.getElementById('lmsCertStatus')?.value || 'active',
+    expires_at: toIsoOrNull(document.getElementById('lmsCertExpiresAt')?.value),
+  };
+  if (!payload.trainee_id || !payload.course_id || !payload.certificate_no) {
+    showToast('Trainee, course, and certificate number are required.', 'error');
+    return;
+  }
+  try {
+    await jsonFetch(`${LMS_ADMIN}?resource=certificates`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      body: JSON.stringify(payload),
+    });
+    showToast('Certificate issued.', 'success');
+    document.getElementById('lmsCertificateForm')?.reset();
+    await loadLmsCertificates();
+  } catch (err) {
+    showToast(err.message || 'Could not issue certificate.', 'error');
+  }
+}
+
+export async function loadLmsTranscripts() {
+  const body = document.getElementById('lmsTranscriptsBody');
+  if (!body) return;
+  try {
+    const data = await jsonFetch(`${LMS_ADMIN}?resource=transcripts`, { headers: getAuthHeaders() });
+    const items = Array.isArray(data.items) ? data.items : [];
+    body.innerHTML = items
+      .map(
+        (t) =>
+          `<tr><td>${escapeHtml(t.trainee_id || '')}</td><td>${escapeHtml(t.course_id || '')}</td><td>${escapeHtml(t.completion_status || '')}</td><td>${escapeHtml(
+            t.final_score ?? '',
+          )}</td><td>${escapeHtml(t.completed_at || '')}</td></tr>`,
+      )
+      .join('');
+    setInlineMsg('lmsTranscriptsMsg', '');
+  } catch (err) {
+    setInlineMsg('lmsTranscriptsMsg', err.message || 'Could not load transcripts.');
+  }
+}
+
+export async function createLmsTranscript(event) {
+  event.preventDefault();
+  const payload = {
+    trainee_id: String(document.getElementById('lmsTrTraineeId')?.value || '').trim(),
+    course_id: String(document.getElementById('lmsTrCourseId')?.value || '').trim(),
+    batch_id: String(document.getElementById('lmsTrBatchId')?.value || '').trim() || null,
+    completion_status: document.getElementById('lmsTrStatus')?.value || 'in_progress',
+    final_score:
+      String(document.getElementById('lmsTrScore')?.value || '').trim() === ''
+        ? null
+        : Number(document.getElementById('lmsTrScore')?.value),
+    completed_at: toIsoOrNull(document.getElementById('lmsTrCompletedAt')?.value),
+  };
+  if (!payload.trainee_id || !payload.course_id) {
+    showToast('Trainee and course are required.', 'error');
+    return;
+  }
+  try {
+    await jsonFetch(`${LMS_ADMIN}?resource=transcripts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      body: JSON.stringify(payload),
+    });
+    showToast('Transcript entry created.', 'success');
+    document.getElementById('lmsTranscriptForm')?.reset();
+    await loadLmsTranscripts();
+  } catch (err) {
+    showToast(err.message || 'Could not create transcript.', 'error');
+  }
+}
+
 function initInsightsTabs() {
   const tabs = [
     { tabId: 'insightsTabPipeline', paneId: 'insightsPanePipeline', key: 'pipeline', onActivate: loadPipeline },
@@ -2446,8 +2653,16 @@ export function initOpsInsights() {
   document.getElementById('btnRefreshLmsAssessments')?.addEventListener('click', loadLmsAssessments);
   document.getElementById('btnRefreshLmsQuestions')?.addEventListener('click', loadLmsQuestions);
   document.getElementById('btnRefreshLmsAttempts')?.addEventListener('click', loadLmsAttempts);
+  document.getElementById('btnRefreshLmsPrograms')?.addEventListener('click', loadLmsPrograms);
+  document.getElementById('btnRefreshLmsCohorts')?.addEventListener('click', loadLmsCohorts);
+  document.getElementById('btnRefreshLmsCertificates')?.addEventListener('click', loadLmsCertificates);
+  document.getElementById('btnRefreshLmsTranscripts')?.addEventListener('click', loadLmsTranscripts);
   document.getElementById('lmsAssessmentForm')?.addEventListener('submit', createLmsAssessment);
   document.getElementById('lmsQuestionForm')?.addEventListener('submit', createLmsQuestion);
+  document.getElementById('lmsProgramForm')?.addEventListener('submit', createLmsProgram);
+  document.getElementById('lmsCohortForm')?.addEventListener('submit', createLmsCohort);
+  document.getElementById('lmsCertificateForm')?.addEventListener('submit', issueLmsCertificate);
+  document.getElementById('lmsTranscriptForm')?.addEventListener('submit', createLmsTranscript);
   document.getElementById('lmsQuestionAssessmentId')?.addEventListener('change', loadLmsQuestions);
   document.getElementById('lmsAttemptsAssessmentId')?.addEventListener('change', loadLmsAttempts);
   document.getElementById('opsHomeAnalyticsDetails')?.addEventListener('click', () => {
@@ -2456,4 +2671,8 @@ export function initOpsInsights() {
   initInsightsTabs();
   initCoursesSubtabs();
   loadLmsAssessments();
+  loadLmsPrograms();
+  loadLmsCohorts();
+  loadLmsCertificates();
+  loadLmsTranscripts();
 }

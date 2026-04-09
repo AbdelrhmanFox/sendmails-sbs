@@ -912,6 +912,117 @@
               </table>
             </div>
           </div>
+
+          <div class="card">
+            <h3>Programs and Cohorts</h3>
+            <form id="lmsProgramForm" class="form-grid form-grid--two">
+              <label>Program code <input id="lmsProgramCode" required maxlength="80" /></label>
+              <label>Program name <input id="lmsProgramName" required maxlength="200" /></label>
+              <label>Status
+                <select id="lmsProgramStatus">
+                  <option value="active">Active</option>
+                  <option value="archived">Archived</option>
+                </select>
+              </label>
+              <label class="full">Description <textarea id="lmsProgramDescription" rows="2" maxlength="2000"></textarea></label>
+              <div class="full form-actions">
+                <button type="submit" class="btn btn-primary">Create program</button>
+                <button type="button" class="btn btn-secondary" id="btnRefreshLmsPrograms">Refresh programs</button>
+              </div>
+            </form>
+            <p id="lmsProgramsMsg" class="inline-note"></p>
+            <div class="ops-table-desktop table-wrap">
+              <table>
+                <thead><tr><th>Code</th><th>Name</th><th>Status</th><th>Created</th></tr></thead>
+                <tbody id="lmsProgramsBody"></tbody>
+              </table>
+            </div>
+
+            <form id="lmsCohortForm" class="form-grid form-grid--two" style="margin-top:12px">
+              <label>Cohort code <input id="lmsCohortCode" required maxlength="80" /></label>
+              <label>Cohort name <input id="lmsCohortName" required maxlength="200" /></label>
+              <label>Program
+                <select id="lmsCohortProgramId">
+                  <option value="">No program</option>
+                </select>
+              </label>
+              <label>Status
+                <select id="lmsCohortStatus">
+                  <option value="planned">Planned</option>
+                  <option value="active">Active</option>
+                  <option value="closed">Closed</option>
+                </select>
+              </label>
+              <label>Start date <input id="lmsCohortStart" type="date" /></label>
+              <label>End date <input id="lmsCohortEnd" type="date" /></label>
+              <div class="full form-actions">
+                <button type="submit" class="btn btn-primary">Create cohort</button>
+                <button type="button" class="btn btn-secondary" id="btnRefreshLmsCohorts">Refresh cohorts</button>
+              </div>
+            </form>
+            <p id="lmsCohortsMsg" class="inline-note"></p>
+            <div class="ops-table-desktop table-wrap">
+              <table>
+                <thead><tr><th>Code</th><th>Name</th><th>Program</th><th>Status</th><th>Start</th><th>End</th></tr></thead>
+                <tbody id="lmsCohortsBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Certificates and Transcripts</h3>
+            <form id="lmsCertificateForm" class="form-grid form-grid--two">
+              <label>Trainee ID <input id="lmsCertTraineeId" required /></label>
+              <label>Course ID <input id="lmsCertCourseId" required /></label>
+              <label>Batch ID <input id="lmsCertBatchId" /></label>
+              <label>Certificate number <input id="lmsCertNo" required /></label>
+              <label>Status
+                <select id="lmsCertStatus">
+                  <option value="active">Active</option>
+                  <option value="revoked">Revoked</option>
+                  <option value="expired">Expired</option>
+                </select>
+              </label>
+              <label>Expires at <input id="lmsCertExpiresAt" type="datetime-local" /></label>
+              <div class="full form-actions">
+                <button type="submit" class="btn btn-primary">Issue certificate</button>
+                <button type="button" class="btn btn-secondary" id="btnRefreshLmsCertificates">Refresh certificates</button>
+              </div>
+            </form>
+            <p id="lmsCertificatesMsg" class="inline-note"></p>
+            <div class="ops-table-desktop table-wrap">
+              <table>
+                <thead><tr><th>Certificate #</th><th>Trainee</th><th>Course</th><th>Status</th><th>Issued</th></tr></thead>
+                <tbody id="lmsCertificatesBody"></tbody>
+              </table>
+            </div>
+
+            <form id="lmsTranscriptForm" class="form-grid form-grid--two" style="margin-top:12px">
+              <label>Trainee ID <input id="lmsTrTraineeId" required /></label>
+              <label>Course ID <input id="lmsTrCourseId" required /></label>
+              <label>Batch ID <input id="lmsTrBatchId" /></label>
+              <label>Status
+                <select id="lmsTrStatus">
+                  <option value="in_progress">In progress</option>
+                  <option value="completed">Completed</option>
+                  <option value="failed">Failed</option>
+                </select>
+              </label>
+              <label>Final score <input id="lmsTrScore" type="number" step="0.01" /></label>
+              <label>Completed at <input id="lmsTrCompletedAt" type="datetime-local" /></label>
+              <div class="full form-actions">
+                <button type="submit" class="btn btn-primary">Create transcript entry</button>
+                <button type="button" class="btn btn-secondary" id="btnRefreshLmsTranscripts">Refresh transcripts</button>
+              </div>
+            </form>
+            <p id="lmsTranscriptsMsg" class="inline-note"></p>
+            <div class="ops-table-desktop table-wrap">
+              <table>
+                <thead><tr><th>Trainee</th><th>Course</th><th>Status</th><th>Score</th><th>Completed</th></tr></thead>
+                <tbody id="lmsTranscriptsBody"></tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </section>
 
