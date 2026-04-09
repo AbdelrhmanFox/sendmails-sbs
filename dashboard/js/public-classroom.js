@@ -229,6 +229,13 @@ export async function initPublicClassroom(token) {
   const courseLibHost = document.getElementById('publicClassroomCourseLibrary');
   const matHost = document.getElementById('publicClassroomMaterials');
   const resourcesBlock = document.getElementById('publicResourcesBlock');
+  const metaCourse = document.getElementById('publicClassroomMetaCourse');
+  const metaBatch = document.getElementById('publicClassroomMetaBatch');
+  const metaTrainer = document.getElementById('publicClassroomMetaTrainer');
+  const metaStart = document.getElementById('publicClassroomMetaStart');
+  const metaEnd = document.getElementById('publicClassroomMetaEnd');
+  const metaAssignments = document.getElementById('publicClassroomMetaAssignments');
+  const metaMaterials = document.getElementById('publicClassroomMetaMaterials');
 
   if (!asgHost) return;
 
@@ -248,12 +255,22 @@ export async function initPublicClassroom(token) {
   try {
     const data = await jsonFetch(`/.netlify/functions/public-classroom?token=${encodeURIComponent(token)}`);
     const b = data.batch || {};
-    const title = [b.course_name, b.batch_name || b.batch_id].filter(Boolean).join(' · ') || b.batch_id || 'Classroom';
+    const courseName = String(b.course_name || '').trim();
+    const batchLabel = String(b.batch_name || b.batch_id || '').trim();
+    const sameName = courseName && batchLabel && courseName.toLowerCase() === batchLabel.toLowerCase();
+    const title = sameName
+      ? courseName
+      : [courseName, batchLabel].filter(Boolean).join(' · ') || b.batch_id || 'Classroom';
     if (heading) heading.textContent = title;
     if (sub) {
       const extra = b.trainer ? ` · Trainer: ${escapeHtml(b.trainer)}` : '';
       sub.textContent = `Participant view · no sign-in required${extra}`;
     }
+    if (metaCourse) metaCourse.textContent = courseName || '-';
+    if (metaBatch) metaBatch.textContent = batchLabel || '-';
+    if (metaTrainer) metaTrainer.textContent = String(b.trainer || '-');
+    if (metaStart) metaStart.textContent = String(b.start_date || '-');
+    if (metaEnd) metaEnd.textContent = String(b.end_date || '-');
 
     const assignments = data.assignments || [];
     const today = new Date().toISOString().slice(0, 10);
@@ -358,6 +375,8 @@ export async function initPublicClassroom(token) {
 
     // Batch materials tab
     const materials = data.materials || [];
+    if (metaAssignments) metaAssignments.textContent = String(assignments.length || 0);
+    if (metaMaterials) metaMaterials.textContent = String(materials.length || 0);
     if (matHost) {
       if (!materials.length) {
         matHost.innerHTML = '<p class="muted" style="font-size:13px">No batch materials yet.</p>';
@@ -380,5 +399,12 @@ export async function initPublicClassroom(token) {
     if (courseLibHost) courseLibHost.innerHTML = '';
     if (msg) { msg.textContent = e.message || 'Could not load classroom.'; msg.hidden = false; }
     if (heading) heading.textContent = 'Classroom';
+    if (metaCourse) metaCourse.textContent = '-';
+    if (metaBatch) metaBatch.textContent = '-';
+    if (metaTrainer) metaTrainer.textContent = '-';
+    if (metaStart) metaStart.textContent = '-';
+    if (metaEnd) metaEnd.textContent = '-';
+    if (metaAssignments) metaAssignments.textContent = '0';
+    if (metaMaterials) metaMaterials.textContent = '0';
   }
 }

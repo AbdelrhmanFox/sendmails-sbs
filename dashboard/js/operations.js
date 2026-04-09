@@ -67,6 +67,9 @@ const wizard = {
 
 let wizardCourseById = {};
 let wizardBatchById = {};
+let batchNameAutoMode = true;
+let batchNameProgrammatic = false;
+let batchNameManualLock = null;
 
 function fillSelect(sel, options, placeholder) {
   if (!sel) return;
@@ -927,6 +930,81 @@ async function refreshBatchCourseDatalist() {
     .join('');
 }
 
+function getCourseNameForBatchForm(courseId, pickValue) {
+  const cid = String(courseId || '').trim();
+  const pick = String(pickValue || '').trim();
+  const dl = document.getElementById('datalist_batch_course_pick');
+  if (dl && cid) {
+    const opt = Array.from(dl.options || []).find((o) => String(o.value || '').trim() === cid);
+    if (opt) {
+      const txt = String(opt.textContent || '').trim();
+      if (txt) return txt;
+    }
+  }
+  if (pick && (!cid || pick.toLowerCase() !== cid.toLowerCase())) return pick;
+  return cid || pick;
+}
+
+function formatAutoBatchName(courseLabel, startDateRaw) {
+  const course = String(courseLabel || '').trim();
+  const startDate = String(startDateRaw || '').trim();
+  if (!course) return '';
+  if (!startDate) return course;
+  return `${course} - ${startDate}`;
+}
+
+function setBatchNameField(value) {
+  const input = document.getElementById('bf_batch_name');
+  if (!input) return;
+  batchNameProgrammatic = true;
+  input.value = String(value || '');
+  batchNameProgrammatic = false;
+}
+
+function maybeAutoFillBatchName() {
+  const batchInput = document.getElementById('bf_batch_name');
+  const pickInput = document.getElementById('bf_course_pick');
+  const cidInput = document.getElementById('bf_course_id');
+  const startInput = document.getElementById('bf_start_date');
+  if (!batchInput || !pickInput || !cidInput || !startInput) return;
+
+  const courseLabel = getCourseNameForBatchForm(cidInput.value, pickInput.value);
+  const suggestion = formatAutoBatchName(courseLabel, startInput.value);
+  const current = String(batchInput.value || '').trim();
+  if (!suggestion) return;
+  if (!batchNameAutoMode && current) return;
+  setBatchNameField(suggestion);
+}
+
+function syncBatchCourseIdFromPick() {
+  const pickInput = document.getElementById('bf_course_pick');
+  const cidInput = document.getElementById('bf_course_id');
+  if (!pickInput || !cidInput) return;
+  const pick = String(pickInput.value || '').trim();
+  const dl = document.getElementById('datalist_batch_course_pick');
+  if (dl) {
+    const match = Array.from(dl.options || []).find((o) => {
+      const v = String(o.value || '').trim().toLowerCase();
+      const t = String(o.textContent || '').trim().toLowerCase();
+      const p = pick.toLowerCase();
+      return p && (p === v || p === t);
+    });
+    cidInput.value = match ? String(match.value || '').trim() : pick;
+    return;
+  }
+  cidInput.value = pick;
+}
+
+function maybeUnlockAutoBatchName() {
+  if (batchNameAutoMode || !batchNameManualLock) return;
+  const pick = String(document.getElementById('bf_course_pick')?.value || '').trim().toLowerCase();
+  const start = String(document.getElementById('bf_start_date')?.value || '').trim();
+  if (pick !== batchNameManualLock.coursePick || start !== batchNameManualLock.startDate) {
+    batchNameAutoMode = true;
+    batchNameManualLock = null;
+  }
+}
+
 function openBatchForm(row) {
   document.getElementById('batchFormCard')?.classList.remove('hidden');
   document.getElementById('batchFormMsg').textContent = '';
@@ -937,6 +1015,9 @@ function openBatchForm(row) {
     document.getElementById('bf_internal_id').value = '';
     document.getElementById('bf_course_id').value = '';
     document.getElementById('bf_batch_id_ro').value = '';
+    batchNameAutoMode = true;
+    batchNameManualLock = null;
+    maybeAutoFillBatchName();
     return;
   }
   document.getElementById('batchFormTitle').textContent = 'Edit batch';
@@ -950,6 +1031,11 @@ function openBatchForm(row) {
   document.getElementById('bf_start_date').value = row.start_date || '';
   document.getElementById('bf_end_date').value = row.end_date || '';
   document.getElementById('bf_batch_id_ro').value = row.batch_id || '';
+  batchNameAutoMode = false;
+  batchNameManualLock = {
+    coursePick: String(document.getElementById('bf_course_pick').value || '').trim().toLowerCase(),
+    startDate: String(document.getElementById('bf_start_date').value || '').trim(),
+  };
 }
 
 async function submitBatchForm(e) {
@@ -1734,8 +1820,34 @@ export function initOperations() {
       loadBatchesList();
     }
   });
-  document.getElementById('bf_course_pick')?.addEventListener('change', (e) => {
-    document.getElementById('bf_course_id').value = e.target.value.trim();
+  document.getElementById('bf_course_pick')?.addEventListener('input', () => {
+    syncBatchCourseIdFromPick();
+    maybeUnlockAutoBatchName();
+    maybeAutoFillBatchName();
+  });
+  document.getElementById('bf_course_pick')?.addEventListener('change', () => {
+    syncBatchCourseIdFromPick();
+    maybeUnlockAutoBatchName();
+    maybeAutoFillBatchName();
+  });
+  document.getElementById('bf_start_date')?.addEventListener('change', () => {
+    maybeUnlockAutoBatchName();
+    maybeAutoFillBatchName();
+  });
+  document.getElementById('bf_batch_name')?.addEventListener('input', (e) => {
+    if (batchNameProgrammatic) return;
+    const val = String(e.target.value || '').trim();
+    if (!val) {
+      batchNameAutoMode = true;
+      batchNameManualLock = null;
+      maybeAutoFillBatchName();
+      return;
+    }
+    batchNameAutoMode = false;
+    batchNameManualLock = {
+      coursePick: String(document.getElementById('bf_course_pick')?.value || '').trim().toLowerCase(),
+      startDate: String(document.getElementById('bf_start_date')?.value || '').trim(),
+    };
   });
 
   document.getElementById('btnStartEnrollmentWizard')?.addEventListener('click', () => {

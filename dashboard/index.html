@@ -589,7 +589,11 @@
               <datalist id="datalist_batch_course_pick"></datalist>
               <input type="hidden" id="bf_course_id" />
             </div>
-            <div class="full"><label for="bf_batch_name">Batch name</label><input id="bf_batch_name" /></div>
+            <div class="full">
+              <label for="bf_batch_name">Batch name</label>
+              <input id="bf_batch_name" />
+              <p class="muted small-margin" style="font-size:12px">Auto-generated from course + start date; you can edit if needed.</p>
+            </div>
             <div><label for="bf_trainer">Trainer</label><input id="bf_trainer" /></div>
             <div><label for="bf_location">Location</label><input id="bf_location" /></div>
             <div><label for="bf_capacity">Capacity</label><input id="bf_capacity" type="number" min="0" /></div>
@@ -1222,45 +1226,67 @@
       </section>
 
       <section id="view-public-classroom" class="view">
-        <div class="view-hero pub-classroom-hero">
-          <div class="view-hero-text">
-            <h2 id="publicClassroomHeading">Classroom</h2>
-            <p class="subtitle" id="publicClassroomSub">Participant view · no sign-in required</p>
-          </div>
-        </div>
-        <p id="publicClassroomMsg" class="inline-error" role="alert" hidden></p>
-
-        <!-- Classwork assignments -->
-        <div class="card public-classroom-block">
-          <div class="pub-classwork-header">
-            <h3>Classwork</h3>
-            <div class="pub-email-lookup" id="pubEmailLookupWrap">
-              <form id="publicReviewLookupForm" class="pub-email-form">
-                <label class="pub-email-label" for="publicReviewEmail">Enter email to see your submission status</label>
-                <div class="pub-email-row">
-                  <input type="email" id="publicReviewEmail" placeholder="your@email.com" maxlength="200" />
-                  <button type="submit" class="btn btn-primary btn-sm">Check</button>
-                  <span class="inline-note" id="publicReviewMsg"></span>
-                </div>
-              </form>
+        <div class="public-classroom-shell">
+          <div class="card public-classroom-hero-card">
+            <div class="public-classroom-hero-head">
+              <div class="view-hero-text">
+                <h2 id="publicClassroomHeading">Classroom</h2>
+                <p class="subtitle" id="publicClassroomSub">Participant view · no sign-in required</p>
+              </div>
+              <p class="pub-classroom-eyebrow">Classroom</p>
+            </div>
+            <div class="public-classroom-hero-meta">
+              <div><span class="pub-meta-label">Course</span><strong id="publicClassroomMetaCourse">-</strong></div>
+              <div><span class="pub-meta-label">Batch</span><strong id="publicClassroomMetaBatch">-</strong></div>
+              <div><span class="pub-meta-label">Trainer</span><strong id="publicClassroomMetaTrainer">-</strong></div>
             </div>
           </div>
-          <div id="publicClassroomAssignments" class="public-classroom-body"></div>
-        </div>
+          <p id="publicClassroomMsg" class="inline-error" role="alert" hidden></p>
 
-        <!-- Resources: course content + batch materials as tabs -->
-        <div class="card public-classroom-block" id="publicResourcesBlock">
-          <div class="pub-resources-tabs" role="tablist">
-            <button type="button" class="pub-res-tab active" id="pubTabCourse" role="tab" aria-selected="true" aria-controls="pubPaneCourse">Course content</button>
-            <button type="button" class="pub-res-tab" id="pubTabBatch" role="tab" aria-selected="false" aria-controls="pubPaneBatch">Batch materials</button>
-          </div>
-          <div id="pubPaneCourse" class="pub-res-pane" role="tabpanel">
-            <p class="muted pub-classroom-course-hint">Shared for this program across all batches.</p>
-            <div id="publicClassroomCourseLibrary" class="public-classroom-body"></div>
-          </div>
-          <div id="pubPaneBatch" class="pub-res-pane hidden" role="tabpanel">
-            <p class="muted pub-classroom-batch-hint">Added specifically for this group.</p>
-            <div id="publicClassroomMaterials" class="public-classroom-body"></div>
+          <div class="public-classroom-layout">
+            <aside class="card public-classroom-overview">
+              <h3>Overview</h3>
+              <ul class="pub-overview-list">
+                <li><span>Start date</span><strong id="publicClassroomMetaStart">-</strong></li>
+                <li><span>End date</span><strong id="publicClassroomMetaEnd">-</strong></li>
+                <li><span>Assignments</span><strong id="publicClassroomMetaAssignments">0</strong></li>
+                <li><span>Batch materials</span><strong id="publicClassroomMetaMaterials">0</strong></li>
+              </ul>
+            </aside>
+
+            <div class="public-classroom-main">
+              <div class="card public-classroom-block">
+                <div class="pub-classwork-header">
+                  <h3>Classwork</h3>
+                  <div class="pub-email-lookup" id="pubEmailLookupWrap">
+                    <form id="publicReviewLookupForm" class="pub-email-form">
+                      <label class="pub-email-label" for="publicReviewEmail">Enter email to see your submission status</label>
+                      <div class="pub-email-row">
+                        <input type="email" id="publicReviewEmail" placeholder="your@email.com" maxlength="200" />
+                        <button type="submit" class="btn btn-primary btn-sm">Check</button>
+                        <span class="inline-note" id="publicReviewMsg"></span>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+                <div id="publicClassroomAssignments" class="public-classroom-body"></div>
+              </div>
+
+              <div class="card public-classroom-block" id="publicResourcesBlock">
+                <div class="pub-resources-tabs" role="tablist">
+                  <button type="button" class="pub-res-tab active" id="pubTabCourse" role="tab" aria-selected="true" aria-controls="pubPaneCourse">Course content</button>
+                  <button type="button" class="pub-res-tab" id="pubTabBatch" role="tab" aria-selected="false" aria-controls="pubPaneBatch">Batch materials</button>
+                </div>
+                <div id="pubPaneCourse" class="pub-res-pane" role="tabpanel">
+                  <p class="muted pub-classroom-course-hint">Shared for this program across all batches.</p>
+                  <div id="publicClassroomCourseLibrary" class="public-classroom-body"></div>
+                </div>
+                <div id="pubPaneBatch" class="pub-res-pane hidden" role="tabpanel">
+                  <p class="muted pub-classroom-batch-hint">Added specifically for this group.</p>
+                  <div id="publicClassroomMaterials" class="public-classroom-body"></div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
