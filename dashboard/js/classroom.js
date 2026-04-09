@@ -1,4 +1,4 @@
-import { jsonFetch, getAuthHeaders } from './shared.js';
+import { jsonFetch, getAuthHeaders, showToast } from './shared.js';
 
 const CLASSROOM = '/.netlify/functions/classroom-data';
 const CLASSROOM_UPLOAD = '/.netlify/functions/classroom-assignment-upload';
@@ -517,7 +517,7 @@ async function loadAssignmentsList() {
           if (String($('classroomAsgEditId')?.value || '') === id) clearAssignmentEditing();
           await refreshClassroomData();
         } catch (e) {
-          alert(e.message);
+          showToast(e.message || 'Action failed.', 'error');
         }
       });
     });
@@ -532,7 +532,7 @@ async function loadAssignmentsList() {
           });
           await loadAssignmentsList();
         } catch (e) {
-          alert(e.message);
+          showToast(e.message || 'Action failed.', 'error');
         }
       });
     });
@@ -600,7 +600,7 @@ async function loadMaterialsList() {
           if (String($('classroomMatEditId')?.value || '') === id) clearMaterialEditing();
           await loadMaterialsList();
         } catch (e) {
-          alert(e.message);
+          showToast(e.message || 'Action failed.', 'error');
         }
       });
     });

@@ -42,3 +42,37 @@ export function normalizePhone(value) {
   const digits = raw.replace(/\D+/g, '');
   return (leadPlus ? '+' : '') + digits;
 }
+
+export function showToast(message, tone = 'info') {
+  const txt = String(message || '').trim();
+  if (!txt) return;
+  let host = document.getElementById('appToastHost');
+  if (!host) {
+    host = document.createElement('div');
+    host.id = 'appToastHost';
+    host.style.position = 'fixed';
+    host.style.right = '16px';
+    host.style.bottom = '16px';
+    host.style.display = 'flex';
+    host.style.flexDirection = 'column';
+    host.style.gap = '8px';
+    host.style.zIndex = '9999';
+    document.body.appendChild(host);
+  }
+  const item = document.createElement('div');
+  item.textContent = txt;
+  item.style.padding = '10px 12px';
+  item.style.borderRadius = '10px';
+  item.style.color = '#fff';
+  item.style.fontSize = '13px';
+  item.style.maxWidth = '320px';
+  item.style.boxShadow = '0 8px 20px rgba(0,0,0,0.24)';
+  item.style.background =
+    tone === 'error' ? '#b42318' : tone === 'success' ? '#067647' : tone === 'warn' ? '#b54708' : '#155eef';
+  host.appendChild(item);
+  setTimeout(() => {
+    item.style.opacity = '0';
+    item.style.transition = 'opacity .25s ease';
+    setTimeout(() => item.remove(), 260);
+  }, 2800);
+}

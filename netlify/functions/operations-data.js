@@ -10,6 +10,21 @@ const UPSERT_CONFLICT = {
 
 const BULK_CHUNK = 75;
 
+async function logAuditEvent(supabase, auth, action, entity, refId, payload) {
+  try {
+    await supabase.from('lms_audit_events').insert({
+      actor_username: String(auth?.username || '').trim() || null,
+      actor_role: String(auth?.role || '').trim() || null,
+      action: String(action || '').trim() || 'unknown',
+      entity: String(entity || '').trim() || 'unknown',
+      ref_id: refId != null ? String(refId) : null,
+      payload: payload != null ? payload : null,
+    });
+  } catch (_) {
+    // Non-blocking: audit must not break primary workflows.
+  }
+}
+
 const SORTABLE = {
   trainees: new Set(['full_name', 'trainee_id', 'phone', 'email', 'created_at', 'city', 'status', 'trainee_type']),
   courses: new Set(['course_name', 'course_id', 'category', 'price', 'status', 'created_at']),
@@ -502,6 +517,7 @@ async function handleBulkEnrollments(event, auth, supabase) {
 
   const { data, error } = await supabase.from('enrollments').update(update).in('enrollment_id', ids).select('enrollment_id');
   if (error) return json({ error: error.message || 'Bulk update failed' }, 500);
+  await logAuditEvent(supabase, auth, 'bulk_update', 'enrollments', null, { requested: ids.length, update });
   return json({ ok: true, requested: ids.length, updated: (data || []).length });
 }
 
@@ -593,7 +609,7 @@ exports.handler = async (event) => {
   let auth = verifyAuth(event);
   if (!auth) return json({ error: 'Unauthorized' }, 401);
   auth = { ...auth, role: String(auth.role || '').trim().toLowerCase() };
-  if (!['admin', 'staff', 'trainer', 'user'].includes(auth.role)) return json({ error: 'Forbidden' }, 403);
+  if (!['admin', 'staff', 'trainer'].includes(auth.role)) return json({ error: 'Forbidden' }, 403);
 
   const supabase = getSupabaseServiceClient();
   if (!supabase) return json({ error: 'Server config missing' }, 500);
@@ -628,6 +644,7 @@ exports.handler = async (event) => {
         .select('*')
         .single();
       if (error) return json({ error: error.message || 'Could not save mapping' }, 500);
+      await logAuditEvent(supabase, auth, 'upsert', 'trainer_course_access', data?.id || null, data || null);
       return json({ ok: true, item: data });
     }
     if (event.httpMethod === 'DELETE') {
@@ -635,6 +652,7 @@ exports.handler = async (event) => {
       if (!id) return json({ error: 'id query parameter is required' }, 400);
       const { error } = await supabase.from('trainer_course_access').delete().eq('id', id);
       if (error) return json({ error: error.message || 'Delete failed' }, 500);
+      await logAuditEvent(supabase, auth, 'delete', 'trainer_course_access', id, null);
       return json({ ok: true });
     }
     return json({ error: 'Method not allowed' }, 405);
@@ -663,7 +681,6 @@ exports.handler = async (event) => {
     if (entity === 'trainees' && detailId) {
       return handleTraineeDetail(event, auth, supabase, detailId);
     }
-    if (!['admin', 'staff', 'trainer', 'user'].includes(auth.role)) return json({ error: 'Forbidden' }, 403);
     return handleEntityList(event, auth, supabase, entity, cfg);
   }
 
@@ -789,6 +806,7 @@ exports.handler = async (event) => {
 
       const { data, error } = await supabase.from(cfg.table).insert(payload).select('*').single();
       if (error) return json({ error: error.message || 'Insert failed' }, 500);
+      await logAuditEvent(supabase, auth, 'create', entity, data?.[cfg.idKey] || data?.id || null, data);
       return json({ ok: true, item: data });
     } catch (e) {
       if (e.code === 409) return json({ error: e.message, trainee_id: e.trainee_id, id: e.id, hint: 'duplicate' }, 409);
@@ -818,6 +836,7 @@ exports.handler = async (event) => {
 
       const { data, error } = await supabase.from(cfg.table).update(payload).eq(cfg.idKey, id).select('*').single();
       if (error) return json({ error: error.message || 'Update failed' }, 500);
+      await logAuditEvent(supabase, auth, 'update', entity, id, data);
       return json({ ok: true, item: data });
     } catch (e) {
       if (e.code === 409) return json({ error: e.message, trainee_id: e.trainee_id, id: e.id, hint: 'duplicate' }, 409);
@@ -834,21 +853,25 @@ exports.handler = async (event) => {
     if (entity === 'enrollments') {
       const err = await adminDeleteEnrollmentByInternalId(supabase, id);
       if (err) return json({ error: err }, 500);
+      await logAuditEvent(supabase, auth, 'delete', 'enrollments', id, null);
       return json({ ok: true });
     }
     if (entity === 'batches') {
       const err = await adminDeleteBatchByInternalId(supabase, id);
       if (err) return json({ error: err }, 500);
+      await logAuditEvent(supabase, auth, 'delete', 'batches', id, null);
       return json({ ok: true });
     }
     if (entity === 'courses') {
       const err = await adminDeleteCourseByInternalId(supabase, id);
       if (err) return json({ error: err }, 500);
+      await logAuditEvent(supabase, auth, 'delete', 'courses', id, null);
       return json({ ok: true });
     }
     if (entity === 'trainees') {
       const err = await adminDeleteTraineeByInternalId(supabase, id);
       if (err) return json({ error: err }, 500);
+      await logAuditEvent(supabase, auth, 'delete', 'trainees', id, null);
       return json({ ok: true });
     }
     return json({ error: 'Delete is only supported for courses, batches, trainees, and enrollments' }, 400);

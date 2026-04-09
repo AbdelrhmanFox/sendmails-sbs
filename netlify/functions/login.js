@@ -7,12 +7,14 @@ const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers
 
 const LOCAL_USER = process.env.LOCAL_FALLBACK_USER || 'local';
 const LOCAL_PASSWORD = process.env.LOCAL_FALLBACK_PASSWORD || 'local';
+const ALLOW_LOCAL_FALLBACK = String(process.env.ALLOW_LOCAL_FALLBACK_LOGIN || '').trim() === '1';
 
 function json(body, status = 200) {
   return { statusCode: status, headers: { 'Content-Type': 'application/json', ...cors }, body: JSON.stringify(body) };
 }
 
 function isLocalLogin(username, password) {
+  if (!ALLOW_LOCAL_FALLBACK) return false;
   return String(username).trim() === LOCAL_USER && String(password) === LOCAL_PASSWORD;
 }
 
@@ -30,6 +32,9 @@ exports.handler = async (event) => {
   const jwtSecret = trimEnvValue(process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET);
 
   if (isLocalLogin(username, password)) {
+    if (String(process.env.NODE_ENV || '').toLowerCase() === 'production') {
+      return json({ error: 'Local fallback login is disabled in production' }, 403);
+    }
     if (!jwtSecret) {
       return json({
         error: 'Server config missing',

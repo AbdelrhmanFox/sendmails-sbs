@@ -30,6 +30,9 @@ const HANDLERS = {
   'classroom-data': require('../netlify/functions/classroom-data').handler,
   'course-library-data': require('../netlify/functions/course-library-data').handler,
   'course-library-upload': require('../netlify/functions/course-library-upload').handler,
+  'assessment-data': require('../netlify/functions/assessment-data').handler,
+  'lms-analytics': require('../netlify/functions/lms-analytics').handler,
+  'integration-events': require('../netlify/functions/integration-events').handler,
 };
 
 function routeName(req) {
