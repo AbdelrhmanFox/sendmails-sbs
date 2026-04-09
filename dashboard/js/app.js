@@ -7,6 +7,7 @@ import {
   authUsername,
   jsonFetch,
   getAuthHeaders,
+  initUploadDropzones,
 } from './shared.js';
 import { showLogin, showApp, applyRoleVisibility, initShell } from './nav.js';
 import { initCampaigns } from './campaigns.js';
@@ -228,6 +229,7 @@ async function bootAuth() {
   initClassroom();
   initCourseLibrary();
   initBulkEnrollment();
+  initUploadDropzones(document);
   dismissAppPreloader();
 }
 

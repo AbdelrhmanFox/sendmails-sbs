@@ -178,3 +178,59 @@ export function isDownloadResource(url, storageObjectKey = null) {
   if (u.includes('/storage/v1/object/public/')) return true;
   return /\.(pdf|doc|docx|ppt|pptx|xls|xlsx|txt|mp4|webm|mov|mkv|avi|m4v|mp3|wav|m4a|aac|ogg|flac)(\?|#|$)/i.test(u);
 }
+
+export function initUploadDropzones(scope = document) {
+  const root = scope && typeof scope.querySelectorAll === 'function' ? scope : document;
+  const labels = root.querySelectorAll('.upload-dropzone__label');
+  labels.forEach((label) => {
+    const input = label.querySelector('input[type="file"]');
+    if (!input || label.dataset.bound === '1') return;
+    label.dataset.bound = '1';
+    const status = root.querySelector(`[data-upload-status-for="${input.id}"]`);
+
+    const updateStatus = () => {
+      const files = input.files ? Array.from(input.files) : [];
+      if (!status) return;
+      if (!files.length) {
+        status.textContent = input.multiple ? 'No files selected.' : 'No file selected.';
+        return;
+      }
+      if (files.length === 1) {
+        status.textContent = `Selected: ${files[0].name}`;
+        return;
+      }
+      status.textContent = `${files.length} files selected.`;
+    };
+
+    input.addEventListener('change', updateStatus);
+
+    ['dragenter', 'dragover'].forEach((evt) =>
+      label.addEventListener(evt, (e) => {
+        e.preventDefault();
+        label.classList.add('is-dragover');
+      }),
+    );
+
+    ['dragleave', 'dragend', 'drop'].forEach((evt) =>
+      label.addEventListener(evt, (e) => {
+        e.preventDefault();
+        label.classList.remove('is-dragover');
+      }),
+    );
+
+    label.addEventListener('drop', (e) => {
+      const dt = e.dataTransfer;
+      if (!dt || !dt.files || !dt.files.length) return;
+      const transfer = new DataTransfer();
+      if (input.multiple) {
+        Array.from(dt.files).forEach((f) => transfer.items.add(f));
+      } else {
+        transfer.items.add(dt.files[0]);
+      }
+      input.files = transfer.files;
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+
+    updateStatus();
+  });
+}

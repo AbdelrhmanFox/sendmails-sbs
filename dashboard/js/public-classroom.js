@@ -7,6 +7,7 @@
   RESOURCE_UPLOAD_MAX_MB,
   requiredFieldMessage,
   couldNotMessage,
+  initUploadDropzones,
 } from './shared.js';
 
 function escapeHtml(s) {
@@ -352,9 +353,15 @@ export async function initPublicClassroom(token) {
                     <label class="full">Response details (text, link, or both)
                       <textarea class="public-submission-text" rows="3" maxlength="5000" placeholder="Write answer or paste links…"></textarea>
                     </label>
-                    <label class="full">Attach file (optional)
-                      <input type="file" class="public-submission-file" accept="${RESOURCE_UPLOAD_ACCEPT}" />
-                    </label>
+                    <label class="full">Attach file (optional)</label>
+                    <div class="upload-dropzone full">
+                      <label class="upload-dropzone__label">
+                        <span class="upload-dropzone__title">Click to upload</span>
+                        <span class="upload-dropzone__hint">or drag and drop</span>
+                        <input type="file" class="public-submission-file upload-dropzone__input" accept="${RESOURCE_UPLOAD_ACCEPT}" />
+                      </label>
+                      <p class="upload-dropzone__status">No file selected.</p>
+                    </div>
                     <p class="muted small-margin full" style="font-size:12px">PDF, Word, Excel, PowerPoint, text, video, or audio — max ${RESOURCE_UPLOAD_MAX_MB} MB per file.</p>
                   </div>
                   <div class="public-submission-actions">
@@ -368,6 +375,15 @@ export async function initPublicClassroom(token) {
         })
         .join('');
       wireSubmissionForms(token);
+      const forms = document.getElementById('publicClassroomAssignments');
+      if (forms) {
+        forms.querySelectorAll('.public-submission-file').forEach((input, idx) => {
+          if (!input.id) input.id = `publicSubmissionFile-${idx + 1}`;
+          const status = input.closest('.upload-dropzone')?.querySelector('.upload-dropzone__status');
+          if (status) status.setAttribute('data-upload-status-for', input.id);
+        });
+        initUploadDropzones(forms);
+      }
     }
 
     wireReviewLookup(token);

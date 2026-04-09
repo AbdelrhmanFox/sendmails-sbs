@@ -732,7 +732,14 @@
               </a>
               <span class="muted dl-btn-row__label">Sample .xlsx</span>
             </div>
-            <input type="file" id="excelImportFile" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="input-file" />
+            <div class="upload-dropzone">
+              <label for="excelImportFile" class="upload-dropzone__label">
+                <span class="upload-dropzone__title">Click to upload</span>
+                <span class="upload-dropzone__hint">.xlsx only</span>
+                <input type="file" id="excelImportFile" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="upload-dropzone__input" />
+              </label>
+              <p class="upload-dropzone__status" data-upload-status-for="excelImportFile">No file selected.</p>
+            </div>
           </div>
           <p id="bulkImportMsg" class="inline-note"></p>
         </div>
@@ -1290,9 +1297,15 @@
                   <label class="full">Title <input type="text" id="classroomAsgTitle" required maxlength="200" /></label>
                   <label class="full">Instructions <textarea id="classroomAsgInstructions" rows="3" maxlength="4000"></textarea></label>
                   <label>Due date <input type="date" id="classroomAsgDue" /></label>
-                  <label class="full">Attachments (PDF, Office, video, audio — multiple files, max 100 MB each)
-                    <input type="file" id="classroomAsgFiles" multiple accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.mp4,.webm,.mov,.mkv,.avi,.m4v,.mp3,.wav,.m4a,.aac,.ogg,.flac" />
-                  </label>
+                  <label class="full">Attachments (PDF, Office, video, audio — multiple files, max 100 MB each)</label>
+                  <div class="upload-dropzone full">
+                    <label for="classroomAsgFiles" class="upload-dropzone__label">
+                      <span class="upload-dropzone__title">Click to upload</span>
+                      <span class="upload-dropzone__hint">or drag and drop files</span>
+                      <input type="file" id="classroomAsgFiles" multiple accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.mp4,.webm,.mov,.mkv,.avi,.m4v,.mp3,.wav,.m4a,.aac,.ogg,.flac" class="upload-dropzone__input" />
+                    </label>
+                    <p class="upload-dropzone__status" data-upload-status-for="classroomAsgFiles">No files selected.</p>
+                  </div>
                   <p class="muted small-margin full">Same file types as trainee submissions; see README for the full list.</p>
                   <div class="form-actions full">
                     <button type="submit" class="btn btn-primary" id="classroomAsgSubmit">Add assignment</button>
@@ -1327,9 +1340,15 @@
                       <option value="">Uncategorized</option>
                     </select>
                   </label>
-                  <label class="full">Files (optional, max 100 MB each)
-                    <input type="file" id="classroomMatFile" multiple accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.mp4,.webm,.mov,.mkv,.avi,.m4v,.mp3,.wav,.m4a,.aac,.ogg,.flac" />
-                  </label>
+                  <label class="full">Files (optional, max 100 MB each)</label>
+                  <div class="upload-dropzone full">
+                    <label for="classroomMatFile" class="upload-dropzone__label">
+                      <span class="upload-dropzone__title">Click to upload</span>
+                      <span class="upload-dropzone__hint">or drag and drop files</span>
+                      <input type="file" id="classroomMatFile" multiple accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.mp4,.webm,.mov,.mkv,.avi,.m4v,.mp3,.wav,.m4a,.aac,.ogg,.flac" class="upload-dropzone__input" />
+                    </label>
+                    <p class="upload-dropzone__status" data-upload-status-for="classroomMatFile">No files selected.</p>
+                  </div>
                   <p class="muted small-margin full" style="font-size:12px">Same file types as classwork attachments (PDF, Office, video, audio). You can upload multiple files at once. Leave URL empty when uploading files.</p>
                   <label class="full">Description <input type="text" id="classroomMatDesc" maxlength="500" /></label>
                   <div class="form-actions full">
@@ -1437,9 +1456,15 @@
                     <label class="full">URL <input type="url" id="courseLibraryMatUrl" placeholder="https://... (optional if you upload a file)" /></label>
                     <label class="full">Description <input type="text" id="courseLibraryMatDesc" maxlength="500" /></label>
                     <div class="full course-library-upload-row" id="courseLibraryUploadRow">
-                      <label class="course-library-file-label">Or upload a file
-                        <input type="file" id="courseLibraryMatFile" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.mp4,.webm,.mov,.mkv,.avi,.m4v,.mp3,.wav,.m4a,.aac,.ogg,.flac" />
-                      </label>
+                      <label class="course-library-file-label">Or upload a file</label>
+                      <div class="upload-dropzone">
+                        <label for="courseLibraryMatFile" class="upload-dropzone__label">
+                          <span class="upload-dropzone__title">Click to upload</span>
+                          <span class="upload-dropzone__hint">or drag and drop</span>
+                          <input type="file" id="courseLibraryMatFile" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.mp4,.webm,.mov,.mkv,.avi,.m4v,.mp3,.wav,.m4a,.aac,.ogg,.flac" class="upload-dropzone__input" />
+                        </label>
+                        <p class="upload-dropzone__status" data-upload-status-for="courseLibraryMatFile">No file selected.</p>
+                      </div>
                       <p class="muted small-margin" id="courseLibraryUploadHint">Uploads use secure storage; the URL is filled automatically. Max 100 MB per file.</p>
                     </div>
                     <div class="form-actions full">
