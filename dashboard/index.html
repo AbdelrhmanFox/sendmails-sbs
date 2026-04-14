@@ -38,6 +38,11 @@
       <h1>SBS Staff Dashboard</h1>
       <p class="subtitle">Internal operations platform for educational services.</p>
       <form id="loginForm">
+        <label for="loginAccountType">Account Type</label>
+        <select id="loginAccountType" required>
+          <option value="staff">Staff account</option>
+          <option value="trainee">Trainee account</option>
+        </select>
         <label for="loginUsername">Username</label>
         <input type="text" id="loginUsername" autocomplete="username" required />
         <label for="loginPassword">Password</label>
@@ -137,6 +142,12 @@
               </button>
             </li>
             <li>
+              <button type="button" class="subnav-item" data-view="trainee-portal">
+                <svg class="subnav-item__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18v14H3z"/><path d="M8 21h8"/><path d="M12 4v17"/></svg>
+                <span class="subnav-item__label">My Learning Portal</span>
+              </button>
+            </li>
+            <li>
               <button type="button" class="subnav-item" data-view="training-tools">
                 <svg class="subnav-item__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><path d="M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v0a2 2 0 0 1-2 2H11a2 2 0 0 1-2-2z"/><path d="m9 12 2 2 4-4"/></svg>
                 <span class="subnav-item__label">Attendance and Materials</span>
@@ -152,6 +163,12 @@
               <button type="button" class="subnav-item" data-view="training-course-library">
                 <svg class="subnav-item__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
                 <span class="subnav-item__label">Course Library</span>
+              </button>
+            </li>
+            <li>
+              <button type="button" class="subnav-item" data-view="training-credentials">
+                <svg class="subnav-item__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8"/><path d="m7 8 5-5 5 5"/><path d="M12 3v12"/><path d="M8 21h8"/></svg>
+                <span class="subnav-item__label">Credentials</span>
               </button>
             </li>
           </ul>
@@ -1479,6 +1496,120 @@
         </div>
       </section>
 
+      <section id="view-training-credentials" class="view">
+        <div class="view-hero">
+          <div class="view-hero-text">
+            <h2>Credential Center</h2>
+            <p class="subtitle">Issue, verify, and analyze digital credentials.</p>
+          </div>
+        </div>
+        <p id="credentialsMsg" class="inline-note"></p>
+        <div class="grid two-col">
+          <article class="card">
+            <h3>Issue credential</h3>
+            <form id="credentialIssueForm" class="form-grid form-grid--two">
+              <label>Trainee ID<input type="text" id="credentialTraineeId" required /></label>
+              <label>Course ID<input type="text" id="credentialCourseId" required /></label>
+              <label>Certificate No<input type="text" id="credentialNo" required /></label>
+              <label>Batch ID<input type="text" id="credentialBatchId" /></label>
+              <label>Template<select id="credentialTemplateId"><option value="">None</option></select></label>
+              <label>Skills (comma separated)<input type="text" id="credentialSkills" /></label>
+              <div class="form-actions full">
+                <button type="submit" class="btn btn-primary">Issue</button>
+              </div>
+            </form>
+          </article>
+          <article class="card">
+            <h3>Template designer</h3>
+            <form id="credentialTemplateForm" class="form-grid form-grid--two">
+              <label>Template code<input type="text" id="templateCode" required /></label>
+              <label>Template name<input type="text" id="templateName" required /></label>
+              <label>Type
+                <select id="templateType">
+                  <option value="certificate">certificate</option>
+                  <option value="badge">badge</option>
+                </select>
+              </label>
+              <div class="form-actions full">
+                <button type="submit" class="btn btn-primary">Create template</button>
+              </div>
+            </form>
+          </article>
+        </div>
+        <div class="grid two-col">
+          <article class="card">
+            <h3>Bulk issue (CSV)</h3>
+            <p class="muted">Headers: trainee_id,course_id,certificate_no,batch_id,template_id,status</p>
+            <form id="credentialBulkIssueForm">
+              <textarea id="credentialBulkCsv" rows="7" placeholder="trainee_id,course_id,certificate_no&#10;TR001,CS101,CERT-001"></textarea>
+              <div class="form-actions"><button type="submit" class="btn btn-primary">Run bulk issue</button></div>
+            </form>
+          </article>
+          <article class="card">
+            <h3>Pathways</h3>
+            <form id="pathwayForm" class="form-grid form-grid--two">
+              <label>Pathway code<input type="text" id="pathwayCode" required /></label>
+              <label>Pathway name<input type="text" id="pathwayName" required /></label>
+              <label class="full">Description<textarea id="pathwayDescription" rows="3"></textarea></label>
+              <label><input type="checkbox" id="pathwayPublic" /> Public spotlight enabled</label>
+              <div class="form-actions full"><button type="submit" class="btn btn-primary">Save pathway</button></div>
+            </form>
+          </article>
+        </div>
+        <article class="card">
+          <h3>Analytics snapshot</h3>
+          <p id="credentialAnalyticsSummary" class="muted">Loading analytics...</p>
+        </article>
+        <article class="card">
+          <h3>Issued credentials</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Certificate No</th>
+                  <th>Trainee</th>
+                  <th>Course</th>
+                  <th>Status</th>
+                  <th>Issued At</th>
+                  <th>Verification Token</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="credentialRows"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <section id="view-trainee-portal" class="view">
+        <div class="view-hero">
+          <div class="view-hero-text">
+            <h2>My Learning Portal</h2>
+            <p class="subtitle">Track your courses, assignments, and submissions in one place.</p>
+          </div>
+        </div>
+        <div class="ops-two-col">
+          <div class="card">
+            <h3>Welcome, <span id="traineeWelcome">Trainee</span></h3>
+            <p id="traineePasswordHint" class="muted"></p>
+            <form id="traineePasswordForm">
+              <label for="traineeCurrentPassword">Current password</label>
+              <input type="password" id="traineeCurrentPassword" required />
+              <label for="traineeNewPassword">New password</label>
+              <input type="password" id="traineeNewPassword" minlength="6" required />
+              <label for="traineeConfirmPassword">Confirm new password</label>
+              <input type="password" id="traineeConfirmPassword" minlength="6" required />
+              <button type="submit" class="btn btn-secondary">Update password</button>
+            </form>
+          </div>
+          <div class="card">
+            <h3>My Courses</h3>
+            <div id="traineeCoursesList" class="trainee-courses-list"></div>
+          </div>
+        </div>
+        <div id="traineeClassroom"></div>
+      </section>
+
       <section id="view-public-classroom" class="view">
         <div class="public-classroom-shell">
           <div class="card public-classroom-hero-card">
@@ -1541,6 +1672,34 @@
                 <div id="publicClassroomAssignments" class="public-classroom-body"></div>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-public-credential" class="view">
+        <div class="public-classroom-shell">
+          <div class="card">
+            <h2>Credential verification</h2>
+            <p id="publicCredentialMsg" class="inline-error"></p>
+            <div id="publicCredentialCard"></div>
+            <a id="publicCredentialOpenProfile" href="#" class="btn btn-secondary">Open learner profile</a>
+            <div class="form-actions">
+              <button type="button" class="btn btn-primary" data-public-share="copy">Copy link</button>
+              <button type="button" class="btn btn-secondary" data-public-share="linkedin">Share on LinkedIn</button>
+              <button type="button" class="btn btn-secondary" data-public-share="x">Share on X</button>
+              <button type="button" class="btn btn-secondary" data-public-share="facebook">Share on Facebook</button>
+              <button type="button" class="btn btn-secondary" data-public-share="email">Share by email</button>
+            </div>
+            <span id="publicCredentialShareLink" data-link=""></span>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-public-learner" class="view">
+        <div class="public-classroom-shell">
+          <div class="card">
+            <h2>Learner profile</h2>
+            <div id="publicLearnerProfileCard"></div>
           </div>
         </div>
       </section>
@@ -1824,6 +1983,15 @@
             <button type="submit" class="btn btn-primary" id="btnSaveDemoSupport">Save number</button>
           </form>
           <p id="demoSupportMsg" class="inline-note"></p>
+        </div>
+        <div class="card">
+          <h3>Trainee Access Reset</h3>
+          <p class="muted small-margin">Issue a new temporary password and force password update on first login.</p>
+          <form id="traineeResetForm" class="row">
+            <input type="text" id="traineeResetIdentifier" placeholder="Trainee email or trainee ID" required />
+            <button type="submit" class="btn btn-secondary">Reset trainee access</button>
+          </form>
+          <p id="traineeResetMsg" class="inline-note"></p>
         </div>
         <form id="createUserForm" class="card row">
           <input type="text" id="newUsername" minlength="2" placeholder="New username" required />

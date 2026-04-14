@@ -6,6 +6,8 @@ Run the full file `supabase/schema.sql` in Supabase SQL Editor.
 
 **Existing project already on an older snapshot:** After `schema.sql`, apply any newer files in `supabase/migrations/` in filename order (or run only the migrations you are missing). Example: `whiteboard_enabled` on `training_sessions` lives in `20260404_training_session_whiteboard_flag.sql` if that column is not already present.
 
+For migration policy, feature mapping, and safety constraints, follow `supabase/migrations/README.md`.
+
 This creates (baseline):
 
 - `app_users`

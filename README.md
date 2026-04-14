@@ -63,6 +63,7 @@ For asset layout and syncing rules, see [`brand/README.md`](brand/README.md).
 
 | Document | Description |
 | --- | --- |
+| [`AGENTS.md`](AGENTS.md) | AI operating contract (precedence, safety, validation, escalation). |
 | [`docs/DASHBOARD.md`](docs/DASHBOARD.md) | Dashboard layout, behaviour, and key files. |
 | [`docs/PROJECT_BREAKDOWN.md`](docs/PROJECT_BREAKDOWN.md) | Structured extraction from the project brief. |
 | [`docs/PROJECT_PROMPT.md`](docs/PROJECT_PROMPT.md) | Full project brief. |
@@ -72,8 +73,19 @@ For asset layout and syncing rules, see [`brand/README.md`](brand/README.md).
 | [`docs/deploy/VERCEL_DEPLOY.md`](docs/deploy/VERCEL_DEPLOY.md) | Vercel project settings, env vars, and `/api/*` behaviour. |
 | [`docs/deploy/NETLIFY_SUPABASE.md`](docs/deploy/NETLIFY_SUPABASE.md) | Netlify + Supabase integration notes. |
 | [`docs/deploy/SUPABASE_SETUP.md`](docs/deploy/SUPABASE_SETUP.md) | Schema overview and optional workbook import. |
+| [`supabase/migrations/README.md`](supabase/migrations/README.md) | Migration execution policy and feature-to-migration index. |
 | [`docs/N8N_FINANCE.md`](docs/N8N_FINANCE.md) | Scheduled finance snapshot for n8n (`finance-data?resource=n8n-report`). |
 | [`CLAUDE.md`](CLAUDE.md) | Agent and delivery rules for this codebase. |
+
+## Agent Document Precedence
+
+When AI agents work on this repository, use this order to avoid conflicting guidance:
+
+1. [`CLAUDE.md`](CLAUDE.md) for hard execution/safety constraints.
+2. [`AGENTS.md`](AGENTS.md) for practical operating workflow in this repository.
+3. [`README.md`](README.md) for current architecture, scripts, and deployment reality.
+4. Focused docs for domain details (for example [`docs/DASHBOARD.md`](docs/DASHBOARD.md), [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md), and deploy docs).
+5. Historical brief documents ([`docs/PROJECT_PROMPT.md`](docs/PROJECT_PROMPT.md), [`docs/PROJECT_BREAKDOWN.md`](docs/PROJECT_BREAKDOWN.md)) as context only when they do not conflict with current docs.
 
 ---
 
@@ -107,7 +119,6 @@ Redeploy after changing variables.
 | Regenerate data model doc | `npm run data-model:build` |
 | Import CSV sample data | `npm run import:workbook` |
 | Regenerate sample Excel for Operations import | `npm run sample-import:xlsx` (writes `docs/sample-import/` and `dashboard/assets/` for the download link) |
-| Legacy enrollments CSV import | `npm run import:enrollments` |
 
 ---
 

@@ -15,9 +15,12 @@ import { initOperations, initOpsInsights, initBulkEnrollment } from './operation
 import { initTraining, initTrainingTools } from './training.js';
 import { initClassroom } from './classroom.js';
 import { initCourseLibrary } from './course-library.js';
+import { initCredentials } from './credentials.js';
 import { initPublicClassroom } from './public-classroom.js';
+import { bindPublicShareActions, initPublicCredential, initPublicLearnerProfile } from './public-credentials.js';
 import { initAdmin } from './admin.js';
 import { initFinance } from './finance.js';
+import { initTraineePortal, loadTraineePortal } from './trainee-portal.js';
 
 const loginError = document.getElementById('loginError');
 let lastDemoError = '';
@@ -45,6 +48,24 @@ function hasPublicTrainingJoinQuery() {
     return Boolean(session || group);
   } catch (_) {
     return false;
+  }
+}
+
+function getPublicCredentialToken() {
+  try {
+    const q = new URLSearchParams(window.location.search);
+    return String(q.get('credential') || '').trim();
+  } catch (_) {
+    return '';
+  }
+}
+
+function getPublicLearnerSlug() {
+  try {
+    const q = new URLSearchParams(window.location.search);
+    return String(q.get('learner') || '').trim();
+  } catch (_) {
+    return '';
   }
 }
 
@@ -201,6 +222,23 @@ function bootPublicTrainingGuest() {
   dismissAppPreloader();
 }
 
+function bootPublicCredentialGuest() {
+  const token = getPublicCredentialToken();
+  const learner = getPublicLearnerSlug();
+  document.body.classList.add('public-credential-guest');
+  showApp();
+  document.querySelectorAll('.view').forEach((v) => v.classList.remove('active'));
+  if (token) {
+    document.getElementById('view-public-credential')?.classList.add('active');
+    void initPublicCredential(token);
+  } else {
+    document.getElementById('view-public-learner')?.classList.add('active');
+    void initPublicLearnerProfile(learner);
+  }
+  bindPublicShareActions();
+  dismissAppPreloader();
+}
+
 async function bootAuth() {
   if (!authToken || !authRole) {
     if (hasPublicClassroomQuery()) {
@@ -211,14 +249,25 @@ async function bootAuth() {
       bootPublicTrainingGuest();
       return;
     }
+    if (getPublicCredentialToken() || getPublicLearnerSlug()) {
+      bootPublicCredentialGuest();
+      return;
+    }
     showLogin();
     dismissAppPreloader();
     return;
   }
   showApp();
   applyRoleVisibility();
+  initTraineePortal();
   toggleChangePasswordPanel();
   initShell();
+  if (authRole === 'trainee') {
+    document.dispatchEvent(new CustomEvent('sbs:goto-view', { detail: { viewId: 'trainee-portal' } }));
+    await loadTraineePortal();
+    dismissAppPreloader();
+    return;
+  }
   initCampaigns();
   initOperations();
   initTraining();
@@ -228,6 +277,7 @@ async function bootAuth() {
   initTrainingTools();
   initClassroom();
   initCourseLibrary();
+  initCredentials();
   initBulkEnrollment();
   initUploadDropzones(document);
   dismissAppPreloader();
@@ -237,13 +287,16 @@ document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const username = String(document.getElementById('loginUsername').value || '').trim();
   const password = String(document.getElementById('loginPassword').value || '');
+  const accountType = String(document.getElementById('loginAccountType')?.value || 'staff');
   loginError.textContent = '';
   if (!username || !password) return;
   try {
-    const data = await jsonFetch('/.netlify/functions/login', {
+    const endpoint = accountType === 'trainee' ? '/.netlify/functions/trainee-login' : '/.netlify/functions/login';
+    const payload = accountType === 'trainee' ? { email: username, password } : { username, password };
+    const data = await jsonFetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify(payload),
     });
     localStorage.setItem(AUTH_TOKEN, data.token);
     localStorage.setItem(AUTH_ROLE, data.role);

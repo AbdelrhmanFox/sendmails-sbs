@@ -4,6 +4,8 @@ import { refreshFinanceAll } from './finance.js';
 import { loadPipeline, loadCapacity, loadQuality, onOperationsViewChange } from './operations.js';
 import { loadClassrooms } from './classroom.js';
 import { loadCourseLibrary } from './course-library.js';
+import { loadCredentialCenter } from './credentials.js';
+import { loadTraineePortal } from './trainee-portal.js';
 
 const loginScreen = document.getElementById('login-screen');
 const appEl = document.getElementById('app');
@@ -30,6 +32,8 @@ export function showView(viewId) {
   if (viewId === 'operations-insights') loadPipeline();
   if (viewId === 'training-classroom') void loadClassrooms();
   if (viewId === 'training-course-library') void loadCourseLibrary();
+  if (viewId === 'training-credentials') void loadCredentialCenter();
+  if (viewId === 'trainee-portal') void loadTraineePortal();
   onOperationsViewChange(viewId);
 }
 
@@ -75,6 +79,12 @@ function applyFinanceWriteVisibility(role) {
 export function initShell() {
   const role = localStorage.getItem('sbs_role') || 'user';
   const allowed = areasForRole(role);
+  if (role === 'trainee') {
+    document.querySelectorAll('.subnav-item').forEach((btn) => {
+      const viewId = String(btn.getAttribute('data-view') || '');
+      btn.style.display = viewId === 'trainee-portal' ? '' : 'none';
+    });
+  }
 
   function showSubnavForArea(area) {
     document.querySelectorAll('.subnav').forEach((s) => {
@@ -127,8 +137,11 @@ export function initShell() {
   });
 
   const firstArea = allowed[0] || 'operations';
-  const firstSub = document.querySelector(`.subnav[data-for-area="${firstArea}"] .subnav-item`);
-  const firstView = firstSub ? firstSub.getAttribute('data-view') : 'operations-home';
+  const firstSub =
+    role === 'trainee'
+      ? document.querySelector('.subnav-item[data-view="trainee-portal"]')
+      : document.querySelector(`.subnav[data-for-area="${firstArea}"] .subnav-item`);
+  const firstView = firstSub ? firstSub.getAttribute('data-view') : role === 'trainee' ? 'trainee-portal' : 'operations-home';
   activateArea(firstArea, firstView);
 
   document.addEventListener('sbs:goto-view', (e) => {

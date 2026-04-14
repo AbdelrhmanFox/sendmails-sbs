@@ -1,6 +1,15 @@
 # Project Brief — Structured Breakdown
 
-Extraction from the full project brief (`docs/PROJECT_PROMPT.md`). Use this as the single reference for implementation and review.
+Extraction from the full project brief (`docs/PROJECT_PROMPT.md`).
+
+Historical context only: do not use this file as the primary implementation source for current work.
+
+Current implementation precedence:
+
+1. `CLAUDE.md`
+2. `AGENTS.md`
+3. `README.md`
+4. Focused docs (for example `docs/DASHBOARD.md`, `docs/DATA_MODEL.md`, and deploy docs)
 
 ---
 
@@ -443,4 +452,4 @@ Earlier subsections in this document (e.g. seven-step wizard, QR, RTL/i18n) desc
 - **list-users response shape:** “Return list of users” — exact shape (e.g. `{ users: [{ username, role }] }`) not defined in brief.
 - **netlify.toml and functions:** No `[functions]` section specified (e.g. node version for functions); NODE_VERSION in build may or may not apply to functions depending on Netlify version.
 
-This breakdown is the structured extraction from the project brief; use it together with `docs/PROJECT_PROMPT.md` for implementation and gap analysis.
+This breakdown remains useful for historical intent and gap analysis. For active implementation, follow current canonical docs listed at the top of this file.

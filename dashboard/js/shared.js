@@ -27,6 +27,7 @@ export const ROLE_AREAS = {
   admin: ['operations', 'training', 'finance', 'automation', 'admin'],
   staff: ['operations', 'automation'],
   trainer: ['training'],
+  trainee: ['training'],
   user: ['automation'],
   accountant: ['finance'],
 };

@@ -190,8 +190,34 @@ function initDemoSupportForm() {
   });
 }
 
+function initTraineeResetForm() {
+  const form = document.getElementById('traineeResetForm');
+  const msg = document.getElementById('traineeResetMsg');
+  const input = document.getElementById('traineeResetIdentifier');
+  if (!form || !msg || !input) return;
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    msg.textContent = '';
+    const raw = String(input.value || '').trim();
+    if (!raw) return;
+    const payload = raw.includes('@') ? { email: raw.toLowerCase() } : { trainee_id: raw };
+    try {
+      const data = await jsonFetch('/.netlify/functions/trainee-admin-reset', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(payload),
+      });
+      msg.textContent = `Temporary password: ${data.temporary_password} (share once with trainee).`;
+      input.value = '';
+    } catch (err) {
+      msg.textContent = err.message || 'Could not reset trainee access.';
+    }
+  });
+}
+
 export function initAdmin() {
   initDemoSupportForm();
+  initTraineeResetForm();
   document.getElementById('createUserForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const username = String(document.getElementById('newUsername').value || '').trim();

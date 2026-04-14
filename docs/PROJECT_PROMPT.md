@@ -2,6 +2,8 @@
 
 Use this prompt to maintain or rebuild the current product.
 
+Important: this file preserves full project brief context and may include historical assumptions. For active implementation decisions, follow `CLAUDE.md`, `AGENTS.md`, `README.md`, and focused docs under `docs/` when conflicts exist.
+
 ## Product intent
 
 Build an internal staff dashboard for SBS (educational/training services), with a clear English-only UX and three operational modules:

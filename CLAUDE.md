@@ -31,5 +31,5 @@
 - At the end of each coherent implementation slice:
   1. Verify changed files.
   2. Run smoke checks.
-  3. Commit with an English message.
-  4. Push to GitHub remote.
+ 3. Commit with an English message only when the user explicitly asks for a commit.
+ 4. Push to GitHub remote only when the user explicitly asks for a push.
