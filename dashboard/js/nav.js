@@ -6,7 +6,7 @@ import { loadClassrooms } from './domains/classroom/index.js';
 import { loadCourseLibrary } from './domains/library/index.js';
 import { loadCredentialCenter } from './domains/credentials/index.js';
 import { loadTraineePortal } from './domains/trainee/index.js';
-import { QUICK_ACTIONS_BY_ROLE, VIEW_META, WORKSPACE_LABELS, parseHashRoute, toHash } from './shell-routes.js';
+import { DASHBOARD_IA, QUICK_ACTIONS_BY_ROLE, VIEW_META, WORKSPACE_LABELS, parseHashRoute, toHash } from './shell-routes.js';
 
 const loginScreen = document.getElementById('login-screen');
 const appEl = document.getElementById('app');
@@ -139,9 +139,39 @@ function renderQuickActions(role) {
   });
 }
 
+function applyIaLabelsAndVisibility(role) {
+  const allowedAreas = areasForRole(role);
+  const tabsByArea = Object.fromEntries(DASHBOARD_IA.tabs.map((t) => [t.area, t]));
+  const allowedViewsByArea = {};
+  Object.entries(DASHBOARD_IA.sidebar).forEach(([area, items]) => {
+    allowedViewsByArea[area] = new Set((items || []).map((item) => item.viewId));
+  });
+
+  document.querySelectorAll('.area-tab').forEach((tab) => {
+    const area = String(tab.getAttribute('data-area') || '').trim();
+    const cfg = tabsByArea[area];
+    if (cfg && cfg.label) tab.textContent = cfg.label;
+    tab.style.display = allowedAreas.includes(area) ? '' : 'none';
+  });
+
+  document.querySelectorAll('.subnav').forEach((subnav) => {
+    const area = String(subnav.getAttribute('data-for-area') || '').trim();
+    const allowedViews = allowedViewsByArea[area] || new Set();
+    subnav.querySelectorAll('.subnav-item').forEach((btn) => {
+      const viewId = String(btn.getAttribute('data-view') || '').trim();
+      const show = allowedViews.has(viewId);
+      const itemCfg = (DASHBOARD_IA.sidebar[area] || []).find((x) => x.viewId === viewId);
+      const labelNode = btn.querySelector('.subnav-item__label');
+      if (labelNode && itemCfg?.label) labelNode.textContent = itemCfg.label;
+      btn.style.display = show ? '' : 'none';
+    });
+  });
+}
+
 export function initShell() {
   const role = localStorage.getItem('sbs_role') || 'user';
   const allowed = areasForRole(role);
+  applyIaLabelsAndVisibility(role);
   renderQuickActions(role);
   if (role === 'trainee') {
     document.querySelectorAll('.subnav-item').forEach((btn) => {
