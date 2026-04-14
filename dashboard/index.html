@@ -12,6 +12,12 @@
   <link rel="stylesheet" href="css/tokens.css" />
   <link rel="stylesheet" href="css/brand-surfaces.css" />
   <link rel="stylesheet" href="css/preloader.css" />
+  <link rel="stylesheet" href="css/layout.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/forms.css" />
+  <link rel="stylesheet" href="css/tables.css" />
+  <link rel="stylesheet" href="css/role-shells.css" />
+  <link rel="stylesheet" href="css/utilities.css" />
   <link rel="stylesheet" href="css/main.css" />
 </head>
 <body>
@@ -233,6 +239,23 @@
     </aside>
 
     <main class="main">
+      <section class="workspace-context" id="workspaceContext">
+        <div class="workspace-context__left">
+          <ol class="workspace-breadcrumb" id="workspaceBreadcrumb">
+            <li>Workspace</li>
+            <li id="workspaceBreadcrumbArea">Operations</li>
+            <li id="workspaceBreadcrumbView">Overview</li>
+          </ol>
+          <h2 class="workspace-context__title" id="workspaceTitle">Operations Workspace</h2>
+          <p class="workspace-context__subtitle" id="workspaceSubtitle">Manage data, track execution, and move work forward.</p>
+        </div>
+        <div class="workspace-context__right" id="workspaceQuickActions">
+          <span class="workspace-pill"><span class="workspace-pill__dot"></span><span id="workspaceRoleLabel">Role: user</span></span>
+          <button type="button" class="btn btn-secondary quick-action" data-quick-view="operations-home">Operations Home</button>
+          <button type="button" class="btn btn-secondary quick-action" data-quick-view="training">Training Hub</button>
+          <button type="button" class="btn btn-secondary quick-action" data-quick-view="finance">Finance Board</button>
+        </div>
+      </section>
       <div id="operationsGlobalBar" class="operations-global-bar hidden" aria-hidden="true">
         <div class="operations-global-bar-inner card card--compact card--plain">
           <label class="visually-hidden" for="opsGlobalSearchInput">Search trainees</label>

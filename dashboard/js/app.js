@@ -10,17 +10,16 @@ import {
   initUploadDropzones,
 } from './shared.js';
 import { showLogin, showApp, applyRoleVisibility, initShell } from './nav.js';
-import { initCampaigns } from './campaigns.js';
-import { initOperations, initOpsInsights, initBulkEnrollment } from './operations.js';
-import { initTraining, initTrainingTools } from './training.js';
-import { initClassroom } from './classroom.js';
-import { initCourseLibrary } from './course-library.js';
-import { initCredentials } from './credentials.js';
-import { initPublicClassroom } from './public-classroom.js';
-import { bindPublicShareActions, initPublicCredential, initPublicLearnerProfile } from './public-credentials.js';
-import { initAdmin } from './admin.js';
-import { initFinance } from './finance.js';
-import { initTraineePortal, loadTraineePortal } from './trainee-portal.js';
+import { initCampaigns } from './domains/automation/index.js';
+import { initOperations, initOpsInsights, initBulkEnrollment } from './domains/operations/index.js';
+import { initTraining, initTrainingTools } from './domains/training/index.js';
+import { initClassroom } from './domains/classroom/index.js';
+import { initCourseLibrary } from './domains/library/index.js';
+import { initCredentials, bindPublicShareActions, initPublicCredential, initPublicLearnerProfile } from './domains/credentials/index.js';
+import { initPublicClassroom } from './domains/public/index.js';
+import { initAdmin } from './domains/admin/index.js';
+import { initFinance } from './domains/finance/index.js';
+import { initTraineePortal, loadTraineePortal } from './domains/trainee/index.js';
 
 const loginError = document.getElementById('loginError');
 let lastDemoError = '';
@@ -203,6 +202,7 @@ function bootPublicClassroomGuest() {
     const q = new URLSearchParams(window.location.search);
     const token = String(q.get('classroom') || '').trim();
     document.body.classList.add('public-classroom-guest');
+    document.getElementById('workspaceContext')?.classList.add('hidden');
     showApp();
     document.querySelectorAll('.view').forEach((v) => v.classList.remove('active'));
     document.getElementById('view-public-classroom')?.classList.add('active');
@@ -215,6 +215,7 @@ function bootPublicClassroomGuest() {
 
 function bootPublicTrainingGuest() {
   document.body.classList.add('public-training-guest');
+  document.getElementById('workspaceContext')?.classList.add('hidden');
   showApp();
   document.querySelectorAll('.view').forEach((v) => v.classList.remove('active'));
   document.getElementById('view-training')?.classList.add('active');
@@ -226,6 +227,7 @@ function bootPublicCredentialGuest() {
   const token = getPublicCredentialToken();
   const learner = getPublicLearnerSlug();
   document.body.classList.add('public-credential-guest');
+  document.getElementById('workspaceContext')?.classList.add('hidden');
   showApp();
   document.querySelectorAll('.view').forEach((v) => v.classList.remove('active'));
   if (token) {
@@ -259,6 +261,8 @@ async function bootAuth() {
   }
   showApp();
   applyRoleVisibility();
+  document.body.classList.add(`role-${String(authRole || 'user').toLowerCase()}`);
+  document.getElementById('workspaceContext')?.classList.remove('hidden');
   initTraineePortal();
   toggleChangePasswordPanel();
   initShell();
@@ -307,6 +311,25 @@ document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
   }
 });
 
+function initLoginExperience() {
+  const select = document.getElementById('loginAccountType');
+  const userLabel = document.querySelector('label[for="loginUsername"]');
+  const userInput = document.getElementById('loginUsername');
+  if (!select || !userLabel || !userInput) return;
+  const sync = () => {
+    const v = String(select.value || 'staff');
+    if (v === 'trainee') {
+      userLabel.textContent = 'Email';
+      userInput.setAttribute('placeholder', 'trainee@example.com');
+      return;
+    }
+    userLabel.textContent = 'Username';
+    userInput.setAttribute('placeholder', 'Enter username');
+  };
+  select.addEventListener('change', sync);
+  sync();
+}
+
 document.getElementById('btnLogout')?.addEventListener('click', () => {
   localStorage.removeItem(AUTH_TOKEN);
   localStorage.removeItem(AUTH_ROLE);
@@ -329,6 +352,7 @@ function initLoginCharacterHero() {
     });
 }
 initLoginCharacterHero();
+initLoginExperience();
 initChangePasswordForm();
 initDemoSupportCta();
 

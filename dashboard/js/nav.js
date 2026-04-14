@@ -1,11 +1,12 @@
 import { areasForRole } from './shared.js';
-import { loadUsers, loadFinanceAudit } from './admin.js';
-import { refreshFinanceAll } from './finance.js';
-import { loadPipeline, loadCapacity, loadQuality, onOperationsViewChange } from './operations.js';
-import { loadClassrooms } from './classroom.js';
-import { loadCourseLibrary } from './course-library.js';
-import { loadCredentialCenter } from './credentials.js';
-import { loadTraineePortal } from './trainee-portal.js';
+import { loadUsers, loadFinanceAudit } from './domains/admin/index.js';
+import { refreshFinanceAll } from './domains/finance/index.js';
+import { loadPipeline, loadCapacity, loadQuality, onOperationsViewChange } from './domains/operations/index.js';
+import { loadClassrooms } from './domains/classroom/index.js';
+import { loadCourseLibrary } from './domains/library/index.js';
+import { loadCredentialCenter } from './domains/credentials/index.js';
+import { loadTraineePortal } from './domains/trainee/index.js';
+import { QUICK_ACTIONS_BY_ROLE, VIEW_META, WORKSPACE_LABELS, parseHashRoute, toHash } from './shell-routes.js';
 
 const loginScreen = document.getElementById('login-screen');
 const appEl = document.getElementById('app');
@@ -35,6 +36,7 @@ export function showView(viewId) {
   if (viewId === 'training-credentials') void loadCredentialCenter();
   if (viewId === 'trainee-portal') void loadTraineePortal();
   onOperationsViewChange(viewId);
+  updateWorkspaceContext(viewId);
 }
 
 /** Switch visible view and sync area tab + subnav when applicable. */
@@ -54,6 +56,8 @@ export function navigateToView(viewId) {
       subItem.classList.add('active');
     }
   }
+  const meta = VIEW_META[viewId];
+  syncHashRoute(meta?.area, viewId);
   showView(viewId);
 }
 
@@ -76,9 +80,69 @@ function applyFinanceWriteVisibility(role) {
   });
 }
 
+let isSyncingHash = false;
+
+function syncHashRoute(area, viewId) {
+  if (!area || !viewId) return;
+  const nextHash = toHash(area, viewId);
+  if (!nextHash) return;
+  if (window.location.hash === nextHash) return;
+  isSyncingHash = true;
+  window.location.hash = nextHash;
+  window.setTimeout(() => {
+    isSyncingHash = false;
+  }, 0);
+}
+
+function toTitleCase(value) {
+  const txt = String(value || '').trim();
+  if (!txt) return 'Workspace';
+  return txt.charAt(0).toUpperCase() + txt.slice(1);
+}
+
+function updateWorkspaceContext(viewId) {
+  const role = String(localStorage.getItem('sbs_role') || 'user').toLowerCase();
+  document.body.classList.remove('role-admin', 'role-staff', 'role-trainer', 'role-accountant', 'role-trainee', 'role-user');
+  document.body.classList.add(`role-${role}`);
+
+  const meta = VIEW_META[viewId] || {};
+  const area = meta.area || 'operations';
+  const areaLabels = WORKSPACE_LABELS[area] || WORKSPACE_LABELS.operations;
+
+  const areaNode = document.getElementById('workspaceBreadcrumbArea');
+  const viewNode = document.getElementById('workspaceBreadcrumbView');
+  const titleNode = document.getElementById('workspaceTitle');
+  const subNode = document.getElementById('workspaceSubtitle');
+  const roleNode = document.getElementById('workspaceRoleLabel');
+
+  if (areaNode) areaNode.textContent = toTitleCase(area);
+  if (viewNode) viewNode.textContent = meta.label || toTitleCase(viewId.replace(/-/g, ' '));
+  if (titleNode) titleNode.textContent = areaLabels.title;
+  if (subNode) subNode.textContent = areaLabels.subtitle;
+  if (roleNode) roleNode.textContent = `Role: ${role}`;
+}
+
+function renderQuickActions(role) {
+  const host = document.getElementById('workspaceQuickActions');
+  if (!host) return;
+  const pill = host.querySelector('.workspace-pill');
+  host.innerHTML = '';
+  if (pill) host.appendChild(pill);
+  const quick = QUICK_ACTIONS_BY_ROLE[role] || QUICK_ACTIONS_BY_ROLE.user;
+  quick.forEach((item) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn btn-secondary quick-action';
+    btn.textContent = item.label;
+    btn.setAttribute('data-quick-view', item.viewId);
+    host.appendChild(btn);
+  });
+}
+
 export function initShell() {
   const role = localStorage.getItem('sbs_role') || 'user';
   const allowed = areasForRole(role);
+  renderQuickActions(role);
   if (role === 'trainee') {
     document.querySelectorAll('.subnav-item').forEach((btn) => {
       const viewId = String(btn.getAttribute('data-view') || '');
@@ -105,6 +169,7 @@ export function initShell() {
         b.classList.toggle('active', v === viewId);
       });
     }
+    syncHashRoute(area, viewId);
     showView(viewId);
   }
 
@@ -132,21 +197,48 @@ export function initShell() {
           t.classList.toggle('active', t.getAttribute('data-area') === area);
         });
       }
+      syncHashRoute(area, viewId);
       showView(viewId);
     });
   });
 
+  document.addEventListener('click', (e) => {
+    const target = e.target.closest('[data-quick-view]');
+    if (!target) return;
+    const viewId = String(target.getAttribute('data-quick-view') || '').trim();
+    if (!viewId) return;
+    navigateToView(viewId);
+  });
+
+  const requested = parseHashRoute();
   const firstArea = allowed[0] || 'operations';
   const firstSub =
     role === 'trainee'
       ? document.querySelector('.subnav-item[data-view="trainee-portal"]')
       : document.querySelector(`.subnav[data-for-area="${firstArea}"] .subnav-item`);
-  const firstView = firstSub ? firstSub.getAttribute('data-view') : role === 'trainee' ? 'trainee-portal' : 'operations-home';
-  activateArea(firstArea, firstView);
+  const defaultView = firstSub ? firstSub.getAttribute('data-view') : role === 'trainee' ? 'trainee-portal' : 'operations-home';
+  const requestedView = String(requested?.viewId || '').trim();
+  const requestedMeta = VIEW_META[requestedView];
+  const canOpenRequested = requestedView && requestedMeta && allowed.includes(requestedMeta.area);
+  if (canOpenRequested) {
+    activateArea(requestedMeta.area, requestedView);
+  } else {
+    activateArea(firstArea, defaultView);
+  }
 
   document.addEventListener('sbs:goto-view', (e) => {
     const id = e.detail && e.detail.viewId;
     if (typeof id === 'string') navigateToView(id);
+  });
+
+  window.addEventListener('hashchange', () => {
+    if (isSyncingHash) return;
+    const next = parseHashRoute();
+    const viewId = String(next?.viewId || '').trim();
+    if (!viewId) return;
+    const meta = VIEW_META[viewId];
+    if (!meta || !allowed.includes(meta.area)) return;
+    navigateToView(viewId);
   });
 
   initSidebarDrawer();

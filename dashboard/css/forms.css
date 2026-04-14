@@ -1,0 +1,24 @@
+.form-grid--two {
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+}
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.field-hint {
+  margin-top: 4px;
+  color: var(--brand-muted);
+  font-size: 12px;
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+button:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--brand-primary-2) 72%, white);
+  outline-offset: 1px;
+}

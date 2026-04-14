@@ -1,0 +1,14 @@
+.table-wrap table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.table-wrap table tbody tr:hover {
+  background: color-mix(in oklab, var(--brand-surface-2) 52%, transparent);
+}
+
+.table-wrap table td,
+.table-wrap table th {
+  vertical-align: middle;
+}

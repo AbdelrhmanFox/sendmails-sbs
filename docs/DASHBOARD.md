@@ -16,6 +16,8 @@ Top-level areas (sidebar):
 
 Role-to-areas mapping is defined in `dashboard/js/shared.js` (`ROLE_AREAS`): e.g. `accountant` sees Finance only; `trainer` sees Training only; `user` sees Automation only.
 
+The shell now also supports hash-route state (`#/<area>/<view>`) through `dashboard/js/shell-routes.js` and `dashboard/js/nav.js`, with workspace breadcrumb/context and role-scoped quick actions.
+
 ## Modules (detail)
 
 1. **Operations — Data**  
@@ -47,12 +49,14 @@ Role-to-areas mapping is defined in `dashboard/js/shared.js` (`ROLE_AREAS`): e.g
 ## Frontend files
 
 - `dashboard/index.html` (Quill, Supabase client, SheetJS, **Chart.js** for Finance; `<script type="module" src="js/app.js">`)
-- `dashboard/css/tokens.css`, `dashboard/css/main.css` (training chat + **shared whiteboard** layout; participant view uses a wider main column)
+- `dashboard/css/tokens.css`, `dashboard/css/main.css` plus modular layers (`layout.css`, `components.css`, `forms.css`, `tables.css`, `role-shells.css`, `utilities.css`)
 - `dashboard/js/app.js` — ES module entry (bootstraps shell, wires imports)
 - `dashboard/js/shared.js` — API base helpers, `ROLE_AREAS`, shared UI utilities
 - `dashboard/js/config.js` — runtime config
-- `dashboard/js/nav.js` — sidebar / area visibility
-- `dashboard/js/operations.js`, `finance.js`, `training.js`, `campaigns.js`, `admin.js` — feature modules imported from `app.js`
+- `dashboard/js/nav.js` — role-aware shell navigation + hash route sync + workspace context
+- `dashboard/js/shell-routes.js` — route metadata, labels, and quick actions
+- `dashboard/js/domains/*` — domain adapters (`operations`, `training`, `classroom`, `library`, `finance`, `automation`, `admin`, `credentials`, `trainee`, `public`)
+- `dashboard/js/operations.js`, `finance.js`, `training.js`, `campaigns.js`, `admin.js` — domain implementations imported through adapters
 
 ## Key behavior
 

@@ -16,7 +16,7 @@ Internal staff dashboard for **SBS** (educational and training services). The ap
 
 ## Tech stack
 
-- **Frontend:** Static HTML/CSS/JS under `dashboard/` as **ES modules** (`js/app.js` entry imports feature modules; Montserrat + design tokens; Quill, SheetJS, Chart.js from CDNs where used).
+- **Frontend:** Static HTML/CSS/JS under `dashboard/` as **ES modules** (`js/app.js` entry imports domain adapters under `js/domains/*`); role-first shell UX with hash-route support (`#/<area>/<view>`), Montserrat + design tokens, Quill, SheetJS, Chart.js from CDNs where used.
 - **Backend:** Node serverless handlers in `netlify/functions/` (shared by Netlify and Vercel).
 - **Vercel entry:** Single dispatcher `api/[name].js` (stays within the Hobby **12-function** limit).
 - **Database & auth storage:** Supabase (schema and RLS in `supabase/schema.sql`).
@@ -30,6 +30,7 @@ Internal staff dashboard for **SBS** (educational and training services). The ap
 | --- | --- |
 | `dashboard/` | Staff UI: login, home, operations, campaigns, training, admin. |
 | `dashboard/css/tokens.css` | Theme variables; keep aligned with `brand/palette.json`. |
+| `dashboard/css/layout.css`, `components.css`, `forms.css`, `tables.css`, `role-shells.css`, `utilities.css` | Modular UI system layers for shell/layout/components/forms/tables/role states/utilities. |
 | `dashboard/assets/` | Runtime assets: `logo.png`, `stickers/sticker-*.jpg`. |
 | `netlify/functions/` | API handlers (login, seed, operations-data, training-*, classroom-data, users, public-config, health-supabase, …). |
 | `netlify/lib/` | Shared server code (not deployed as its own function). |
@@ -39,7 +40,8 @@ Internal staff dashboard for **SBS** (educational and training services). The ap
 | `supabase/schema.sql` | Tables, policies, and training realtime setup (full baseline for new projects). |
 | `supabase/migrations/` | Timestamped SQL for existing databases (run after baseline schema when listed in release notes). |
 | `supabase/` | One-off SQL helpers (e.g. `fix-login-database-error.sql`) as needed. |
-| `dashboard/js/` | `app.js` (entry) plus `shared.js`, `nav.js`, `config.js`, `operations.js`, `finance.js`, `training.js`, `classroom.js`, `campaigns.js`, `admin.js`. |
+| `dashboard/js/` | `app.js` (entry), `nav.js`, `shared.js`, `shell-routes.js`, and domain implementation files. |
+| `dashboard/js/domains/` | Domain adapter boundaries for `operations`, `training`, `classroom`, `library`, `finance`, `automation`, `admin`, `credentials`, `trainee`, and `public`. |
 | `scripts/` | Seed, workbook export/import, data model build. |
 | `automation/workflow.json` | n8n campaign workflow (import into your n8n instance). |
 | `docs/` | Long-form docs, CSV exports under `docs/excel-export/`, sample import under `docs/sample-import/`. |
