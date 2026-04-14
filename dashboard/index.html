@@ -1174,7 +1174,35 @@
           </div>
           <div class="chat-panel-body">
             <div class="chat-panel-pane chat-panel-pane--board" id="chatPaneBoard" role="tabpanel" aria-labelledby="chatTabBoard">
-              <div id="whiteboardWrap" class="whiteboard-wrap whiteboard-wrap--collapsed whiteboard-wrap--session-off" aria-hidden="true">
+              <div class="training-board-layout">
+                <div id="trainingPollMountBoard" class="training-poll-mount training-poll-mount--board" aria-label="Group poll">
+                  <div id="trainingPollCard" class="training-poll-card hidden">
+                    <div class="training-poll-header">
+                      <span class="training-poll-title">Group poll</span>
+                      <span class="muted training-poll-hint">Live — not saved after refresh</span>
+                    </div>
+                    <p id="trainingPollNote" class="muted training-poll-note hidden" role="status"></p>
+                    <div id="trainingPollCompose" class="training-poll-compose">
+                      <label class="visually-hidden" for="trainingPollQuestion">Poll question</label>
+                      <input type="text" id="trainingPollQuestion" class="training-poll-question-input" maxlength="200" placeholder="Poll question" autocomplete="off" />
+                      <div id="trainingPollOptionRows" class="training-poll-option-rows" aria-label="Answer choices">
+                        <input type="text" class="training-poll-opt-input" maxlength="80" placeholder="Choice 1" autocomplete="off" />
+                        <input type="text" class="training-poll-opt-input" maxlength="80" placeholder="Choice 2" autocomplete="off" />
+                      </div>
+                      <div class="training-poll-compose-actions">
+                        <button type="button" class="btn btn-secondary btn-sm" id="btnTrainingPollAddOption">Add choice</button>
+                        <button type="button" class="btn btn-primary btn-sm" id="btnTrainingPollStart">Start poll</button>
+                      </div>
+                    </div>
+                    <div id="trainingPollActive" class="training-poll-active hidden">
+                      <p id="trainingPollActiveQuestion" class="training-poll-active-q"></p>
+                      <div id="trainingPollVoteList" class="training-poll-vote-list" role="group" aria-label="Vote"></div>
+                      <p id="trainingPollYourVote" class="muted training-poll-your-vote hidden"></p>
+                      <button type="button" class="btn btn-secondary btn-sm training-poll-end" id="btnTrainingPollEnd">End poll</button>
+                    </div>
+                  </div>
+                </div>
+                <div id="whiteboardWrap" class="whiteboard-wrap whiteboard-wrap--collapsed whiteboard-wrap--session-off" aria-hidden="true">
                 <div class="whiteboard-expandable">
                   <div class="whiteboard-header">
                     <span class="whiteboard-title">Quick board</span>
@@ -1213,9 +1241,11 @@
                   </div>
                   <p id="whiteboardNote" class="muted whiteboard-note hidden"></p>
                 </div>
+                </div>
               </div>
             </div>
             <div class="chat-panel-pane chat-panel-pane--chat chat-panel-pane--active" id="chatPaneChat" role="tabpanel" aria-labelledby="chatTabChat">
+              <div id="trainingPollMountChat" class="training-poll-mount training-poll-mount--chat hidden" aria-label="Group poll"></div>
               <div id="trainChatScroll" class="chat-scroll" role="log" aria-live="polite" aria-relevant="additions">
                 <div id="chatMessages" class="chat-messages-inner"></div>
               </div>

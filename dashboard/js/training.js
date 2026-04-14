@@ -763,6 +763,7 @@ function setTrainingChatMobileTab(which) {
     requestAnimationFrame(() => {
       resizeBoardToDisplay();
       void ensureWhiteboardRealtime();
+      void ensurePollRealtime();
     });
   }
 }
@@ -807,6 +808,401 @@ let boardThrottleUntil = 0;
 const BOARD_THROTTLE_MS = 0;
 const WHITE_EVENT = 'white';
 let whiteboardUiAbort = null;
+
+/* ── Group poll (Realtime broadcast, same trust model as whiteboard) ─ */
+const POLL_EVENT = 'poll';
+let pollChannel = null;
+let pollSubscribed = false;
+let pollUiAbort = null;
+let pollSnapshotReplyTimer = null;
+/** @type {{ pollId: string, question: string, options: string[], votes: Record<string, number>, createdBy?: string } | null} */
+let activePoll = null;
+
+function newTrainingPollId() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+}
+
+function setPollNote(msg) {
+  const el = document.getElementById('trainingPollNote');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.classList.toggle('hidden', !msg);
+}
+
+function syncTrainingPollMount() {
+  const card = document.getElementById('trainingPollCard');
+  const mountBoard = document.getElementById('trainingPollMountBoard');
+  const mountChat = document.getElementById('trainingPollMountChat');
+  if (!card || !mountBoard || !mountChat) return;
+  if (!trainingState.groupId || trainingState.sessionEnded) return;
+  if (trainingState.whiteboardAllowed) {
+    mountBoard.appendChild(card);
+    mountChat.classList.add('hidden');
+  } else {
+    mountChat.appendChild(card);
+    mountChat.classList.remove('hidden');
+  }
+}
+
+function showTrainingPollCardForSession() {
+  const card = document.getElementById('trainingPollCard');
+  if (card) card.classList.remove('hidden');
+  syncTrainingPollMount();
+}
+
+function hideTrainingPollCardUi() {
+  const card = document.getElementById('trainingPollCard');
+  if (card) {
+    card.classList.add('hidden');
+    const mountBoard = document.getElementById('trainingPollMountBoard');
+    if (mountBoard && card.parentElement !== mountBoard) mountBoard.appendChild(card);
+  }
+  document.getElementById('trainingPollMountChat')?.classList.add('hidden');
+}
+
+function broadcastPollPayload(payload) {
+  if (!pollChannel) return;
+  void pollChannel.send({ type: 'broadcast', event: POLL_EVENT, payload }).catch(() => {});
+}
+
+function broadcastPollSnapshot() {
+  if (!activePoll) return;
+  broadcastPollPayload({
+    kind: 'snapshot',
+    pollId: activePoll.pollId,
+    question: activePoll.question,
+    options: activePoll.options,
+    votes: { ...activePoll.votes },
+    createdBy: activePoll.createdBy,
+  });
+}
+
+function schedulePollSnapshotReply() {
+  if (!activePoll || !pollChannel || pollSnapshotReplyTimer) return;
+  pollSnapshotReplyTimer = setTimeout(() => {
+    pollSnapshotReplyTimer = null;
+    if (activePoll && pollChannel) broadcastPollSnapshot();
+  }, 60 + Math.floor(Math.random() * 180));
+}
+
+function applyPollIncomingPayload(raw) {
+  const pl = raw && typeof raw === 'object' ? raw : {};
+  const kind = String(pl.kind || '');
+  if (kind === 'request_snapshot') {
+    schedulePollSnapshotReply();
+    return;
+  }
+  if (kind === 'clear') {
+    const pid = pl.pollId != null ? String(pl.pollId) : '';
+    if (!activePoll) return;
+    if (pid && pid !== activePoll.pollId) return;
+    activePoll = null;
+    renderTrainingPollUi();
+    return;
+  }
+  if (kind === 'vote') {
+    const pollId = String(pl.pollId || '');
+    const participantId = String(pl.participantId || '');
+    const optionIndex = Number(pl.optionIndex);
+    if (!activePoll || activePoll.pollId !== pollId || !participantId || Number.isNaN(optionIndex)) return;
+    if (optionIndex < 0 || optionIndex >= activePoll.options.length) return;
+    activePoll = {
+      ...activePoll,
+      votes: { ...activePoll.votes, [participantId]: optionIndex },
+    };
+    renderTrainingPollUi();
+    return;
+  }
+  if (kind === 'snapshot') {
+    const pollId = String(pl.pollId || '');
+    const question = String(pl.question || '').trim();
+    const options = Array.isArray(pl.options) ? pl.options.map((o) => String(o || '').trim()).filter(Boolean) : [];
+    const votesRaw = pl.votes && typeof pl.votes === 'object' ? pl.votes : {};
+    if (!pollId || !question || options.length < 2) return;
+    const votes = {};
+    Object.keys(votesRaw).forEach((k) => {
+      const idx = Number(votesRaw[k]);
+      if (!Number.isNaN(idx) && idx >= 0 && idx < options.length) votes[String(k)] = idx;
+    });
+    activePoll = {
+      pollId,
+      question,
+      options,
+      votes,
+      createdBy: pl.createdBy != null ? String(pl.createdBy) : undefined,
+    };
+    renderTrainingPollUi();
+  }
+}
+
+function getTrainingPollOptionInputs() {
+  return Array.from(document.querySelectorAll('#trainingPollOptionRows .training-poll-opt-input'));
+}
+
+function resetTrainingPollComposeDefaults() {
+  const rows = document.getElementById('trainingPollOptionRows');
+  if (!rows) return;
+  rows.innerHTML =
+    '<input type="text" class="training-poll-opt-input" maxlength="80" placeholder="Choice 1" autocomplete="off" />' +
+    '<input type="text" class="training-poll-opt-input" maxlength="80" placeholder="Choice 2" autocomplete="off" />';
+}
+
+function renderTrainingPollUi() {
+  const compose = document.getElementById('trainingPollCompose');
+  const activeEl = document.getElementById('trainingPollActive');
+  const qActive = document.getElementById('trainingPollActiveQuestion');
+  const voteList = document.getElementById('trainingPollVoteList');
+  const yourVote = document.getElementById('trainingPollYourVote');
+  if (!compose || !activeEl || !voteList) return;
+
+  if (!activePoll) {
+    compose.classList.remove('hidden');
+    activeEl.classList.add('hidden');
+    if (yourVote) {
+      yourVote.textContent = '';
+      yourVote.classList.add('hidden');
+    }
+    voteList.innerHTML = '';
+    return;
+  }
+
+  compose.classList.add('hidden');
+  activeEl.classList.remove('hidden');
+  if (qActive) qActive.textContent = activePoll.question;
+
+  const myPid = String(trainingState.participantId || '');
+  const counts = activePoll.options.map(() => 0);
+  Object.values(activePoll.votes).forEach((idx) => {
+    if (idx >= 0 && idx < counts.length) counts[idx] += 1;
+  });
+  const maxCount = Math.max(1, ...counts);
+
+  voteList.innerHTML = '';
+  activePoll.options.forEach((label, idx) => {
+    const row = document.createElement('div');
+    row.className = 'training-poll-vote-row';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn btn-secondary training-poll-vote-btn';
+    const n = counts[idx];
+    btn.innerHTML = `${esc(label)} <span class="muted">(${n})</span>`;
+    if (myPid && activePoll.votes[myPid] === idx) btn.classList.add('training-poll-vote-btn--picked');
+    btn.addEventListener(
+      'click',
+      () => {
+        if (!activePoll || !pollChannel || !myPid) return;
+        const currentPollId = activePoll.pollId;
+        broadcastPollPayload({
+          kind: 'vote',
+          pollId: currentPollId,
+          optionIndex: idx,
+          participantId: myPid,
+        });
+        if (activePoll && activePoll.pollId === currentPollId) {
+          activePoll = {
+            ...activePoll,
+            votes: { ...activePoll.votes, [myPid]: idx },
+          };
+          renderTrainingPollUi();
+        }
+      },
+      { signal: pollUiAbort?.signal },
+    );
+    const barWrap = document.createElement('div');
+    barWrap.className = 'training-poll-count-bar';
+    const span = document.createElement('span');
+    span.style.width = `${Math.round((100 * n) / maxCount)}%`;
+    barWrap.appendChild(span);
+    row.appendChild(btn);
+    row.appendChild(barWrap);
+    voteList.appendChild(row);
+  });
+
+  if (yourVote && myPid) {
+    const v = activePoll.votes[myPid];
+    if (v !== undefined && activePoll.options[v]) {
+      yourVote.textContent = `You voted for: ${activePoll.options[v]}`;
+      yourVote.classList.remove('hidden');
+    } else {
+      yourVote.textContent = 'Tap a choice to vote.';
+      yourVote.classList.remove('hidden');
+    }
+  } else if (yourVote) {
+    yourVote.classList.add('hidden');
+  }
+}
+
+function wireTrainingPollControls() {
+  pollUiAbort?.abort();
+  pollUiAbort = new AbortController();
+  const sig = pollUiAbort.signal;
+
+  document.getElementById('btnTrainingPollAddOption')?.addEventListener(
+    'click',
+    () => {
+      const rows = getTrainingPollOptionInputs();
+      if (rows.length >= 8) return;
+      const inp = document.createElement('input');
+      inp.type = 'text';
+      inp.className = 'training-poll-opt-input';
+      inp.maxLength = 80;
+      inp.placeholder = `Choice ${rows.length + 1}`;
+      inp.autocomplete = 'off';
+      document.getElementById('trainingPollOptionRows')?.appendChild(inp);
+    },
+    { signal: sig },
+  );
+
+  document.getElementById('btnTrainingPollStart')?.addEventListener(
+    'click',
+    () => {
+      if (!pollChannel || activePoll) return;
+      const question = String(document.getElementById('trainingPollQuestion')?.value || '').trim();
+      const opts = getTrainingPollOptionInputs()
+        .map((el) => String(el.value || '').trim())
+        .filter(Boolean);
+      if (!question) {
+        setPollNote('Enter a poll question.');
+        return;
+      }
+      if (opts.length < 2) {
+        setPollNote('Add at least two non-empty choices.');
+        return;
+      }
+      setPollNote('');
+      const pollId = newTrainingPollId();
+      activePoll = {
+        pollId,
+        question,
+        options: opts,
+        votes: {},
+        createdBy: String(trainingState.senderName || authUsername || 'Participant'),
+      };
+      renderTrainingPollUi();
+      broadcastPollSnapshot();
+    },
+    { signal: sig },
+  );
+
+  document.getElementById('btnTrainingPollEnd')?.addEventListener(
+    'click',
+    () => {
+      if (!pollChannel || !activePoll) return;
+      const pid = activePoll.pollId;
+      activePoll = null;
+      renderTrainingPollUi();
+      resetTrainingPollComposeDefaults();
+      const qi = document.getElementById('trainingPollQuestion');
+      if (qi) qi.value = '';
+      broadcastPollPayload({ kind: 'clear', pollId: pid });
+    },
+    { signal: sig },
+  );
+}
+
+async function teardownPollUi() {
+  if (pollSnapshotReplyTimer) {
+    clearTimeout(pollSnapshotReplyTimer);
+    pollSnapshotReplyTimer = null;
+  }
+  pollUiAbort?.abort();
+  pollUiAbort = null;
+  const ch = pollChannel;
+  pollChannel = null;
+  pollSubscribed = false;
+  activePoll = null;
+  if (ch && trainingState.supabase) {
+    try {
+      await trainingState.supabase.removeChannel(ch);
+    } catch (_) {
+      try {
+        await ch.unsubscribe();
+      } catch (__) {
+        /* ignore */
+      }
+    }
+  }
+  const voteList = document.getElementById('trainingPollVoteList');
+  if (voteList) voteList.innerHTML = '';
+  document.getElementById('trainingPollCompose')?.classList.remove('hidden');
+  document.getElementById('trainingPollActive')?.classList.add('hidden');
+  resetTrainingPollComposeDefaults();
+  const qi = document.getElementById('trainingPollQuestion');
+  if (qi) qi.value = '';
+  setPollNote('');
+  renderTrainingPollUi();
+}
+
+async function ensurePollRealtime() {
+  if (!trainingState.groupId || trainingState.sessionEnded) return;
+  syncTrainingPollMount();
+  showTrainingPollCardForSession();
+
+  if (!trainingState.supabase) {
+    setPollNote('Polls need Supabase realtime (same as live chat updates).');
+    wireTrainingPollControls();
+    renderTrainingPollUi();
+    return;
+  }
+
+  if (pollSubscribed && pollChannel) {
+    syncTrainingPollMount();
+    wireTrainingPollControls();
+    renderTrainingPollUi();
+    return;
+  }
+
+  await teardownPollUi();
+  setPollNote('');
+
+  let ch = null;
+  try {
+    const topic = `training-poll:${String(trainingState.groupId)}`;
+    ch = trainingState.supabase.channel(topic, {
+      config: { broadcast: { self: false } },
+    });
+    ch.on('broadcast', { event: POLL_EVENT }, (msg) => {
+      const raw = msg && typeof msg === 'object' ? msg : {};
+      const pl = raw.payload !== undefined ? raw.payload : raw;
+      applyPollIncomingPayload(pl);
+    });
+    await new Promise((resolve, reject) => {
+      const ms = 15000;
+      const t = setTimeout(() => reject(new Error('TIMED_OUT')), ms);
+      ch.subscribe((status, err) => {
+        if (status === 'SUBSCRIBED') {
+          clearTimeout(t);
+          resolve();
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          clearTimeout(t);
+          reject(err || new Error(status));
+        }
+      });
+    });
+    pollChannel = ch;
+    ch = null;
+    pollSubscribed = true;
+    wireTrainingPollControls();
+    renderTrainingPollUi();
+    void pollChannel.send({
+      type: 'broadcast',
+      event: POLL_EVENT,
+      payload: { kind: 'request_snapshot', from: String(trainingState.participantId || '') },
+    });
+  } catch (_) {
+    if (ch && trainingState.supabase) {
+      try {
+        await trainingState.supabase.removeChannel(ch);
+      } catch (__) {
+        /* ignore */
+      }
+    }
+    setPollNote('Poll channel unavailable. Try again or refresh.');
+    wireTrainingPollControls();
+    renderTrainingPollUi();
+  }
+}
 
 function scrollTrainingChatToBottom() {
   const el = document.getElementById('trainChatScroll');
@@ -888,6 +1284,7 @@ function applyWhiteboardPolicyToChatUi() {
     document.getElementById('chatPaneBoard')?.classList.add('chat-panel-pane--hidden');
     syncChatPanelLayout();
     updateVoiceRoomUi();
+    syncTrainingPollMount();
     return;
   }
   document.getElementById('chatPaneBoard')?.classList.remove('chat-panel-pane--hidden');
@@ -895,6 +1292,7 @@ function applyWhiteboardPolicyToChatUi() {
   btn.setAttribute('aria-expanded', 'false');
   syncChatPanelLayout();
   updateVoiceRoomUi();
+  syncTrainingPollMount();
 }
 
 async function ensureWhiteboardRealtime() {
@@ -1329,6 +1727,8 @@ async function handleTrainingSessionEnded() {
 
   await teardownTrainingChatRealtime();
   await teardownWhiteboardUi();
+  await teardownPollUi();
+  hideTrainingPollCardUi();
 
   await leaveVoiceChannel();
 
@@ -1439,6 +1839,7 @@ async function joinByTokenFlow(token) {
     trainingState.participantId = joined.participant.id;
     trainingState.senderName = joined.participant.display_name;
     trainingState.whiteboardAllowed = joined.whiteboardEnabled !== false;
+    trainingState.joinToken = token;
     panel.classList.add('hidden');
     document.getElementById('chatPanel').classList.remove('hidden');
     const sub = document.getElementById('chatPanelSub');
@@ -1446,8 +1847,10 @@ async function joinByTokenFlow(token) {
       sub.textContent = `${joined.sessionTitle || joinData.sessionTitle || 'Live session'} · Group ${joined.groupNumber ?? joinData.groupNumber}`;
     }
     applyWhiteboardPolicyToChatUi();
+    syncTrainingPollMount();
     loadRecentMessages();
     await initRealtime();
+    void ensurePollRealtime();
     updateVoiceRoomUi();
     clearTrainingParticipantPolls();
     trainingMessagesIntervalId = setInterval(loadRecentMessages, 10000);
