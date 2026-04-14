@@ -976,18 +976,50 @@ function renderTrainingPollUi() {
   Object.values(activePoll.votes).forEach((idx) => {
     if (idx >= 0 && idx < counts.length) counts[idx] += 1;
   });
-  const maxCount = Math.max(1, ...counts);
+  const totalVotes = counts.reduce((a, b) => a + b, 0);
+  const canVote = Boolean(pollChannel && myPid);
 
   voteList.innerHTML = '';
   activePoll.options.forEach((label, idx) => {
-    const row = document.createElement('div');
-    row.className = 'training-poll-vote-row';
+    const n = counts[idx];
+    const pct = totalVotes > 0 ? Math.round((100 * n) / totalVotes) : 0;
+    const w = Math.min(100, Math.max(0, pct));
+
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'btn btn-secondary training-poll-vote-btn';
-    const n = counts[idx];
-    btn.innerHTML = `${esc(label)} <span class="muted">(${n})</span>`;
-    if (myPid && activePoll.votes[myPid] === idx) btn.classList.add('training-poll-vote-btn--picked');
+    btn.className = 'training-poll-option-btn';
+    btn.setAttribute('role', 'radio');
+    btn.setAttribute('aria-checked', myPid && activePoll.votes[myPid] === idx ? 'true' : 'false');
+    btn.title = `${n} vote${n === 1 ? '' : 's'}`;
+    btn.setAttribute('aria-label', canVote ? `Vote for ${String(label)}` : String(label));
+    if (myPid && activePoll.votes[myPid] === idx) btn.classList.add('training-poll-option-btn--selected');
+    btn.disabled = !canVote;
+
+    const top = document.createElement('div');
+    top.className = 'training-poll-option-top';
+    const col = document.createElement('div');
+    col.className = 'training-poll-option-col';
+    const dot = document.createElement('span');
+    dot.className = 'training-poll-option-dot';
+    dot.setAttribute('aria-hidden', 'true');
+    const textSpan = document.createElement('span');
+    textSpan.className = 'training-poll-option-text';
+    textSpan.textContent = String(label);
+    col.appendChild(dot);
+    col.appendChild(textSpan);
+    const pctSpan = document.createElement('span');
+    pctSpan.className = 'training-poll-option-percent';
+    pctSpan.textContent = `${pct}%`;
+    top.appendChild(col);
+    top.appendChild(pctSpan);
+
+    const prog = document.createElement('div');
+    prog.className = 'training-poll-option-progress';
+    prog.style.setProperty('--w', String(w));
+
+    btn.appendChild(top);
+    btn.appendChild(prog);
+
     btn.addEventListener(
       'click',
       () => {
@@ -1009,14 +1041,7 @@ function renderTrainingPollUi() {
       },
       { signal: pollUiAbort?.signal },
     );
-    const barWrap = document.createElement('div');
-    barWrap.className = 'training-poll-count-bar';
-    const span = document.createElement('span');
-    span.style.width = `${Math.round((100 * n) / maxCount)}%`;
-    barWrap.appendChild(span);
-    row.appendChild(btn);
-    row.appendChild(barWrap);
-    voteList.appendChild(row);
+    voteList.appendChild(btn);
   });
 
   if (yourVote && myPid) {
