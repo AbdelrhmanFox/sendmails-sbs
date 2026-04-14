@@ -29,7 +29,7 @@ export const VIEW_META = {
   'operations-enrollments': { area: 'operations', label: 'Enrollments' },
   'operations-bulk': { area: 'operations', label: 'Data Import' },
   'operations-insights': { area: 'operations', label: 'Insights' },
-  trainee-portal: { area: 'training', label: 'My Learning Portal' },
+  'trainee-portal': { area: 'training', label: 'My Learning Portal' },
 
   training: { area: 'training', label: 'Session Management' },
   'training-tools': { area: 'training', label: 'Attendance and Materials' },
