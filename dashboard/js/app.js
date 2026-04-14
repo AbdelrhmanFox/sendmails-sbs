@@ -13,6 +13,7 @@ import { showLogin, showApp, applyRoleVisibility, initShell } from './nav.js';
 import { initCampaigns } from './domains/automation/index.js';
 import { initOperations, initOpsInsights, initBulkEnrollment } from './domains/operations/index.js';
 import { initTraining, initTrainingTools } from './domains/training/index.js';
+import { initTrainingPresenterTools } from './training-presenter-tools.js';
 import { initClassroom } from './domains/classroom/index.js';
 import { initCourseLibrary } from './domains/library/index.js';
 import { initCredentials, bindPublicShareActions, initPublicCredential, initPublicLearnerProfile } from './domains/credentials/index.js';
@@ -279,6 +280,7 @@ async function bootAuth() {
   initFinance();
   initOpsInsights();
   initTrainingTools();
+  initTrainingPresenterTools();
   initClassroom();
   initCourseLibrary();
   initCredentials();

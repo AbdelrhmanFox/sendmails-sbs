@@ -19,6 +19,7 @@
   <link rel="stylesheet" href="css/role-shells.css" />
   <link rel="stylesheet" href="css/utilities.css" />
   <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/presenter-tools.css" />
 </head>
 <body>
   <div id="app-preloader" class="app-preloader" aria-busy="true" aria-live="polite">
@@ -148,21 +149,21 @@
               </button>
             </li>
             <li>
-              <button type="button" class="subnav-item" data-view="trainee-portal">
-                <svg class="subnav-item__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18v14H3z"/><path d="M8 21h8"/><path d="M12 4v17"/></svg>
-                <span class="subnav-item__label">My Learning Portal</span>
-              </button>
-            </li>
-            <li>
-              <button type="button" class="subnav-item" data-view="training-tools">
-                <svg class="subnav-item__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><path d="M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v0a2 2 0 0 1-2 2H11a2 2 0 0 1-2-2z"/><path d="m9 12 2 2 4-4"/></svg>
-                <span class="subnav-item__label">Attendance and Materials</span>
+              <button type="button" class="subnav-item" data-view="training-presenter-tools">
+                <svg class="subnav-item__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/><path d="M12 8v8"/><path d="M8 12h8"/></svg>
+                <span class="subnav-item__label">Presenter tools</span>
               </button>
             </li>
             <li>
               <button type="button" class="subnav-item" data-view="training-classroom">
                 <svg class="subnav-item__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2"/><path d="M8 7h8"/><path d="M8 11h8"/></svg>
                 <span class="subnav-item__label">Classroom</span>
+              </button>
+            </li>
+            <li>
+              <button type="button" class="subnav-item" data-view="training-tools">
+                <svg class="subnav-item__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><path d="M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v0a2 2 0 0 1-2 2H11a2 2 0 0 1-2-2z"/><path d="m9 12 2 2 4-4"/></svg>
+                <span class="subnav-item__label">Attendance and Materials</span>
               </button>
             </li>
             <li>
@@ -175,6 +176,12 @@
               <button type="button" class="subnav-item" data-view="training-credentials">
                 <svg class="subnav-item__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8"/><path d="m7 8 5-5 5 5"/><path d="M12 3v12"/><path d="M8 21h8"/></svg>
                 <span class="subnav-item__label">Credentials</span>
+              </button>
+            </li>
+            <li>
+              <button type="button" class="subnav-item" data-view="trainee-portal">
+                <svg class="subnav-item__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18v14H3z"/><path d="M8 21h8"/><path d="M12 4v17"/></svg>
+                <span class="subnav-item__label">My Learning Portal</span>
               </button>
             </li>
           </ul>
@@ -1259,6 +1266,112 @@
         </div>
           <aside class="voice-stickers-col" id="voiceStickersRight" aria-label="Voice participants right"></aside>
         </div><!-- /.training-room-wrap -->
+      </section>
+
+      <section id="view-training-presenter-tools" class="view">
+        <div class="view-hero">
+          <div class="view-hero-text">
+            <h2>Presenter tools</h2>
+            <p class="subtitle">QR codes for links, read-aloud for scripts, and a teleprompter for delivery—all run in your browser.</p>
+          </div>
+        </div>
+        <div class="card presenter-tools-tabbar" role="tablist" aria-label="Presenter tool">
+          <button type="button" class="btn btn-secondary presenter-tool-tab active" role="tab" aria-selected="true" data-presenter-tab="qr" id="presenterTabQr">QR code</button>
+          <button type="button" class="btn btn-secondary presenter-tool-tab" role="tab" aria-selected="false" data-presenter-tab="script" id="presenterTabScript">Script reader</button>
+          <button type="button" class="btn btn-secondary presenter-tool-tab" role="tab" aria-selected="false" data-presenter-tab="tele" id="presenterTabTele">Teleprompter</button>
+        </div>
+
+        <div id="presenterPanelQr" class="presenter-tool-panel" role="tabpanel" aria-labelledby="presenterTabQr">
+          <div class="card">
+            <h3>URL to encode</h3>
+            <p class="muted small-margin">Enter a full URL or a hostname; <code>https://</code> is added when missing.</p>
+            <div class="row">
+              <label class="full" for="presenterQrUrl">Link <input type="text" id="presenterQrUrl" placeholder="https://example.com/resource" autocomplete="url" /></label>
+            </div>
+            <div class="row">
+              <button type="button" class="btn btn-primary" id="presenterQrGenerate">Generate</button>
+              <button type="button" class="btn btn-secondary" id="presenterQrDownload" disabled>Download PNG</button>
+            </div>
+            <p id="presenterQrMsg" class="inline-note" role="status"></p>
+            <div class="presenter-qr-preview">
+              <img id="presenterQrImg" alt="QR code preview" class="presenter-qr-img hidden" width="300" height="300" />
+            </div>
+          </div>
+        </div>
+
+        <div id="presenterPanelScript" class="presenter-tool-panel hidden" role="tabpanel" aria-labelledby="presenterTabScript">
+          <div class="card">
+            <h3>Script</h3>
+            <div class="row presenter-script-actions">
+              <input type="file" id="presenterScriptFile" accept=".txt,.md,text/plain" class="visually-hidden" />
+              <button type="button" class="btn btn-secondary" id="presenterScriptPickFile">Upload text file</button>
+              <button type="button" class="btn btn-secondary" id="presenterScriptClear">Clear</button>
+            </div>
+            <label class="full" for="presenterScriptText">Content <textarea id="presenterScriptText" rows="12" maxlength="50000" placeholder="Paste or type your script. Plain text and Markdown (.md) files work best."></textarea></label>
+            <p class="muted small-margin" id="presenterScriptCounts">0 characters · 0 words</p>
+          </div>
+          <div class="card">
+            <h3>Playback</h3>
+            <div class="row presenter-script-playback">
+              <button type="button" class="btn btn-primary" id="presenterScriptPlay">Play</button>
+              <button type="button" class="btn btn-secondary" id="presenterScriptPause" disabled>Pause</button>
+              <button type="button" class="btn btn-secondary" id="presenterScriptStop" disabled>Stop</button>
+              <button type="button" class="btn btn-secondary" id="presenterScriptReset">Reset position</button>
+            </div>
+            <div class="row">
+              <label for="presenterScriptSpeed">Speed <span id="presenterScriptSpeedVal">1</span>× <input type="range" id="presenterScriptSpeed" min="0.5" max="2" step="0.1" value="1" /></label>
+              <label for="presenterScriptVolume">Volume <span id="presenterScriptVolumeVal">100</span>% <input type="range" id="presenterScriptVolume" min="0" max="1" step="0.05" value="1" /></label>
+              <label class="presenter-script-mute"><input type="checkbox" id="presenterScriptMute" /> Mute</label>
+            </div>
+            <div class="row">
+              <label class="full" for="presenterScriptVoice">Voice
+                <select id="presenterScriptVoice"></select>
+              </label>
+            </div>
+            <div class="presenter-progress-wrap">
+              <div class="presenter-progress-label"><span>Progress</span><span id="presenterScriptProgressPct">0%</span></div>
+              <div class="presenter-progress-track"><div class="presenter-progress-fill" id="presenterScriptProgressFill"></div></div>
+            </div>
+            <p id="presenterScriptReading" class="inline-note hidden" role="status"></p>
+            <p class="muted small-margin">Uses your browser’s built-in speech. Availability varies by device and language packs.</p>
+          </div>
+        </div>
+
+        <div id="presenterPanelTele" class="presenter-tool-panel hidden" role="tabpanel" aria-labelledby="presenterTabTele">
+          <div class="card" id="presenterTeleEditCard">
+            <h3>Script</h3>
+            <div class="row presenter-script-actions">
+              <input type="file" id="presenterTeleFile" accept=".txt,.md,text/plain" class="visually-hidden" />
+              <button type="button" class="btn btn-secondary" id="presenterTelePickFile">Upload text file</button>
+              <button type="button" class="btn btn-secondary" id="presenterTeleClear">Clear</button>
+            </div>
+            <label class="full" for="presenterTeleText">Content <textarea id="presenterTeleText" rows="10" maxlength="50000" placeholder="Paste your lines here. Use Space in the prompter to play or pause when this view is active."></textarea></label>
+            <p class="muted small-margin" id="presenterTeleCounts">0 words</p>
+          </div>
+          <div class="card presenter-tele-controls">
+            <h3>Controls</h3>
+            <div class="row">
+              <button type="button" class="btn btn-primary" id="presenterTelePlayPause">Play</button>
+              <button type="button" class="btn btn-secondary" id="presenterTeleStop">Stop</button>
+              <button type="button" class="btn btn-secondary" id="presenterTeleResetScroll">Reset scroll</button>
+              <button type="button" class="btn btn-secondary" id="presenterTeleFullscreen">Fullscreen prompter</button>
+            </div>
+            <div class="row">
+              <label for="presenterTeleSpeed">Scroll speed <input type="range" id="presenterTeleSpeed" min="5" max="100" value="50" /></label>
+              <label for="presenterTeleFont">Text size <input type="range" id="presenterTeleFont" min="24" max="96" value="48" /></label>
+            </div>
+            <div class="row">
+              <label for="presenterTeleColorFg">Text <input type="color" id="presenterTeleColorFg" value="#ffffff" /></label>
+              <label for="presenterTeleColorBg">Background <input type="color" id="presenterTeleColorBg" value="#000000" /></label>
+            </div>
+            <p class="muted small-margin">Escape exits fullscreen. Space toggles scroll only while this screen is open and the prompter is focused or fullscreen.</p>
+          </div>
+          <div id="presenterTeleStage" class="presenter-tele-stage card">
+            <div id="presenterTeleViewport" class="presenter-tele-viewport" tabindex="0" aria-label="Teleprompter text">
+              <div id="presenterTeleScrollInner" class="presenter-tele-scroll-inner"></div>
+            </div>
+          </div>
+        </div>
       </section>
 
       <section id="view-training-tools" class="view">

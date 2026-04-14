@@ -7,6 +7,7 @@ import { loadCourseLibrary } from './domains/library/index.js';
 import { loadCredentialCenter } from './domains/credentials/index.js';
 import { loadTraineePortal } from './domains/trainee/index.js';
 import { DASHBOARD_IA, QUICK_ACTIONS_BY_ROLE, VIEW_META, WORKSPACE_LABELS, parseHashRoute, toHash } from './shell-routes.js';
+import { leavePresenterToolsView, onPresenterToolsViewShown } from './training-presenter-tools.js';
 
 const loginScreen = document.getElementById('login-screen');
 const appEl = document.getElementById('app');
@@ -22,9 +23,17 @@ export function showApp() {
 }
 
 export function showView(viewId) {
+  const prevEl = document.querySelector('.view.active');
+  const prevViewId = prevEl?.id?.startsWith('view-') ? prevEl.id.slice(5) : '';
   document.querySelectorAll('.view').forEach((v) => v.classList.remove('active'));
+  if (prevViewId === 'training-presenter-tools' && viewId !== 'training-presenter-tools') {
+    leavePresenterToolsView();
+  }
   const el = document.getElementById(`view-${viewId}`);
   if (el) el.classList.add('active');
+  if (viewId === 'training-presenter-tools') {
+    onPresenterToolsViewShown();
+  }
   if (viewId === 'admin') {
     loadUsers();
     loadFinanceAudit();

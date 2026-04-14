@@ -41,6 +41,7 @@ export const DASHBOARD_IA = {
     ],
     training: [
       { viewId: 'training', label: 'Overview' },
+      { viewId: 'training-presenter-tools', label: 'Presenter tools' },
       { viewId: 'training-classroom', label: 'Classroom' },
       { viewId: 'training-tools', label: 'Attendance & Materials' },
       { viewId: 'training-course-library', label: 'Course Library' },
@@ -80,6 +81,7 @@ export const VIEW_META = {
   'trainee-portal': { area: 'training', label: 'My Learning Portal' },
 
   training: { area: 'training', label: 'Overview' },
+  'training-presenter-tools': { area: 'training', label: 'Presenter tools' },
   'training-tools': { area: 'training', label: 'Attendance and Materials' },
   'training-classroom': { area: 'training', label: 'Classroom' },
   'training-course-library': { area: 'training', label: 'Course Library' },
@@ -103,6 +105,7 @@ export const QUICK_ACTIONS_BY_ROLE = {
   ],
   trainer: [
     { viewId: 'training', label: 'Sessions' },
+    { viewId: 'training-presenter-tools', label: 'Presenter tools' },
     { viewId: 'training-classroom', label: 'Classroom' },
     { viewId: 'training-course-library', label: 'Library' },
   ],
