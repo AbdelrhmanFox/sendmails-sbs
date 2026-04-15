@@ -70,12 +70,9 @@
         <span></span>
         <span></span>
       </label>
-      <nav id="areaNav" class="area-nav" aria-label="Primary">
-        <button type="button" class="area-tab active" data-area="operations" id="areaOperations">Operations</button>
-        <button type="button" class="area-tab" data-area="training" id="areaTraining">Training</button>
-        <button type="button" class="area-tab" data-area="finance" id="areaFinance">Finance</button>
-        <button type="button" class="area-tab" data-area="automation" id="areaAutomation">Automation</button>
-        <button type="button" class="area-tab" data-area="admin" id="areaAdmin">Admin</button>
+      <nav id="areaNav" class="area-nav area-nav--context" aria-label="Workspace context">
+        <span class="area-nav-context-label">Workspace</span>
+        <strong id="topBarWorkspaceLabel" class="area-nav-context-value">Operations</strong>
       </nav>
     </header>
     <aside id="app-sidebar" class="sidebar">
@@ -178,12 +175,6 @@
                 <span class="subnav-item__label">Credentials</span>
               </button>
             </li>
-            <li>
-              <button type="button" class="subnav-item" data-view="trainee-portal">
-                <svg class="subnav-item__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18v14H3z"/><path d="M8 21h8"/><path d="M12 4v17"/></svg>
-                <span class="subnav-item__label">My Learning Portal</span>
-              </button>
-            </li>
           </ul>
         </div>
       </div>
@@ -258,9 +249,6 @@
         </div>
         <div class="workspace-context__right" id="workspaceQuickActions">
           <span class="workspace-pill"><span class="workspace-pill__dot"></span><span id="workspaceRoleLabel">Role: user</span></span>
-          <button type="button" class="btn btn-secondary quick-action" data-quick-view="operations-home">Overview</button>
-          <button type="button" class="btn btn-secondary quick-action" data-quick-view="training">Training Overview</button>
-          <button type="button" class="btn btn-secondary quick-action" data-quick-view="finance">Finance Overview</button>
         </div>
       </section>
       <div id="operationsGlobalBar" class="operations-global-bar hidden" aria-hidden="true">
@@ -289,16 +277,6 @@
       </div>
 
       <section id="view-operations-home" class="view active">
-        <div class="view-hero view-hero--brand-deco view-hero--brand-deco-ops">
-          <div class="view-hero-text">
-            <h2>Operations</h2>
-            <p class="subtitle">Enrollment pipeline, capacity, and workbook-driven records for staff.</p>
-          </div>
-          <div class="view-stickers" aria-hidden="true">
-            <img src="assets/stickers/sticker-2.jpg" alt="" class="view-sticker" />
-          </div>
-        </div>
-
         <div class="ops-home-overview">
           <article class="ops-analytics-card" aria-labelledby="ops-analytics-heading">
             <div class="ops-analytics-card__glow" aria-hidden="true"></div>
@@ -1375,12 +1353,6 @@
       </section>
 
       <section id="view-training-tools" class="view">
-        <div class="view-hero">
-          <div class="view-hero-text">
-            <h2>Attendance &amp; materials</h2>
-            <p class="subtitle">Record attendance by group and attach resource links.</p>
-          </div>
-        </div>
         <div class="card">
           <h3>Load session groups</h3>
           <button type="button" class="btn btn-secondary" id="btnLoadSessionsForTools">Refresh sessions</button>
@@ -1871,12 +1843,6 @@
       </section>
 
       <section id="view-finance" class="view">
-        <div class="view-hero">
-          <div class="view-hero-text">
-            <h2>Finance</h2>
-            <p class="subtitle">KPIs, interactive charts, payments ledger, open invoices, and AR aging.</p>
-          </div>
-        </div>
         <div class="card finance-kpis">
           <div class="view-header">
             <h3>Summary</h3>
@@ -2062,15 +2028,6 @@
       </section>
 
       <section id="view-campaigns" class="view">
-        <div class="view-hero">
-          <div class="view-hero-text">
-            <h2>Email Campaigns</h2>
-            <p class="subtitle">Optional module powered by existing n8n workflow.</p>
-          </div>
-          <div class="view-stickers" aria-hidden="true">
-            <img src="assets/stickers/sticker-3.jpg" alt="" class="view-sticker" />
-          </div>
-        </div>
         <div class="card">
           <label for="webhookUrl">n8n Webhook URL</label>
           <div class="row">
@@ -2113,15 +2070,6 @@
       </section>
 
       <section id="view-admin" class="view">
-        <div class="view-hero">
-          <div class="view-hero-text">
-            <h2>Manage Users</h2>
-            <p class="subtitle">Admin-only controls for account management.</p>
-          </div>
-          <div class="view-stickers" aria-hidden="true">
-            <img src="assets/stickers/sticker-1.jpg" alt="" class="view-sticker" />
-          </div>
-        </div>
         <div class="card config-help">
           <h3>Backend configuration (not entered here)</h3>
           <p class="muted">The dashboard never stores Supabase keys. Add them once in <strong>Netlify</strong> for this site, then <strong>redeploy</strong>.</p>

@@ -176,6 +176,10 @@ body.participant-join .app-top-bar {
   display: none !important;
 }
 
+body.role-trainee-shell .app-top-bar {
+  display: none !important;
+}
+
 /* Public training join (students open ?session= / ?group= without staff login) */
 body.public-training-guest .app,
 body.public-classroom-guest .app {
@@ -185,8 +189,15 @@ body.public-training-guest .sidebar,
 body.public-classroom-guest .sidebar {
   display: none !important;
 }
+body.role-trainee-shell .sidebar {
+  display: none !important;
+}
 body.public-training-guest .main,
 body.public-classroom-guest .main {
+  grid-column: 1 / -1;
+  max-width: 100%;
+}
+body.role-trainee-shell .main {
   grid-column: 1 / -1;
   max-width: 100%;
 }
@@ -224,6 +235,26 @@ body.public-classroom-guest .main {
   gap: 8px;
   margin-bottom: 0;
   min-height: 40px;
+}
+.area-nav--context {
+  gap: 10px;
+}
+.area-nav-context-label {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid color-mix(in oklab, var(--brand-border) 60%, transparent);
+  background: color-mix(in oklab, var(--brand-surface-2) 70%, transparent);
+  color: var(--brand-muted);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.area-nav-context-value {
+  color: var(--brand-text);
+  font-size: 14px;
+  font-weight: 700;
 }
 .area-tab {
   flex: 0 0 auto;

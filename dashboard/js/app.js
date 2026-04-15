@@ -262,17 +262,21 @@ async function bootAuth() {
   }
   showApp();
   applyRoleVisibility();
-  document.body.classList.add(`role-${String(authRole || 'user').toLowerCase()}`);
+  const roleClass = `role-${String(authRole || 'user').toLowerCase()}`;
+  document.body.classList.add(roleClass);
+  document.body.classList.toggle('role-trainee-shell', String(authRole || '').toLowerCase() === 'trainee');
   document.getElementById('workspaceContext')?.classList.remove('hidden');
   initTraineePortal();
   toggleChangePasswordPanel();
-  initShell();
   if (authRole === 'trainee') {
-    document.dispatchEvent(new CustomEvent('sbs:goto-view', { detail: { viewId: 'trainee-portal' } }));
+    document.getElementById('workspaceContext')?.classList.add('hidden');
+    document.querySelectorAll('.view').forEach((v) => v.classList.remove('active'));
+    document.getElementById('view-trainee-portal')?.classList.add('active');
     await loadTraineePortal();
     dismissAppPreloader();
     return;
   }
+  initShell();
   initCampaigns();
   initOperations();
   initTraining();

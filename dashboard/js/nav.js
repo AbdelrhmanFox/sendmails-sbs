@@ -6,7 +6,7 @@ import { loadClassrooms } from './domains/classroom/index.js';
 import { loadCourseLibrary } from './domains/library/index.js';
 import { loadCredentialCenter } from './domains/credentials/index.js';
 import { loadTraineePortal } from './domains/trainee/index.js';
-import { DASHBOARD_IA, QUICK_ACTIONS_BY_ROLE, VIEW_META, WORKSPACE_LABELS, parseHashRoute, toHash } from './shell-routes.js';
+import { DASHBOARD_IA, VIEW_META, WORKSPACE_LABELS, parseHashRoute, toHash } from './shell-routes.js';
 import { leavePresenterToolsView, onPresenterToolsViewShown } from './training-presenter-tools.js';
 
 const loginScreen = document.getElementById('login-screen');
@@ -55,14 +55,13 @@ export function navigateToView(viewId) {
     const sub = subItem.closest('.subnav');
     const area = sub && sub.getAttribute('data-for-area');
     if (area) {
-      document.querySelectorAll('.area-tab').forEach((t) => {
-        t.classList.toggle('active', t.getAttribute('data-area') === area);
-      });
       document.querySelectorAll('.subnav').forEach((s) => {
         s.classList.toggle('hidden', s.getAttribute('data-for-area') !== area);
       });
       sub.querySelectorAll('.subnav-item').forEach((b) => b.classList.remove('active'));
+      sub.querySelectorAll('.subnav-item').forEach((b) => b.removeAttribute('aria-current'));
       subItem.classList.add('active');
+      subItem.setAttribute('aria-current', 'page');
     }
   }
   const meta = VIEW_META[viewId];
@@ -72,12 +71,6 @@ export function navigateToView(viewId) {
 
 export function applyRoleVisibility() {
   const role = localStorage.getItem('sbs_role') || 'user';
-  const allowed = areasForRole(role);
-  document.querySelectorAll('.area-tab').forEach((tab) => {
-    const area = tab.getAttribute('data-area');
-    const show = allowed.includes(area);
-    tab.style.display = show ? '' : 'none';
-  });
   applyFinanceWriteVisibility(role);
 }
 
@@ -123,12 +116,15 @@ function updateWorkspaceContext(viewId) {
   const titleNode = document.getElementById('workspaceTitle');
   const subNode = document.getElementById('workspaceSubtitle');
   const roleNode = document.getElementById('workspaceRoleLabel');
+  const topBarWorkspaceNode = document.getElementById('topBarWorkspaceLabel');
 
   if (areaNode) areaNode.textContent = toTitleCase(area);
   if (viewNode) viewNode.textContent = meta.label || toTitleCase(viewId.replace(/-/g, ' '));
   if (titleNode) titleNode.textContent = areaLabels.title;
   if (subNode) subNode.textContent = areaLabels.subtitle;
   if (roleNode) roleNode.textContent = `Role: ${role}`;
+  if (topBarWorkspaceNode) topBarWorkspaceNode.textContent = toTitleCase(area);
+  renderContextWidgets(role, viewId);
 }
 
 function renderQuickActions(role) {
@@ -137,30 +133,71 @@ function renderQuickActions(role) {
   const pill = host.querySelector('.workspace-pill');
   host.innerHTML = '';
   if (pill) host.appendChild(pill);
-  const quick = QUICK_ACTIONS_BY_ROLE[role] || QUICK_ACTIONS_BY_ROLE.user;
-  quick.forEach((item) => {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'btn btn-secondary quick-action';
-    btn.textContent = item.label;
-    btn.setAttribute('data-quick-view', item.viewId);
-    host.appendChild(btn);
+}
+
+function renderContextWidgets(role, viewId) {
+  const host = document.getElementById('workspaceQuickActions');
+  if (!host) return;
+  host.querySelectorAll('.workspace-widget').forEach((n) => n.remove());
+  const byRole = {
+    trainer: ['Today sessions: use Classroom and Presenter tools.', 'Review grading queue before session close.'],
+    staff: ['Pending work: enrollments and import follow-up.', 'Use Insights to check capacity risk.'],
+    admin: ['Review user and settings updates.', 'Cross-check Finance and Campaigns status.'],
+    accountant: ['Review invoice aging and payment statuses.', 'Confirm ledger entries in Finance.'],
+    trainee: ['Complete assigned tasks and submissions.', 'Keep your account password updated.'],
+    user: ['Monitor campaign runs and delivery status.', 'Review templates before the next run.'],
+  };
+  const notes = byRole[role] || byRole.user;
+  const widget = document.createElement('aside');
+  widget.className = 'workspace-widget';
+  widget.setAttribute('aria-label', 'Context notes');
+  widget.innerHTML = `<p class="workspace-widget__title">Focus now</p>
+    <ul class="workspace-widget__list">
+      <li>${notes[0]}</li>
+      <li>${notes[1]}</li>
+      <li>Current view: ${toTitleCase(String(viewId || '').replace(/-/g, ' '))}</li>
+    </ul>`;
+  host.appendChild(widget);
+}
+
+function runNavIaChecks() {
+  const dupes = [];
+  Object.entries(DASHBOARD_IA.sidebar || {}).forEach(([area, items]) => {
+    const seen = new Set();
+    (items || []).forEach((item) => {
+      const viewId = String(item?.viewId || '').trim();
+      if (!viewId) return;
+      if (seen.has(viewId)) dupes.push(`${area}:${viewId}`);
+      seen.add(viewId);
+    });
   });
+  if (dupes.length) console.warn('[IA check] Duplicate viewIds by area:', dupes.join(', '));
+
+  const sidebarViewIds = new Set();
+  Object.values(DASHBOARD_IA.sidebar || {}).forEach((items) => {
+    (items || []).forEach((item) => {
+      const viewId = String(item?.viewId || '').trim();
+      if (viewId) sidebarViewIds.add(viewId);
+    });
+  });
+  const missingMeta = [...sidebarViewIds].filter((viewId) => !VIEW_META[viewId]);
+  if (missingMeta.length) console.warn('[IA check] Missing VIEW_META for:', missingMeta.join(', '));
+
+  const orphanDomViews = [];
+  document.querySelectorAll('section[id^="view-"]').forEach((node) => {
+    const viewId = String(node.id || '').slice(5);
+    const inMeta = Boolean(VIEW_META[viewId]);
+    const inSidebar = sidebarViewIds.has(viewId);
+    const allowedInternal = ['public-classroom', 'public-credential', 'public-learner'];
+    if (!inMeta && !inSidebar && !allowedInternal.includes(viewId)) orphanDomViews.push(viewId);
+  });
+  if (orphanDomViews.length) console.warn('[IA check] Orphan view sections:', orphanDomViews.join(', '));
 }
 
 function applyIaLabelsAndVisibility(role) {
-  const allowedAreas = areasForRole(role);
-  const tabsByArea = Object.fromEntries(DASHBOARD_IA.tabs.map((t) => [t.area, t]));
   const allowedViewsByArea = {};
   Object.entries(DASHBOARD_IA.sidebar).forEach(([area, items]) => {
     allowedViewsByArea[area] = new Set((items || []).map((item) => item.viewId));
-  });
-
-  document.querySelectorAll('.area-tab').forEach((tab) => {
-    const area = String(tab.getAttribute('data-area') || '').trim();
-    const cfg = tabsByArea[area];
-    if (cfg && cfg.label) tab.textContent = cfg.label;
-    tab.style.display = allowedAreas.includes(area) ? '' : 'none';
   });
 
   document.querySelectorAll('.subnav').forEach((subnav) => {
@@ -181,6 +218,7 @@ export function initShell() {
   const role = localStorage.getItem('sbs_role') || 'user';
   const allowed = areasForRole(role);
   applyIaLabelsAndVisibility(role);
+  runNavIaChecks();
   renderQuickActions(role);
   if (role === 'trainee') {
     document.querySelectorAll('.subnav-item').forEach((btn) => {
@@ -197,31 +235,20 @@ export function initShell() {
   }
 
   function activateArea(area, viewId) {
-    document.querySelectorAll('.area-tab').forEach((t) => {
-      t.classList.toggle('active', t.getAttribute('data-area') === area);
-    });
     showSubnavForArea(area);
     const sub = document.querySelector(`.subnav[data-for-area="${area}"]`);
     if (sub) {
       sub.querySelectorAll('.subnav-item').forEach((b) => {
         const v = b.getAttribute('data-view');
-        b.classList.toggle('active', v === viewId);
+        const on = v === viewId;
+        b.classList.toggle('active', on);
+        if (on) b.setAttribute('aria-current', 'page');
+        else b.removeAttribute('aria-current');
       });
     }
     syncHashRoute(area, viewId);
     showView(viewId);
   }
-
-  document.querySelectorAll('.area-tab').forEach((tab) => {
-    tab.addEventListener('click', () => {
-      const area = tab.getAttribute('data-area');
-      if (!areasForRole(role).includes(area)) return;
-      const sub = document.querySelector(`.subnav[data-for-area="${area}"]`);
-      const first = sub && sub.querySelector('.subnav-item');
-      const viewId = first ? first.getAttribute('data-view') : area;
-      activateArea(area, viewId);
-    });
-  });
 
   document.querySelectorAll('.subnav-item').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -231,22 +258,11 @@ export function initShell() {
       if (area && !areasForRole(role).includes(area)) return;
       if (sub) sub.querySelectorAll('.subnav-item').forEach((b) => b.classList.remove('active'));
       btn.classList.add('active');
-      if (area) {
-        document.querySelectorAll('.area-tab').forEach((t) => {
-          t.classList.toggle('active', t.getAttribute('data-area') === area);
-        });
-      }
+      if (sub) sub.querySelectorAll('.subnav-item').forEach((b) => b.removeAttribute('aria-current'));
+      btn.setAttribute('aria-current', 'page');
       syncHashRoute(area, viewId);
       showView(viewId);
     });
-  });
-
-  document.addEventListener('click', (e) => {
-    const target = e.target.closest('[data-quick-view]');
-    if (!target) return;
-    const viewId = String(target.getAttribute('data-quick-view') || '').trim();
-    if (!viewId) return;
-    navigateToView(viewId);
   });
 
   const requested = parseHashRoute();
@@ -328,9 +344,6 @@ function initSidebarDrawer() {
   }
 
   document.querySelectorAll('.subnav-item').forEach((btn) => {
-    btn.addEventListener('click', closeIfMobileNav);
-  });
-  document.querySelectorAll('.area-tab').forEach((btn) => {
     btn.addEventListener('click', closeIfMobileNav);
   });
 }

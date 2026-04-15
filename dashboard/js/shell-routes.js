@@ -12,8 +12,8 @@ export const WORKSPACE_LABELS = {
     subtitle: 'Monitor cash flow, invoices, and operational finance health.',
   },
   automation: {
-    title: 'Automation Workspace',
-    subtitle: 'Operate campaigns and monitor automation execution.',
+    title: 'Campaigns Workspace',
+    subtitle: 'Operate campaigns and monitor execution.',
   },
   admin: {
     title: 'Admin Workspace',
@@ -26,7 +26,7 @@ export const DASHBOARD_IA = {
     { area: 'operations', label: 'Operations' },
     { area: 'training', label: 'Training' },
     { area: 'finance', label: 'Finance' },
-    { area: 'automation', label: 'Automation' },
+    { area: 'automation', label: 'Campaigns' },
     { area: 'admin', label: 'Admin' },
   ],
   sidebar: {
@@ -46,26 +46,15 @@ export const DASHBOARD_IA = {
       { viewId: 'training-tools', label: 'Attendance & Materials' },
       { viewId: 'training-course-library', label: 'Course Library' },
       { viewId: 'training-credentials', label: 'Credentials' },
-      { viewId: 'trainee-portal', label: 'My Learning Portal' },
     ],
     finance: [
       { viewId: 'finance', label: 'Overview' },
-      { viewId: 'finance', label: 'Payments Ledger' },
-      { viewId: 'finance', label: 'Invoices' },
-      { viewId: 'finance', label: 'AR Aging' },
-      { viewId: 'finance', label: 'Reports' },
     ],
     automation: [
-      { viewId: 'campaigns', label: 'Overview' },
       { viewId: 'campaigns', label: 'Campaigns' },
-      { viewId: 'campaigns', label: 'Run Status' },
     ],
     admin: [
-      { viewId: 'admin', label: 'Overview' },
       { viewId: 'admin', label: 'Users' },
-      { viewId: 'admin', label: 'Trainee Access Reset' },
-      { viewId: 'admin', label: 'System Config' },
-      { viewId: 'admin', label: 'Audit' },
     ],
   },
 };
@@ -73,6 +62,7 @@ export const DASHBOARD_IA = {
 export const VIEW_META = {
   'operations-home': { area: 'operations', label: 'Overview' },
   'operations-trainees': { area: 'operations', label: 'Trainees' },
+  'trainee-profile': { area: 'operations', label: 'Trainee Profile' },
   'operations-courses': { area: 'operations', label: 'Courses' },
   'operations-batches': { area: 'operations', label: 'Batches' },
   'operations-enrollments': { area: 'operations', label: 'Enrollments' },
@@ -88,42 +78,17 @@ export const VIEW_META = {
   'training-credentials': { area: 'training', label: 'Credentials' },
 
   finance: { area: 'finance', label: 'Overview' },
-  campaigns: { area: 'automation', label: 'Overview' },
+  campaigns: { area: 'automation', label: 'Campaigns' },
   admin: { area: 'admin', label: 'Overview' },
 };
 
 export const QUICK_ACTIONS_BY_ROLE = {
-  admin: [
-    { viewId: 'operations-home', label: 'Operations Overview' },
-    { viewId: 'training', label: 'Training Overview' },
-    { viewId: 'finance', label: 'Finance Overview' },
-  ],
-  staff: [
-    { viewId: 'operations-home', label: 'Overview' },
-    { viewId: 'operations-trainees', label: 'Trainees' },
-    { viewId: 'campaigns', label: 'Campaigns' },
-  ],
-  trainer: [
-    { viewId: 'training', label: 'Sessions' },
-    { viewId: 'training-presenter-tools', label: 'Presenter tools' },
-    { viewId: 'training-classroom', label: 'Classroom' },
-    { viewId: 'training-course-library', label: 'Library' },
-  ],
-  accountant: [
-    { viewId: 'finance', label: 'Finance Overview' },
-    { viewId: 'finance', label: 'Ledger' },
-    { viewId: 'finance', label: 'Invoices' },
-  ],
-  trainee: [
-    { viewId: 'trainee-portal', label: 'My Portal' },
-    { viewId: 'trainee-portal', label: 'My Classroom' },
-    { viewId: 'trainee-portal', label: 'My Account' },
-  ],
-  user: [
-    { viewId: 'campaigns', label: 'Campaigns' },
-    { viewId: 'campaigns', label: 'Preview' },
-    { viewId: 'campaigns', label: 'Status' },
-  ],
+  admin: [],
+  staff: [],
+  trainer: [],
+  accountant: [],
+  trainee: [],
+  user: [],
 };
 
 export function parseHashRoute() {
