@@ -256,6 +256,20 @@ body.role-trainee-shell .main {
   font-size: 14px;
   font-weight: 700;
 }
+.area-nav-context-select {
+  color: var(--brand-text);
+  border: 1px solid color-mix(in oklab, var(--brand-border) 60%, transparent);
+  background: color-mix(in oklab, var(--brand-surface-2) 70%, transparent);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 14px;
+  font-weight: 700;
+  min-width: 170px;
+}
+.area-nav-context-select:focus-visible {
+  outline: 2px solid var(--brand-primary-2);
+  outline-offset: 2px;
+}
 .area-tab {
   flex: 0 0 auto;
   width: auto;

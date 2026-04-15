@@ -116,14 +116,14 @@ function updateWorkspaceContext(viewId) {
   const titleNode = document.getElementById('workspaceTitle');
   const subNode = document.getElementById('workspaceSubtitle');
   const roleNode = document.getElementById('workspaceRoleLabel');
-  const topBarWorkspaceNode = document.getElementById('topBarWorkspaceLabel');
+  const topBarWorkspaceSelect = document.getElementById('topBarWorkspaceSelect');
 
   if (areaNode) areaNode.textContent = toTitleCase(area);
   if (viewNode) viewNode.textContent = meta.label || toTitleCase(viewId.replace(/-/g, ' '));
   if (titleNode) titleNode.textContent = areaLabels.title;
   if (subNode) subNode.textContent = areaLabels.subtitle;
   if (roleNode) roleNode.textContent = `Role: ${role}`;
-  if (topBarWorkspaceNode) topBarWorkspaceNode.textContent = toTitleCase(area);
+  if (topBarWorkspaceSelect) topBarWorkspaceSelect.value = area;
   renderContextWidgets(role, viewId);
 }
 
@@ -217,6 +217,7 @@ function applyIaLabelsAndVisibility(role) {
 export function initShell() {
   const role = localStorage.getItem('sbs_role') || 'user';
   const allowed = areasForRole(role);
+  const areaSelect = document.getElementById('topBarWorkspaceSelect');
   applyIaLabelsAndVisibility(role);
   runNavIaChecks();
   renderQuickActions(role);
@@ -248,6 +249,26 @@ export function initShell() {
     }
     syncHashRoute(area, viewId);
     showView(viewId);
+  }
+
+  if (areaSelect) {
+    areaSelect.innerHTML = '';
+    const tabsByArea = Object.fromEntries(DASHBOARD_IA.tabs.map((t) => [t.area, t]));
+    allowed.forEach((area) => {
+      const opt = document.createElement('option');
+      opt.value = area;
+      opt.textContent = tabsByArea[area]?.label || toTitleCase(area);
+      areaSelect.appendChild(opt);
+    });
+    areaSelect.addEventListener('change', () => {
+      const area = String(areaSelect.value || '').trim();
+      if (!area || !allowed.includes(area)) return;
+      const sub = document.querySelector(`.subnav[data-for-area="${area}"]`);
+      const first = sub?.querySelector('.subnav-item:not([style*="display: none"])');
+      const viewId = first ? first.getAttribute('data-view') : '';
+      if (!viewId) return;
+      activateArea(area, viewId);
+    });
   }
 
   document.querySelectorAll('.subnav-item').forEach((btn) => {
