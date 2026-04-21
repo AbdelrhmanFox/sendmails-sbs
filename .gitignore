@@ -6,3 +6,6 @@ node_modules
 .netlify
 .vercel
 
+# Vite SPA build output (rebuilt by Netlify/Vercel from dashboard-ui)
+dashboard/spa/
+

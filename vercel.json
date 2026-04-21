@@ -1,12 +1,16 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "npm install",
-  "buildCommand": "echo Build complete",
+  "buildCommand": "cd dashboard-ui && npm install && npm run build",
   "outputDirectory": "dashboard",
   "rewrites": [
     {
       "source": "/.netlify/functions/:name",
       "destination": "/api/:name"
+    },
+    {
+      "source": "/spa/:path*",
+      "destination": "/spa/index.html"
     }
   ],
   "functions": {

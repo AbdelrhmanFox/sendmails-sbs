@@ -1,7 +1,7 @@
 # Netlify - SBS Dashboard
 # Publish from the dashboard folder so index.html is at the site root.
 [build]
-  command = "echo Build complete"
+  command = "cd dashboard-ui && npm install && npm run build"
   publish = "dashboard"
 
 [build.environment]
@@ -19,3 +19,9 @@
   [headers.values]
     X-Frame-Options = "DENY"
     X-Content-Type-Options = "nosniff"
+
+# React SPA (Vite) under /spa/
+[[redirects]]
+  from = "/spa/*"
+  to = "/spa/index.html"
+  status = 200
