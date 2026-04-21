@@ -132,9 +132,9 @@ export function DashboardPage() {
   const traineeCount = ops?.trainees ?? null;
   const batchCount = ops?.batches ?? null;
   const revenue = fin != null ? fmtMoney(fin.mtd_revenue) : '—';
-  const outstanding = fin != null ? fmtMoney(fin.outstanding_invoices) : '—';
+  const pendingPaymentsCount = fin != null && typeof fin.payment_count === 'number' ? fin.payment_count : null;
 
-  const topSessions = sessions.slice(0, 4);
+  const liveSessions = sessions.slice(0, 2);
 
   return (
     <div className="space-y-6">
@@ -161,7 +161,7 @@ export function DashboardPage() {
           }
         />
         <StatCard
-          title="Batches"
+          title="Active Batches"
           value={batchCount != null ? batchCount : '—'}
           icon={
             <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -189,8 +189,8 @@ export function DashboardPage() {
           }
         />
         <StatCard
-          title="Outstanding invoices"
-          value={outstanding}
+          title="Pending Payments"
+          value={pendingPaymentsCount != null ? pendingPaymentsCount : '—'}
           icon={
             <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
@@ -211,53 +211,86 @@ export function DashboardPage() {
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            Operations
+            New Trainee
           </Button>
-          <Button type="button" variant="secondary" fullWidth onClick={() => navigate('/training')}>
+          <Button type="button" variant="secondary" fullWidth onClick={() => navigate('/operations')}>
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            New Batch
+          </Button>
+          <Button type="button" variant="secondary" fullWidth onClick={() => (window.location.href = '/#/finance/finance')}>
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth={2}
-                d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
               />
             </svg>
-            Live sessions
+            Record Payment
           </Button>
           <Button type="button" variant="secondary" fullWidth onClick={() => (window.location.href = '/#/finance/finance')}>
-            Finance (classic)
-          </Button>
-          <Button type="button" variant="secondary" fullWidth onClick={() => (window.location.href = '/#/automation/campaigns')}>
-            Campaigns (classic)
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+              />
+            </svg>
+            View Reports
           </Button>
         </div>
       </Card>
 
       <Card>
-        <CardHeader title="Training sessions" subtitle="From live session groups" />
-        {topSessions.length === 0 ? (
-          <p className="text-sm text-[var(--brand-muted)]">No sessions loaded (or no access).</p>
-        ) : (
-          <div className="space-y-3">
-            {topSessions.map((s) => {
-              const groups = Array.isArray(s.training_groups) ? s.training_groups.length : Number(s.groups_count || 0);
-              return (
-                <div key={s.id} className="flex items-center justify-between rounded-lg p-3 hover:bg-[var(--brand-surface-2)]">
-                  <div>
-                    <p className="text-sm font-medium text-[var(--brand-text)]">{s.title || 'Session'}</p>
-                    <p className="text-xs text-[var(--brand-muted)]">
-                      {s.trainer_username || '—'} · {groups} group(s)
-                    </p>
-                  </div>
-                  <Badge variant="info" size="sm">
-                    Session
-                  </Badge>
-                </div>
-              );
-            })}
-          </div>
-        )}
+        <CardHeader title="Recent Activity" subtitle="Latest system events" />
+        <div className="space-y-3">
+          <p className="rounded-lg p-4 text-sm text-[var(--brand-muted)]">
+            No activity feed is wired to this dashboard yet. Finance and operations changes continue to appear in the
+            classic modules.
+          </p>
+        </div>
       </Card>
+
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader title="Active Training Sessions" subtitle="Live now" />
+          <div className="space-y-3">
+            {liveSessions.length === 0 ? (
+              <p className="p-3 text-sm text-[var(--brand-muted)]">No sessions listed (or no access).</p>
+            ) : (
+              liveSessions.map((s) => {
+                const groups = Array.isArray(s.training_groups) ? s.training_groups.length : Number(s.groups_count || 0);
+                return (
+                  <div key={s.id} className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-[var(--brand-text)]">{s.title || 'Session'}</p>
+                      <p className="text-xs text-[var(--brand-muted)]">
+                        {s.trainer_username || '—'} · {groups} group(s)
+                      </p>
+                    </div>
+                    <Badge variant="success" dot>
+                      Live
+                    </Badge>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </Card>
+
+        <Card>
+          <CardHeader title="Pending Submissions" subtitle="Awaiting review" />
+          <div className="space-y-3">
+            <p className="p-3 text-sm text-[var(--brand-muted)]">
+              Assignment queues are not exposed in the React dashboard API yet. Use the classic training workspace for
+              detailed reviews.
+            </p>
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }

@@ -5,6 +5,10 @@ This repository ships two staff UI surfaces:
 1. **Legacy shell** — static `dashboard/index.html` with ES modules under `dashboard/js/` (unchanged as default entry for existing bookmarks).
 2. **React SPA (Figma baseline)** — Vite app under [`dashboard-ui/`](../dashboard-ui/), built to [`dashboard/spa/`](../dashboard/spa/) with base path `/spa/`.
 
+## Design source and Operations tab counts
+
+Visual layout for the React pages is aligned with the Figma/Make export on the developer machine at `c:/Users/abdelrahmanahmed/Downloads/project` (see `src/app/pages/*` and `src/styles/*` there). When updating the SPA, compare those files to `dashboard-ui/src` so tokens and page chrome stay in sync. On **Operations**, tab badges show totals from four lightweight `operations-data` requests (`entity=*&page=1&pageSize=1`) on page load so counts match the prototype pattern; the active tab’s table still loads the full list with search debouncing.
+
 ## What the prototype actually implements (code, not marketing docs)
 
 Source was vendored from the Figma/Make export; **do not** treat `REDESIGN_SUMMARY.md` in external folders as shipped scope unless the code exists here.
@@ -29,7 +33,7 @@ Same `localStorage` keys as [`dashboard/js/shared.js`](../dashboard/js/shared.js
 
 ## API helpers
 
-Shared fetch helpers live in `dashboard-ui/src/lib/api.ts` (`jsonFetch`, `getAuthHeaders`).
+Shared fetch helpers live in `dashboard-ui/src/lib/api.ts` (`jsonFetch`, `getAuthHeaders`, `clearAuthSession`). The top bar **Sign out** action clears the same keys as the legacy dashboard logout.
 
 ## URLs and deployment
 

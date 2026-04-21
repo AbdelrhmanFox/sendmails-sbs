@@ -76,7 +76,7 @@ export function LoginPage() {
             <Input
               label={accountType === 'trainee' ? 'Email' : 'Username'}
               type={accountType === 'trainee' ? 'email' : 'text'}
-              placeholder={accountType === 'trainee' ? 'Email address' : 'Username'}
+              placeholder={accountType === 'trainee' ? 'trainee@example.com' : 'Enter your username'}
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
@@ -95,7 +95,7 @@ export function LoginPage() {
             <Input
               label="Password"
               type="password"
-              placeholder="Password"
+              placeholder="Enter your password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -123,11 +123,20 @@ export function LoginPage() {
 
             <div className="text-center">
               <p className="text-xs text-[var(--brand-muted)]">
-                Local fallback (non-production): <span className="font-semibold">local / local</span> when enabled on the server.
+                Fallback only: <span className="font-semibold">local / local</span> when enabled on the server.
               </p>
             </div>
           </form>
         </Card>
+
+        <div className="mt-6 text-center">
+          <button
+            type="button"
+            className="text-sm text-[var(--brand-primary)] transition-colors hover:text-[var(--brand-primary-deep)]"
+          >
+            Forgot your password?
+          </button>
+        </div>
       </div>
     </div>
   );
