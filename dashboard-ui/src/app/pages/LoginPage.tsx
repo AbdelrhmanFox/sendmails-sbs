@@ -57,6 +57,9 @@ export function LoginPage() {
 
       <div className="relative z-10 w-full max-w-md">
         <div className="mb-8 text-center">
+          <div className="mb-4 flex justify-center">
+            <img src="/assets/logo.png" alt="" className="h-12 w-auto" width={160} height={48} />
+          </div>
           <h1 className="mb-2 text-4xl font-bold text-[var(--brand-text)]">SBS Staff Dashboard</h1>
           <p className="text-[var(--brand-muted)]">Internal operations platform for educational services</p>
         </div>
@@ -129,14 +132,13 @@ export function LoginPage() {
           </form>
         </Card>
 
-        <div className="mt-6 text-center">
-          <button
-            type="button"
-            className="text-sm text-[var(--brand-primary)] transition-colors hover:text-[var(--brand-primary-deep)]"
-          >
-            Forgot your password?
-          </button>
-        </div>
+        <p className="mt-6 text-center text-xs text-[var(--brand-muted)]">
+          Need the legacy modules only? Open{' '}
+          <a className="text-[var(--brand-primary)] underline" href="/classic/index.html">
+            classic workspace
+          </a>
+          .
+        </p>
       </div>
     </div>
   );

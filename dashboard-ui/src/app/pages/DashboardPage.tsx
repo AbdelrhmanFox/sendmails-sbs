@@ -207,19 +207,19 @@ export function DashboardPage() {
       <Card>
         <CardHeader title="Quick Actions" subtitle="Common operations" />
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <Button type="button" variant="secondary" fullWidth onClick={() => navigate('/operations')}>
+          <Button type="button" variant="secondary" fullWidth onClick={() => navigate('/operations/trainees')}>
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
             New Trainee
           </Button>
-          <Button type="button" variant="secondary" fullWidth onClick={() => navigate('/operations')}>
+          <Button type="button" variant="secondary" fullWidth onClick={() => navigate('/operations/batches')}>
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
             New Batch
           </Button>
-          <Button type="button" variant="secondary" fullWidth onClick={() => (window.location.href = '/#/finance/finance')}>
+          <Button type="button" variant="secondary" fullWidth onClick={() => navigate('/finance')}>
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
@@ -230,7 +230,7 @@ export function DashboardPage() {
             </svg>
             Record Payment
           </Button>
-          <Button type="button" variant="secondary" fullWidth onClick={() => (window.location.href = '/#/finance/finance')}>
+          <Button type="button" variant="secondary" fullWidth onClick={() => navigate('/finance')}>
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
@@ -291,6 +291,18 @@ export function DashboardPage() {
           </div>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader title="Classic bookmarks" subtitle="Legacy hash URLs" />
+        <p className="text-sm text-[var(--brand-muted)]">
+          Saved links like <code className="text-xs text-[var(--brand-text)]">#/operations/operations-insights</code> still load
+          the classic shell at{' '}
+          <a className="text-[var(--brand-primary)] underline" href="/classic/index.html">
+            /classic/index.html
+          </a>{' '}
+          with the same hash. The site root sends staff to this React app and keeps public participant links working.
+        </p>
+      </Card>
     </div>
   );
 }

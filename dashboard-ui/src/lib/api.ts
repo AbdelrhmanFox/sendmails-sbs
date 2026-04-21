@@ -23,6 +23,13 @@ export async function jsonFetch<T = unknown>(url: string, options: RequestInit =
   const res = await fetch(url, options);
   const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
   if (!res.ok) {
+    if (res.status === 401 && typeof window !== 'undefined') {
+      clearAuthSession();
+      const onLogin = window.location.pathname.includes('/spa/login');
+      if (!onLogin) {
+        window.location.replace(`${window.location.origin}/spa/login`);
+      }
+    }
     const parts = [data.error, data.hint, data.details].filter(Boolean);
     const msg = parts.length ? parts.join(' — ') : `Request failed (${res.status})`;
     throw new Error(String(msg));

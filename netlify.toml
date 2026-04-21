@@ -1,5 +1,6 @@
 # Netlify - SBS Dashboard
 # Publish from the dashboard folder so index.html is at the site root.
+# Root index is a minimal bootstrap (see docs/DASHBOARD_UI.md); full legacy shell is at /classic/index.html.
 [build]
   command = "cd dashboard-ui && npm install && npm run build"
   publish = "dashboard"

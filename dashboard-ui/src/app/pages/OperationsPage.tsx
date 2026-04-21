@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { Card } from '../components/design-system/Card';
 import { Button } from '../components/design-system/Button';
 import { Input } from '../components/design-system/Input';
@@ -6,6 +7,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '.
 import { Badge } from '../components/design-system/Badge';
 import { EmptyState } from '../components/design-system/EmptyState';
 import { functionsBase, getAuthHeaders, jsonFetch } from '../../lib/api';
+import { OperationEntityModal } from './operations/OperationEntityModal';
 
 type Tab = 'trainees' | 'courses' | 'batches' | 'enrollments';
 
@@ -22,7 +24,19 @@ function deliveryVariant(dt: string) {
 }
 
 export function OperationsPage() {
-  const [activeTab, setActiveTab] = useState<Tab>('trainees');
+  const { tab } = useParams();
+  const navigate = useNavigate();
+  const role = String(localStorage.getItem('sbs_role') || 'user');
+  const isAdmin = role === 'admin';
+
+  if (!tab || !TAB_ORDER.includes(tab as Tab)) {
+    return <Navigate to="/operations/trainees" replace />;
+  }
+  const activeTab = tab as Tab;
+
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
+  const [editRow, setEditRow] = useState<Record<string, unknown> | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQ, setDebouncedQ] = useState('');
   const [rows, setRows] = useState<Record<string, unknown>[]>([]);
@@ -100,15 +114,43 @@ export function OperationsPage() {
     count: tabTotals[id],
   }));
 
+  const openCreate = () => {
+    setModalMode('create');
+    setEditRow(null);
+    setModalOpen(true);
+  };
+
+  const openEdit = (r: Record<string, unknown>) => {
+    setModalMode('edit');
+    setEditRow(r);
+    setModalOpen(true);
+  };
+
+  const deleteRow = async (r: Record<string, unknown>) => {
+    if (!isAdmin) return;
+    const id = String(r.id || '').trim();
+    if (!id) return;
+    if (!window.confirm('Delete this record? This cannot be undone.')) return;
+    try {
+      await jsonFetch(`${functionsBase()}/operations-data?entity=${activeTab}&id=${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      });
+      void load();
+    } catch (e) {
+      window.alert(e instanceof Error ? e.message : 'Delete failed');
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-[var(--brand-text)]">Operations Data</h1>
-          <p className="mt-1 text-sm text-[var(--brand-muted)]">Manage trainees, courses, batches, and enrollments</p>
+          <h2 className="text-xl font-bold capitalize text-[var(--brand-text)]">{activeTab}</h2>
+          <p className="mt-1 text-sm text-[var(--brand-muted)]">List, create, and edit workbook entities</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="secondary" type="button" onClick={() => (window.location.href = '/#/operations/operations-bulk')}>
+          <Button variant="secondary" type="button" onClick={() => navigate('/operations/import')}>
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
@@ -119,7 +161,12 @@ export function OperationsPage() {
             </svg>
             Import Excel
           </Button>
-          <Button type="button" onClick={() => (window.location.href = '/#/operations/operations-trainees')}>
+          <Button
+            type="button"
+            onClick={() => {
+              openCreate();
+            }}
+          >
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
@@ -129,26 +176,35 @@ export function OperationsPage() {
       </div>
 
       <div className="border-b border-[var(--brand-border)]">
-        <nav className="flex gap-6">
-          {tabs.map((tab) => (
+        <nav className="flex flex-wrap gap-4">
+          {tabs.map((t) => (
             <button
-              key={tab.id}
+              key={t.id}
               type="button"
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => navigate(`/operations/${t.id}`)}
               className={`border-b-2 px-1 pb-3 transition-all duration-200 ${
-                activeTab === tab.id
+                activeTab === t.id
                   ? 'border-[var(--brand-primary)] text-[var(--brand-primary)]'
                   : 'border-transparent text-[var(--brand-muted)] hover:border-[var(--brand-border)] hover:text-[var(--brand-text)]'
               }`}
             >
-              <span className="font-medium">{tab.label}</span>
+              <span className="font-medium">{t.label}</span>
               <span className="ml-2 rounded-full bg-[var(--brand-surface-2)] px-2 py-0.5 text-xs">
-                {typeof tab.count === 'number' ? tab.count : '—'}
+                {typeof t.count === 'number' ? t.count : '—'}
               </span>
             </button>
           ))}
         </nav>
       </div>
+
+      <OperationEntityModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        entity={activeTab}
+        mode={modalMode}
+        row={editRow}
+        onSaved={() => void load()}
+      />
 
       <Card>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
@@ -256,6 +312,7 @@ export function OperationsPage() {
                           type="button"
                           className="rounded p-1 transition-colors hover:bg-[var(--brand-surface-2)]"
                           aria-label="Edit"
+                          onClick={() => openEdit(r)}
                         >
                           <svg className="h-4 w-4 text-[var(--brand-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path
@@ -266,20 +323,23 @@ export function OperationsPage() {
                             />
                           </svg>
                         </button>
-                        <button
-                          type="button"
-                          className="rounded p-1 transition-colors hover:bg-[var(--brand-surface-2)]"
-                          aria-label="Delete"
-                        >
-                          <svg className="h-4 w-4 text-[var(--brand-danger)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                            />
-                          </svg>
-                        </button>
+                        {isAdmin ? (
+                          <button
+                            type="button"
+                            className="rounded p-1 transition-colors hover:bg-[var(--brand-surface-2)]"
+                            aria-label="Delete"
+                            onClick={() => void deleteRow(r)}
+                          >
+                            <svg className="h-4 w-4 text-[var(--brand-danger)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                              />
+                            </svg>
+                          </button>
+                        ) : null}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -342,6 +402,7 @@ export function OperationsPage() {
                           type="button"
                           className="rounded p-1 transition-colors hover:bg-[var(--brand-surface-2)]"
                           aria-label="Edit"
+                          onClick={() => openEdit(r)}
                         >
                           <svg className="h-4 w-4 text-[var(--brand-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path
@@ -352,6 +413,23 @@ export function OperationsPage() {
                             />
                           </svg>
                         </button>
+                        {isAdmin ? (
+                          <button
+                            type="button"
+                            className="rounded p-1 transition-colors hover:bg-[var(--brand-surface-2)]"
+                            aria-label="Delete"
+                            onClick={() => void deleteRow(r)}
+                          >
+                            <svg className="h-4 w-4 text-[var(--brand-danger)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                              />
+                            </svg>
+                          </button>
+                        ) : null}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -430,6 +508,7 @@ export function OperationsPage() {
                             type="button"
                             className="rounded p-1 transition-colors hover:bg-[var(--brand-surface-2)]"
                             aria-label="Edit"
+                            onClick={() => openEdit(r)}
                           >
                             <svg className="h-4 w-4 text-[var(--brand-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path
@@ -437,9 +516,26 @@ export function OperationsPage() {
                                 strokeLinejoin="round"
                                 strokeWidth={2}
                                 d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                              />
+                            />
                             </svg>
                           </button>
+                          {isAdmin ? (
+                            <button
+                              type="button"
+                              className="rounded p-1 transition-colors hover:bg-[var(--brand-surface-2)]"
+                              aria-label="Delete"
+                              onClick={() => void deleteRow(r)}
+                            >
+                              <svg className="h-4 w-4 text-[var(--brand-danger)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                />
+                              </svg>
+                            </button>
+                          ) : null}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -518,6 +614,7 @@ export function OperationsPage() {
                             type="button"
                             className="rounded p-1 transition-colors hover:bg-[var(--brand-surface-2)]"
                             aria-label="Edit"
+                            onClick={() => openEdit(r)}
                           >
                             <svg className="h-4 w-4 text-[var(--brand-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path
@@ -528,6 +625,23 @@ export function OperationsPage() {
                               />
                             </svg>
                           </button>
+                          {isAdmin ? (
+                            <button
+                              type="button"
+                              className="rounded p-1 transition-colors hover:bg-[var(--brand-surface-2)]"
+                              aria-label="Delete"
+                              onClick={() => void deleteRow(r)}
+                            >
+                              <svg className="h-4 w-4 text-[var(--brand-danger)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                />
+                              </svg>
+                            </button>
+                          ) : null}
                         </div>
                       </TableCell>
                     </TableRow>
