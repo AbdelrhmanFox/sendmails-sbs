@@ -248,8 +248,7 @@ export function DashboardPage() {
         <CardHeader title="Recent Activity" subtitle="Latest system events" />
         <div className="space-y-3">
           <p className="rounded-lg p-4 text-sm text-[var(--brand-muted)]">
-            No activity feed is wired to this dashboard yet. Finance and operations changes continue to appear in the
-            classic modules.
+            No activity feed is wired to this dashboard yet. Use Operations and Finance for day-to-day changes.
           </p>
         </div>
       </Card>
@@ -285,22 +284,32 @@ export function DashboardPage() {
           <CardHeader title="Pending Submissions" subtitle="Awaiting review" />
           <div className="space-y-3">
             <p className="p-3 text-sm text-[var(--brand-muted)]">
-              Assignment queues are not exposed in the React dashboard API yet. Use the classic training workspace for
-              detailed reviews.
+              Assignment queues are not surfaced on this dashboard yet. Open Training for sessions, materials, and classroom
+              tools.
             </p>
           </div>
         </Card>
       </div>
 
       <Card>
-        <CardHeader title="Classic bookmarks" subtitle="Legacy hash URLs" />
-        <p className="text-sm text-[var(--brand-muted)]">
-          Saved links like <code className="text-xs text-[var(--brand-text)]">#/operations/operations-insights</code> still load
-          the classic shell at{' '}
-          <a className="text-[var(--brand-primary)] underline" href="/classic/index.html">
-            /classic/index.html
-          </a>{' '}
-          with the same hash. The site root sends staff to this React app and keeps public participant links working.
+        <CardHeader title="Training shortcuts" subtitle="React routes" />
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="secondary" size="sm" onClick={() => navigate('/training/sessions')}>
+            Sessions
+          </Button>
+          <Button type="button" variant="secondary" size="sm" onClick={() => navigate('/training/presenter')}>
+            Presenter
+          </Button>
+          <Button type="button" variant="secondary" size="sm" onClick={() => navigate('/training/classroom')}>
+            Classroom links
+          </Button>
+          <Button type="button" variant="secondary" size="sm" onClick={() => navigate('/operations/import')}>
+            Data import
+          </Button>
+        </div>
+        <p className="mt-3 text-sm text-[var(--brand-muted)]">
+          Public participant URLs (<code className="text-xs text-[var(--brand-text)]">?session=</code>,{' '}
+          <code className="text-xs text-[var(--brand-text)]">?group=</code>, <code className="text-xs text-[var(--brand-text)]">?classroom=</code>, etc.) still resolve via the site root bootstrap into the legacy public views until those flows are ported.
         </p>
       </Card>
     </div>

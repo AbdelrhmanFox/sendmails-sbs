@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Card } from '../../components/design-system/Card';
 import { Button } from '../../components/design-system/Button';
 import { functionsBase, getAuthHeaders, jsonFetch } from '../../../lib/api';
-import { classicShellUrl } from '../../../lib/legacyClassic';
 
 export function TrainingOverviewPage() {
   const [count, setCount] = useState<number | null>(null);
@@ -25,10 +25,6 @@ export function TrainingOverviewPage() {
     };
   }, []);
 
-  const openClassicTrainingHome = () => {
-    window.location.href = `${window.location.origin}${classicShellUrl('/training/training')}`;
-  };
-
   return (
     <div className="space-y-4">
       {err ? (
@@ -42,16 +38,19 @@ export function TrainingOverviewPage() {
           <p className="mt-1 text-2xl font-bold text-[var(--brand-text)]">{count ?? '—'}</p>
         </Card>
         <Card>
-          <p className="text-sm text-[var(--brand-muted)]">Trainee portal</p>
-          <p className="mt-2 text-sm text-[var(--brand-text)]">Trainees can continue to use the classic “My Learning Portal” flow.</p>
-          <Button className="mt-3" variant="secondary" type="button" onClick={openClassicTrainingHome}>
-            Open classic training home
-          </Button>
+          <p className="text-sm text-[var(--brand-muted)]">Sessions and groups</p>
+          <p className="mt-2 text-sm text-[var(--brand-text)]">Create live sessions, copy participant links, and manage groups from Sessions.</p>
+          <Link to="/training/sessions">
+            <Button className="mt-3" type="button">
+              Open sessions
+            </Button>
+          </Link>
         </Card>
         <Card>
-          <p className="text-sm text-[var(--brand-muted)]">Heavy classroom UI</p>
+          <p className="text-sm text-[var(--brand-muted)]">Trainees</p>
           <p className="mt-2 text-sm text-[var(--brand-text)]">
-            Live classroom, whiteboard, and assignments stay in the classic embed for this release; APIs are unchanged.
+            Trainees sign in with a trainee account and use Training in the sidebar. Participant join links use the site root with{' '}
+            <code className="text-xs">?session=</code>.
           </p>
         </Card>
       </div>

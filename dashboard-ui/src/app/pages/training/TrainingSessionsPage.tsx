@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Card, CardHeader } from '../../components/design-system/Card';
 import { Button } from '../../components/design-system/Button';
 import { Badge } from '../../components/design-system/Badge';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/design-system/Table';
 import { EmptyState } from '../../components/design-system/EmptyState';
 import { functionsBase, getAuthHeaders, jsonFetch } from '../../../lib/api';
-import { classicShellUrl } from '../../../lib/legacyClassic';
+import { TrainingSessionCreateModal } from './TrainingSessionCreateModal';
 
 type TrainingSession = {
   id: string;
@@ -21,27 +21,27 @@ export function TrainingSessionsPage() {
   const [sessions, setSessions] = useState<TrainingSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
+  const [createOpen, setCreateOpen] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setErr('');
+    try {
+      const data = await jsonFetch<{ sessions: TrainingSession[] }>(`${functionsBase()}/training-sessions`, {
+        headers: getAuthHeaders(),
+      });
+      setSessions(data.sessions || []);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Could not load sessions');
+      setSessions([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      setErr('');
-      try {
-        const data = await jsonFetch<{ sessions: TrainingSession[] }>(`${functionsBase()}/training-sessions`, {
-          headers: getAuthHeaders(),
-        });
-        if (!cancelled) setSessions(data.sessions || []);
-      } catch (e) {
-        if (!cancelled) setErr(e instanceof Error ? e.message : 'Could not load sessions');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    void load();
+  }, [load]);
 
   const stats = useMemo(() => {
     const groupCount = sessions.reduce((acc, s) => {
@@ -60,22 +60,19 @@ export function TrainingSessionsPage() {
     return `${base}?session=${encodeURIComponent(sessionId)}`;
   };
 
-  const newSession = () => {
-    window.location.href = `${window.location.origin}${classicShellUrl('/training/training')}`;
-  };
-
   return (
     <div className="space-y-6">
+      <TrainingSessionCreateModal open={createOpen} onOpenChange={setCreateOpen} onCreated={() => void load()} />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold text-[var(--brand-text)]">Live training sessions</h2>
           <p className="mt-1 text-sm text-[var(--brand-muted)]">Manage sessions and participant links</p>
         </div>
-        <Button type="button" onClick={newSession}>
+        <Button type="button" onClick={() => setCreateOpen(true)}>
           <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-          New session (classic)
+          New session
         </Button>
       </div>
 
@@ -166,7 +163,7 @@ export function TrainingSessionsPage() {
             {!sessions.length && !loading ? (
               <TableRow>
                 <TableCell colSpan={8}>
-                  <EmptyState title="No sessions" description="Create a session from the classic training UI." />
+                  <EmptyState title="No sessions" description="Create a session with New session above." />
                 </TableCell>
               </TableRow>
             ) : null}

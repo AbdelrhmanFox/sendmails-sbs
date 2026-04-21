@@ -133,11 +133,7 @@ export function LoginPage() {
         </Card>
 
         <p className="mt-6 text-center text-xs text-[var(--brand-muted)]">
-          Need the legacy modules only? Open{' '}
-          <a className="text-[var(--brand-primary)] underline" href="/classic/index.html">
-            classic workspace
-          </a>
-          .
+          After sign-in, staff use the React dashboard. Public training links with query parameters load from the site root.
         </p>
       </div>
     </div>

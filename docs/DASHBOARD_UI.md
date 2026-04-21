@@ -3,15 +3,17 @@
 The published site uses a **small root HTML bootstrap** (`dashboard/index.html`) that sends browsers to the correct experience:
 
 - **No hash, site root** → redirects to **`/spa/`** (this React app).
+- **Public query parameters** on the site root (`session`, `group`, `classroom`, `credential`, `learner`) → **`/classic/index.html`** with the same hash and search string (participant and public verification flows).
 - **Public participant hashes** (`public-classroom`, `public-credential`, `public-learner`) → **`/classic/index.html`** with the same hash.
-- **Other hash routes** (staff bookmarks such as `#/operations/operations-insights`) → **`/classic/index.html`** with the same hash.
+- **Other hash routes** (legacy staff bookmarks such as `#/operations/operations-insights`) → **`/classic/index.html`** with the same hash.
 
-The **full legacy ES-module shell** is served at **`/classic/index.html`** (same assets and behaviour as before, with `<base href="/" />` so paths resolve from the site root).
+The **legacy ES-module shell** remains at **`/classic/index.html`** for hash bookmarks and public flows that are not yet duplicated in React.
 
 ## React app (staff primary)
 
 - **Source:** [`dashboard-ui/`](../dashboard-ui/), built to [`dashboard/spa/`](../dashboard/spa/) with Vite `base: '/spa/'`.
-- **Navigation** mirrors [`dashboard/js/shell-routes.js`](../dashboard/js/shell-routes.js): Operations, Training, Finance, Campaigns (automation), and Admin expose nested routes; subviews that still depend on legacy bundles are **embedded** from `/classic/` where noted in code.
+- **Navigation** mirrors [`dashboard/js/shell-routes.js`](../dashboard/js/shell-routes.js): Operations, Training, Finance, Campaigns (automation), and Admin expose nested routes.
+- **Training** and **Operations → Import** are implemented in React (no iframe). They call the same Netlify functions as legacy (`training-sessions`, `training-data`, `classroom-data`, `course-library-data`, `credential-center`, `operations-data?bulk=1`, etc.).
 - **Role visibility** follows [`dashboard/js/shared.js`](../dashboard/js/shared.js) `ROLE_AREAS` (enforced in `dashboard-ui/src/lib/roleAccess.ts` and `AreaGuard`).
 
 ## Authentication and session
@@ -41,4 +43,4 @@ Use `netlify dev` from the repo root if you need `/.netlify/functions` on the sa
 
 ## Classic shell maintenance
 
-Script [`scripts/copy-classic-dashboard.mjs`](../scripts/copy-classic-dashboard.mjs) ensures `<base href="/" />` exists in `dashboard/classic/index.html`. The canonical full shell must live at **`dashboard/classic/index.html`**; do not overwrite it from the minimal root `index.html`.
+Script [`scripts/copy-classic-dashboard.mjs`](../scripts/copy-classic-dashboard.mjs) ensures `<base href="/" />` exists in `dashboard/classic/index.html`. Keep **`dashboard/classic/index.html`** in deploy artifacts until all public flows are served from dedicated React or minimal static pages; do not overwrite it from the minimal root `index.html`.

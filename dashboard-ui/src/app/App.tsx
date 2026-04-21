@@ -12,7 +12,11 @@ import { OperationsImportPage } from './pages/operations/OperationsImportPage';
 import { TrainingLayout } from './pages/training/TrainingLayout';
 import { TrainingOverviewPage } from './pages/training/TrainingOverviewPage';
 import { TrainingSessionsPage } from './pages/training/TrainingSessionsPage';
-import { TrainingClassicSubPage } from './pages/training/TrainingClassicSubPage';
+import { TrainingPresenterPage } from './pages/training/TrainingPresenterPage';
+import { TrainingClassroomPage } from './pages/training/TrainingClassroomPage';
+import { TrainingMaterialsAttendancePage } from './pages/training/TrainingMaterialsAttendancePage';
+import { TrainingCourseLibraryPage } from './pages/training/TrainingCourseLibraryPage';
+import { TrainingCredentialsPage } from './pages/training/TrainingCredentialsPage';
 import { FinancePage } from './pages/FinancePage';
 import { CampaignsPage } from './pages/CampaignsPage';
 import { AdminPage } from './pages/AdminPage';
@@ -86,51 +90,11 @@ export default function App() {
           <Route index element={<Navigate to="overview" replace />} />
           <Route path="overview" element={<TrainingOverviewPage />} />
           <Route path="sessions" element={<TrainingSessionsPage />} />
-          <Route
-            path="presenter"
-            element={
-              <TrainingClassicSubPage
-                hashPath="/training/training-presenter-tools"
-                description="Presenter tools (QR, script, teleprompter) live in the classic trainer bundle for now."
-              />
-            }
-          />
-          <Route
-            path="classroom"
-            element={
-              <TrainingClassicSubPage
-                hashPath="/training/training-classroom"
-                description="Full classroom experience (live session, whiteboard, polls) is embedded from the classic dashboard."
-              />
-            }
-          />
-          <Route
-            path="materials"
-            element={
-              <TrainingClassicSubPage
-                hashPath="/training/training-tools"
-                description="Attendance and materials are opened in the classic training workspace."
-              />
-            }
-          />
-          <Route
-            path="library"
-            element={
-              <TrainingClassicSubPage
-                hashPath="/training/training-course-library"
-                description="Course library uses the same APIs as legacy; UI is embedded from classic."
-              />
-            }
-          />
-          <Route
-            path="credentials"
-            element={
-              <TrainingClassicSubPage
-                hashPath="/training/training-credentials"
-                description="Credential center opens inside the classic shell."
-              />
-            }
-          />
+          <Route path="presenter" element={<TrainingPresenterPage />} />
+          <Route path="classroom" element={<TrainingClassroomPage />} />
+          <Route path="materials" element={<TrainingMaterialsAttendancePage />} />
+          <Route path="library" element={<TrainingCourseLibraryPage />} />
+          <Route path="credentials" element={<TrainingCredentialsPage />} />
         </Route>
         <Route
           path="/finance"

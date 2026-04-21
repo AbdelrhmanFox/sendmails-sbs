@@ -14,6 +14,13 @@
         location.replace('/classic/index.html' + h + location.search);
         return;
       }
+      try {
+        var q = new URLSearchParams(location.search);
+        if (q.get('session') || q.get('group') || q.get('classroom') || q.get('credential') || q.get('learner')) {
+          location.replace('/classic/index.html' + h + location.search);
+          return;
+        }
+      } catch (e) {}
       if (!h || h === '#') {
         location.replace('/spa/' + location.search);
         return;
@@ -27,8 +34,7 @@
 </head>
 <body>
   <p style="font-family: system-ui, sans-serif; padding: 2rem">
-    <a href="/spa/">Open staff dashboard</a> or
-    <a href="/classic/">open classic workspace</a>.
+    <a href="/spa/">Open staff dashboard</a>. Public training links with query parameters are handled by the redirect script above.
   </p>
 </body>
 </html>
