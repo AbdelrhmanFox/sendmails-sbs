@@ -17,7 +17,7 @@
       try {
         var q = new URLSearchParams(location.search);
         if (q.get('session') || q.get('group') || q.get('classroom') || q.get('credential') || q.get('learner')) {
-          location.replace('/classic/index.html' + h + location.search);
+          location.replace('/spa/' + location.search);
           return;
         }
       } catch (e) {}

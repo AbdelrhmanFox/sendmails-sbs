@@ -22,6 +22,7 @@ import { CampaignsPage } from './pages/CampaignsPage';
 import { AdminPage } from './pages/AdminPage';
 import { ChangePasswordPage } from './pages/ChangePasswordPage';
 import { AUTH_TOKEN } from '../lib/api';
+import { PublicQueryRouter, hasPublicQuery } from './pages/public/PublicQueryRouter';
 
 function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem(AUTH_TOKEN);
@@ -44,6 +45,17 @@ function ProtectedLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
+function RootEntry() {
+  if (hasPublicQuery()) return <PublicQueryRouter />;
+  const token = localStorage.getItem(AUTH_TOKEN);
+  if (!token) return <Navigate to="/login" replace />;
+  return (
+    <ProtectedLayout>
+      <DashboardPage />
+    </ProtectedLayout>
+  );
+}
+
 export default function App() {
   return (
     <BrowserRouter basename="/spa">
@@ -57,14 +69,7 @@ export default function App() {
             </ProtectedLayout>
           }
         />
-        <Route
-          path="/"
-          element={
-            <ProtectedLayout>
-              <DashboardPage />
-            </ProtectedLayout>
-          }
-        />
+        <Route path="/" element={<RootEntry />} />
         <Route
           path="/operations"
           element={

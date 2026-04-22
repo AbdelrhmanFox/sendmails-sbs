@@ -3,11 +3,11 @@
 The published site uses a **small root HTML bootstrap** (`dashboard/index.html`) that sends browsers to the correct experience:
 
 - **No hash, site root** → redirects to **`/spa/`** (this React app).
-- **Public query parameters** on the site root (`session`, `group`, `classroom`, `credential`, `learner`) → **`/classic/index.html`** with the same hash and search string (participant and public verification flows).
+- **Public query parameters** on the site root (`session`, `group`, `classroom`, `credential`, `learner`) → **`/spa/`** (React public query router).
 - **Public participant hashes** (`public-classroom`, `public-credential`, `public-learner`) → **`/classic/index.html`** with the same hash.
 - **Other hash routes** (legacy staff bookmarks such as `#/operations/operations-insights`) → **`/classic/index.html`** with the same hash.
 
-The **legacy ES-module shell** remains at **`/classic/index.html`** for hash bookmarks and public flows that are not yet duplicated in React.
+The **legacy ES-module shell** remains at **`/classic/index.html`** for hash bookmarks and legacy hash routes only.
 
 ## React app (staff primary)
 
