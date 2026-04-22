@@ -14,6 +14,7 @@ The **legacy ES-module shell** remains at **`/classic/index.html`** for hash boo
 - **Source:** [`dashboard-ui/`](../dashboard-ui/), built to [`dashboard/spa/`](../dashboard/spa/) with Vite `base: '/spa/'`.
 - **Navigation** mirrors [`dashboard/js/shell-routes.js`](../dashboard/js/shell-routes.js): Operations, Training, Finance, Campaigns (automation), and Admin expose nested routes.
 - **Training** and **Operations → Import** are implemented in React (no iframe). They call the same Netlify functions as legacy (`training-sessions`, `training-data`, `classroom-data`, `course-library-data`, `credential-center`, `operations-data?bulk=1`, etc.).
+- **Public session links** (`?session` / `?group`) are routed through the React public entry and render the legacy live session engine in-place to preserve full parity (group picker, name-first join, chat, whiteboard, voice, stickers, mute, join notifications).
 - **Role visibility** follows [`dashboard/js/shared.js`](../dashboard/js/shared.js) `ROLE_AREAS` (enforced in `dashboard-ui/src/lib/roleAccess.ts` and `AreaGuard`).
 
 ## Authentication and session
