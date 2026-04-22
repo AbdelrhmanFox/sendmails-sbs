@@ -15,6 +15,11 @@ export function AdminPage() {
   const [newPass, setNewPass] = useState('');
   const [newRole, setNewRole] = useState('staff');
   const [msg, setMsg] = useState('');
+  const [resetUser, setResetUser] = useState('');
+  const [resetPass, setResetPass] = useState('');
+  const [traineeEmail, setTraineeEmail] = useState('');
+  const [supportNumber, setSupportNumber] = useState('');
+  const [auditRows, setAuditRows] = useState<Record<string, unknown>[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -31,6 +36,20 @@ export function AdminPage() {
 
   useEffect(() => {
     void load();
+    (async () => {
+      try {
+        const [cfg, audit] = await Promise.all([
+          jsonFetch<{ number?: string }>(`${functionsBase()}/demo-support-config`),
+          jsonFetch<{ items: Record<string, unknown>[] }>(`${functionsBase()}/finance-data?resource=audit&page=1&pageSize=20`, {
+            headers: getAuthHeaders(),
+          }),
+        ]);
+        setSupportNumber(String(cfg.number || ''));
+        setAuditRows(audit.items || []);
+      } catch (_) {
+        // ignore optional panels for non-admin roles
+      }
+    })();
   }, [load]);
 
   const createUser = async () => {
@@ -62,6 +81,50 @@ export function AdminPage() {
       void load();
     } catch (e) {
       setMsg(e instanceof Error ? e.message : 'Delete failed');
+    }
+  };
+
+  const resetUserPassword = async () => {
+    setMsg('');
+    try {
+      await jsonFetch(`${functionsBase()}/reset-password`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ username: resetUser.trim(), newPassword: resetPass }),
+      });
+      setMsg('Password reset completed.');
+      setResetUser('');
+      setResetPass('');
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : 'Reset failed');
+    }
+  };
+
+  const resetTraineeAccess = async () => {
+    setMsg('');
+    try {
+      const data = await jsonFetch<{ temporary_password: string }>(`${functionsBase()}/trainee-admin-reset`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ email: traineeEmail.trim() }),
+      });
+      setMsg(`Trainee access reset. Temporary password: ${data.temporary_password}`);
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : 'Trainee reset failed');
+    }
+  };
+
+  const saveSupportNumber = async () => {
+    setMsg('');
+    try {
+      await jsonFetch(`${functionsBase()}/demo-support-config`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ number: supportNumber.trim() }),
+      });
+      setMsg('Demo support number saved.');
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : 'Save failed');
     }
   };
 
@@ -126,6 +189,61 @@ export function AdminPage() {
                     Delete
                   </Button>
                 </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card className="space-y-3">
+          <h3 className="text-lg font-semibold text-[var(--brand-text)]">Reset dashboard user password</h3>
+          <Input label="Username" value={resetUser} onChange={(e) => setResetUser(e.target.value)} />
+          <Input label="New password" type="password" value={resetPass} onChange={(e) => setResetPass(e.target.value)} />
+          <Button type="button" onClick={() => void resetUserPassword()}>
+            Reset password
+          </Button>
+        </Card>
+
+        <Card className="space-y-3">
+          <h3 className="text-lg font-semibold text-[var(--brand-text)]">Reset trainee access</h3>
+          <Input label="Trainee email" type="email" value={traineeEmail} onChange={(e) => setTraineeEmail(e.target.value)} />
+          <Button type="button" onClick={() => void resetTraineeAccess()}>
+            Reset trainee account
+          </Button>
+        </Card>
+      </div>
+
+      <Card className="space-y-3">
+        <h3 className="text-lg font-semibold text-[var(--brand-text)]">Demo WhatsApp support number</h3>
+        <div className="flex max-w-xl flex-wrap items-end gap-2">
+          <Input label="Number" value={supportNumber} onChange={(e) => setSupportNumber(e.target.value)} />
+          <Button type="button" onClick={() => void saveSupportNumber()}>
+            Save
+          </Button>
+        </div>
+      </Card>
+
+      <Card noPadding>
+        <div className="border-b border-[var(--brand-border)] p-4">
+          <h3 className="text-lg font-semibold text-[var(--brand-text)]">Finance audit (recent)</h3>
+        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Time</TableHead>
+              <TableHead>Actor</TableHead>
+              <TableHead>Action</TableHead>
+              <TableHead>Entity</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {auditRows.map((r) => (
+              <TableRow key={String(r.id)}>
+                <TableCell>{String(r.created_at || '').replace('T', ' ').slice(0, 19)}</TableCell>
+                <TableCell>{String(r.actor || '')}</TableCell>
+                <TableCell>{String(r.action || '')}</TableCell>
+                <TableCell>{String(r.entity || '')}</TableCell>
               </TableRow>
             ))}
           </TableBody>

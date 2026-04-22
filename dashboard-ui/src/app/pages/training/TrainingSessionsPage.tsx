@@ -60,6 +60,20 @@ export function TrainingSessionsPage() {
     return `${base}?session=${encodeURIComponent(sessionId)}`;
   };
 
+  const deleteSession = async (sessionId: string) => {
+    if (!window.confirm('Delete this session and all related groups/messages? This cannot be undone.')) return;
+    setErr('');
+    try {
+      await jsonFetch(`${functionsBase()}/training-sessions?id=${encodeURIComponent(sessionId)}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      });
+      await load();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Could not delete session');
+    }
+  };
+
   return (
     <div className="space-y-6">
       <TrainingSessionCreateModal open={createOpen} onOpenChange={setCreateOpen} onCreated={() => void load()} />
@@ -240,6 +254,9 @@ export function TrainingSessionsPage() {
                           />
                         </svg>
                         Share link
+                      </Button>
+                      <Button size="sm" variant="secondary" type="button" onClick={() => void deleteSession(session.id)}>
+                        Delete
                       </Button>
                     </div>
                   </TableCell>

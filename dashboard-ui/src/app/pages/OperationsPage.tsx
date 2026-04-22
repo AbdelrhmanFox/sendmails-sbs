@@ -43,6 +43,9 @@ export function OperationsPage() {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState('');
   const [tabTotals, setTabTotals] = useState<Partial<Record<Tab, number>>>({});
+  const [courseAccess, setCourseAccess] = useState<Array<{ id: string; trainer_username: string; course_id: string }>>([]);
+  const [mapTrainer, setMapTrainer] = useState('');
+  const [mapCourseId, setMapCourseId] = useState('');
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQ(searchQuery.trim()), 350);
@@ -108,6 +111,28 @@ export function OperationsPage() {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    if (activeTab !== 'courses') {
+      setCourseAccess([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await jsonFetch<{ items: Array<{ id: string; trainer_username: string; course_id: string }> }>(
+          `${functionsBase()}/operations-data?resource=trainer-course-access`,
+          { headers: getAuthHeaders() },
+        );
+        if (!cancelled) setCourseAccess(data.items || []);
+      } catch (_) {
+        if (!cancelled) setCourseAccess([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab]);
+
   const tabs = TAB_ORDER.map((id) => ({
     id,
     label: id.charAt(0).toUpperCase() + id.slice(1),
@@ -139,6 +164,37 @@ export function OperationsPage() {
       void load();
     } catch (e) {
       window.alert(e instanceof Error ? e.message : 'Delete failed');
+    }
+  };
+
+  const saveCourseAccess = async () => {
+    if (!mapTrainer.trim() || !mapCourseId.trim()) return;
+    try {
+      await jsonFetch(`${functionsBase()}/operations-data?resource=trainer-course-access`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ trainer_username: mapTrainer.trim(), course_id: mapCourseId.trim() }),
+      });
+      const data = await jsonFetch<{ items: Array<{ id: string; trainer_username: string; course_id: string }> }>(
+        `${functionsBase()}/operations-data?resource=trainer-course-access`,
+        { headers: getAuthHeaders() },
+      );
+      setCourseAccess(data.items || []);
+      setMapTrainer('');
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Could not save mapping');
+    }
+  };
+
+  const removeCourseAccess = async (id: string) => {
+    try {
+      await jsonFetch(`${functionsBase()}/operations-data?resource=trainer-course-access&id=${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      });
+      setCourseAccess((prev) => prev.filter((x) => x.id !== id));
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Could not delete mapping');
     }
   };
 
@@ -652,6 +708,61 @@ export function OperationsPage() {
           </Table>
         )}
       </Card>
+
+      {activeTab === 'courses' ? (
+        <Card className="space-y-4">
+          <h3 className="text-lg font-semibold text-[var(--brand-text)]">Trainer-course access</h3>
+          <div className="grid gap-3 md:grid-cols-3">
+            <Input label="Trainer username" value={mapTrainer} onChange={(e) => setMapTrainer(e.target.value)} />
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-[var(--brand-text)]">Course ID</label>
+              <select
+                className="w-full rounded-[var(--brand-radius-dense)] border border-[var(--brand-border)] bg-[var(--brand-surface)] px-4 py-2.5 text-[var(--brand-text)]"
+                value={mapCourseId}
+                onChange={(e) => setMapCourseId(e.target.value)}
+              >
+                <option value="">Select course</option>
+                {rows.map((r) => {
+                  const cid = String(r.course_id || '');
+                  const name = String(r.course_name || cid);
+                  return (
+                    <option key={cid} value={cid}>
+                      {name} ({cid})
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+            <div className="flex items-end">
+              <Button type="button" onClick={() => void saveCourseAccess()}>
+                Save mapping
+              </Button>
+            </div>
+          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Trainer</TableHead>
+                <TableHead>Course</TableHead>
+                <TableHead />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {courseAccess.map((m) => (
+                <TableRow key={m.id}>
+                  <TableCell>{m.trainer_username}</TableCell>
+                  <TableCell className="font-mono text-xs">{m.course_id}</TableCell>
+                  <TableCell className="text-right">
+                    <Button size="sm" variant="secondary" type="button" onClick={() => void removeCourseAccess(m.id)}>
+                      Remove
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
+      ) : null}
     </div>
   );
 }

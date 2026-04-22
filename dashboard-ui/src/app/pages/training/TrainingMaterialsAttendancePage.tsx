@@ -14,6 +14,19 @@ type TrainingSession = {
 type Material = { id: string; title: string; url: string; sort_order?: number };
 type AttRow = { id: string; participant_name: string; attendance_date: string; status: string };
 
+function downloadCsv(name: string, headers: string[], rows: Array<Array<string | number>>) {
+  const esc = (v: string | number) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const out = [headers.map(esc).join(',')];
+  rows.forEach((r) => out.push(r.map(esc).join(',')));
+  const blob = new Blob([out.join('\n')], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export function TrainingMaterialsAttendancePage() {
   const [sessions, setSessions] = useState<TrainingSession[]>([]);
   const [sessionId, setSessionId] = useState('');
@@ -143,6 +156,41 @@ export function TrainingMaterialsAttendancePage() {
     }
   };
 
+  const deleteMaterial = async (id: string) => {
+    setErr('');
+    try {
+      await jsonFetch(`${functionsBase()}/training-data?resource=materials&id=${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      });
+      setMaterials((prev) => prev.filter((x) => x.id !== id));
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Material delete failed');
+    }
+  };
+
+  const deleteAttendance = async (id: string) => {
+    setErr('');
+    try {
+      await jsonFetch(`${functionsBase()}/training-data?resource=attendance&id=${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      });
+      setAttendance((prev) => prev.filter((x) => x.id !== id));
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Attendance delete failed');
+    }
+  };
+
+  const exportAttendance = () => {
+    if (!attendance.length) return;
+    downloadCsv(
+      `attendance-${groupId || 'group'}.csv`,
+      ['participant_name', 'attendance_date', 'status'],
+      attendance.map((a) => [a.participant_name, String(a.attendance_date || '').slice(0, 10), a.status]),
+    );
+  };
+
   return (
     <div className="space-y-6">
       <p className="text-sm text-[var(--brand-muted)]">Materials and attendance per live training session and group.</p>
@@ -193,6 +241,7 @@ export function TrainingMaterialsAttendancePage() {
             <TableRow>
               <TableHead>Title</TableHead>
               <TableHead>URL</TableHead>
+              <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -203,6 +252,11 @@ export function TrainingMaterialsAttendancePage() {
                   <a className="text-[var(--brand-primary)] underline" href={m.url} target="_blank" rel="noreferrer">
                     {m.url}
                   </a>
+                </TableCell>
+                <TableCell>
+                  <Button size="sm" variant="secondary" type="button" onClick={() => void deleteMaterial(m.id)}>
+                    Delete
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}
@@ -217,6 +271,9 @@ export function TrainingMaterialsAttendancePage() {
           <Button type="button" disabled={!groupId} onClick={() => void addAttendance()}>
             Mark present
           </Button>
+          <Button type="button" variant="secondary" disabled={!attendance.length} onClick={exportAttendance}>
+            Export CSV
+          </Button>
         </div>
         <Table>
           <TableHeader>
@@ -224,6 +281,7 @@ export function TrainingMaterialsAttendancePage() {
               <TableHead>Name</TableHead>
               <TableHead>Date</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -232,6 +290,11 @@ export function TrainingMaterialsAttendancePage() {
                 <TableCell>{a.participant_name}</TableCell>
                 <TableCell>{String(a.attendance_date || '').slice(0, 10)}</TableCell>
                 <TableCell>{a.status}</TableCell>
+                <TableCell>
+                  <Button size="sm" variant="secondary" type="button" onClick={() => void deleteAttendance(a.id)}>
+                    Delete
+                  </Button>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
