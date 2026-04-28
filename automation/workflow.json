@@ -20,7 +20,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ { \"ok\": true, \"message\": \"Sending started\" } }}",
+        "responseBody": "={{ { \"ok\": true, \"message\": ($json.body?.action === 'stop' ? 'Stop requested' : 'Sending started') } }}",
         "options": {}
       },
       "id": "19892bab-1333-4e04-9f34-116e6ab5dab0",
@@ -124,7 +124,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Merge Subject and Body; normalize email again + _toEmail for SMTP (never spaces in To:).\nfunction cleanEmail(v) {\n  if (v === null || v === undefined) return '';\n  return String(v).replace(/[\\u200B-\\u200D\\uFEFF]/g, '').replace(/\\u00A0/g, ' ').trim();\n}\nfunction cleanEmailList(v) {\n  return String(v || '')\n    .split(/[;,]/)\n    .map(cleanEmail)\n    .filter(Boolean)\n    .join(', ');\n}\nfunction normalizeKey(key) {\n  return String(key || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '');\n}\nfunction escapeRegExp(str) {\n  return String(str).replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&');\n}\nfunction replacePlaceholderCI(text, key, value) {\n  const pattern = new RegExp('\\\\{\\\\{\\\\s*' + escapeRegExp(key) + '\\\\s*\\\\}\\\\}', 'gi');\n  return String(text).replace(pattern, String(value));\n}\nconst webhook = $('Webhook').first().json;\nconst body = webhook.body || webhook;\nlet subject = String(body.subject ?? webhook.subject ?? '');\nlet html = String(body.bodyHtml ?? webhook.bodyHtml ?? '');\nconst row = { ...$input.item.json };\nif ('Email' in row) row.Email = cleanEmail(row.Email);\nif ('email' in row) row.email = cleanEmail(row.email);\nconst _toEmail = cleanEmail(row.Email || row.email);\nconst _ccEmail = cleanEmailList(body.cc ?? webhook.cc ?? '');\nconst rowKeyByNormalized = {};\nfor (const key of Object.keys(row)) {\n  const nk = normalizeKey(key);\n  if (nk && !rowKeyByNormalized[nk]) rowKeyByNormalized[nk] = key;\n}\nfunction getRowValueByAliases(aliases) {\n  for (const alias of aliases) {\n    const key = rowKeyByNormalized[normalizeKey(alias)];\n    if (!key) continue;\n    const value = row[key];\n    if (value !== null && value !== undefined && String(value).trim() !== '') return value;\n  }\n  return null;\n}\nconst courseValue = getRowValueByAliases(['course', 'course_name', 'courseid', 'coures']);\nif (courseValue !== null) {\n  for (const alias of ['course', 'course_name', 'coures']) {\n    subject = replacePlaceholderCI(subject, alias, courseValue);\n    html = replacePlaceholderCI(html, alias, courseValue);\n  }\n}\nfor (const [k, v] of Object.entries(row)) {\n  if (v === null || v === undefined) continue;\n  subject = replacePlaceholderCI(subject, k, v);\n  html = replacePlaceholderCI(html, k, v);\n}\nreturn { json: { ...row, _subject: subject, _html: html, _toEmail, _ccEmail } };"
+        "jsCode": "// Merge Subject and Body; normalize email again + _toEmail for SMTP (never spaces in To:).\nfunction cleanEmail(v) {\n  if (v === null || v === undefined) return '';\n  return String(v).replace(/[\\u200B-\\u200D\\uFEFF]/g, '').replace(/\\u00A0/g, ' ').trim();\n}\nfunction cleanEmailList(v) {\n  return String(v || '')\n    .split(/[;,]/)\n    .map(cleanEmail)\n    .filter(Boolean)\n    .join(', ');\n}\nfunction normalizeKey(key) {\n  return String(key || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '');\n}\nfunction escapeRegExp(str) {\n  return String(str).replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&');\n}\nfunction replacePlaceholderCI(text, key, value) {\n  const pattern = new RegExp('\\\\{\\\\{\\\\s*' + escapeRegExp(key) + '\\\\s*\\\\}\\\\}', 'gi');\n  return String(text).replace(pattern, String(value));\n}\nconst webhook = $('Webhook').first().json;\nconst body = webhook.body || webhook;\nconst sheetKey = String(body.sheetUrl ?? webhook.body?.sheetUrl ?? '').trim();\nconst staticData = $getWorkflowStaticData('global');\nconst stopMap = (staticData.sendmailsStopMap && typeof staticData.sendmailsStopMap === 'object') ? staticData.sendmailsStopMap : {};\nif (sheetKey && stopMap[sheetKey]) {\n  return null;\n}\nlet subject = String(body.subject ?? webhook.subject ?? '');\nlet html = String(body.bodyHtml ?? webhook.bodyHtml ?? '');\nconst row = { ...$input.item.json };\nif ('Email' in row) row.Email = cleanEmail(row.Email);\nif ('email' in row) row.email = cleanEmail(row.email);\nconst _toEmail = cleanEmail(row.Email || row.email);\nconst _ccEmail = cleanEmailList(body.cc ?? webhook.cc ?? '');\nconst rowKeyByNormalized = {};\nfor (const key of Object.keys(row)) {\n  const nk = normalizeKey(key);\n  if (nk && !rowKeyByNormalized[nk]) rowKeyByNormalized[nk] = key;\n}\nfunction getRowValueByAliases(aliases) {\n  for (const alias of aliases) {\n    const key = rowKeyByNormalized[normalizeKey(alias)];\n    if (!key) continue;\n    const value = row[key];\n    if (value !== null && value !== undefined && String(value).trim() !== '') return value;\n  }\n  return null;\n}\nconst courseValue = getRowValueByAliases(['course', 'course_name', 'courseid', 'coures']);\nif (courseValue !== null) {\n  for (const alias of ['course', 'course_name', 'coures']) {\n    subject = replacePlaceholderCI(subject, alias, courseValue);\n    html = replacePlaceholderCI(html, alias, courseValue);\n  }\n}\nfor (const [k, v] of Object.entries(row)) {\n  if (v === null || v === undefined) continue;\n  subject = replacePlaceholderCI(subject, k, v);\n  html = replacePlaceholderCI(html, k, v);\n}\nreturn { json: { ...row, _subject: subject, _html: html, _toEmail, _ccEmail } };"
       },
       "id": "8b93de30-526e-421c-8c69-9d5cfcade888",
       "name": "Prepare Email Body",
@@ -366,7 +366,7 @@
     },
     {
       "parameters": {
-        "content": "## SBS Sendmails (single webhook)\n\n• **One webhook** receives: sheetUrl and action (preview or send).\n• **action = preview**: returns sheet columns + sample row.\n• **action = send**: responds immediately then reads sheet and sends emails (with subject and bodyHtml).\n• Use in Body and Subject: **{{Name}}**, **{{Email}}**, **{{Coures}}**, etc.",
+        "content": "## SBS Sendmails (single webhook)\n\n• **One webhook** receives: sheetUrl and action (preview, status, send, stop).\n• **action = preview**: returns sheet columns + sample row.\n• **action = status**: returns sent/pending progress.\n• **action = send**: responds immediately then reads sheet and sends emails (with subject and bodyHtml).\n• **action = stop**: requests the active send loop to stop before the next email.\n• Use in Body and Subject: **{{Name}}**, **{{Email}}**, **{{Coures}}**, etc.",
         "height": 240,
         "width": 360,
         "color": 4
@@ -563,6 +563,65 @@
         18160,
         4416
       ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "is-stop",
+              "leftValue": "={{ $json.body.action }}",
+              "rightValue": "stop",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "1f9ab2a9-bdb5-4f57-8bf2-7d6ba266f7a2",
+      "name": "Action = stop?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        17712,
+        4032
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body || {};\nconst sheetKey = String(body.sheetUrl || '').trim();\nconst staticData = $getWorkflowStaticData('global');\nif (!staticData.sendmailsStopMap || typeof staticData.sendmailsStopMap !== 'object') {\n  staticData.sendmailsStopMap = {};\n}\nif (sheetKey) staticData.sendmailsStopMap[sheetKey] = true;\nreturn { json: { ...$json, stopRequested: !!sheetKey } };"
+      },
+      "id": "ee3f9f56-b7a8-4715-a7ab-a175f5826543",
+      "name": "Set Stop Flag",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        17936,
+        3936
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body || {};\nconst sheetKey = String(body.sheetUrl || '').trim();\nconst staticData = $getWorkflowStaticData('global');\nif (!staticData.sendmailsStopMap || typeof staticData.sendmailsStopMap !== 'object') {\n  staticData.sendmailsStopMap = {};\n}\nif (sheetKey) delete staticData.sendmailsStopMap[sheetKey];\nreturn { json: { ...$json } };"
+      },
+      "id": "ba0d68a3-6f0a-444a-8f25-372b9976ea85",
+      "name": "Clear Stop Flag",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        17936,
+        4224
+      ]
     }
   ],
   "connections": {
@@ -757,12 +816,7 @@
         ],
         [
           {
-            "node": "Respond to Webhook",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Read All Rows",
+            "node": "Action = stop?",
             "type": "main",
             "index": 0
           }
@@ -785,6 +839,51 @@
         [
           {
             "node": "Respond Status1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Action = stop?": {
+      "main": [
+        [
+          {
+            "node": "Set Stop Flag",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Clear Stop Flag",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Stop Flag": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clear Stop Flag": {
+      "main": [
+        [
+          {
+            "node": "Read All Rows",
             "type": "main",
             "index": 0
           }

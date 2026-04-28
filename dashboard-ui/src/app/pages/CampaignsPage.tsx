@@ -56,6 +56,7 @@ export function CampaignsPage() {
   const editorRef = useRef<HTMLDivElement | null>(null);
   const subjectRef = useRef<HTMLInputElement | null>(null);
   const [insertToken, setInsertToken] = useState<'{{Name}}' | '{{Course}}'>('{{Name}}');
+  const [textColor, setTextColor] = useState('#1f2937');
 
   useEffect(() => {
     const w = localStorage.getItem(WEBHOOK_KEY);
@@ -109,6 +110,24 @@ export function CampaignsPage() {
       void refreshStatus();
     } catch (e) {
       setMsg(e instanceof Error ? e.message : 'Send failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const stopCampaign = async () => {
+    setLoading(true);
+    setMsg('');
+    try {
+      await jsonFetch(webhook.trim(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'stop', sheetUrl: sheetUrl.trim() }),
+      });
+      setMsg('Stop requested. Current automation run will halt before the next email.');
+      void refreshStatus();
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : 'Stop failed');
     } finally {
       setLoading(false);
     }
@@ -362,21 +381,39 @@ export function CampaignsPage() {
             <Button type="button" variant="secondary" onClick={insertLink}>
               Link
             </Button>
+            <label className="inline-flex items-center gap-2 rounded-[var(--brand-radius-dense)] border border-[var(--brand-border)] bg-[var(--brand-surface)] px-3 py-2 text-sm text-[var(--brand-text)]">
+              Text color
+              <input
+                type="color"
+                value={textColor}
+                onChange={(e) => setTextColor(e.target.value)}
+                className="h-7 w-10 cursor-pointer rounded border border-[var(--brand-border)] bg-transparent p-0"
+                aria-label="Choose text color"
+              />
+            </label>
+            <Button type="button" variant="secondary" onClick={() => runEditorCommand('foreColor', textColor)}>
+              Apply color
+            </Button>
           </div>
           <div
             ref={editorRef}
             contentEditable
             suppressContentEditableWarning
-            className="min-h-[200px] w-full rounded-[var(--brand-radius-dense)] border border-[var(--brand-border)] bg-[var(--brand-surface)] p-3 text-sm text-[var(--brand-text)] focus:outline-none"
+            className="min-h-[200px] w-full rounded-[var(--brand-radius-dense)] border border-[var(--brand-border)] bg-[var(--brand-surface)] p-3 text-sm text-[#1f2937] focus:outline-none"
             onInput={(e) => setBodyHtml((e.target as HTMLDivElement).innerHTML)}
           />
         </div>
         <p className="text-sm text-[var(--brand-muted)]">
           Composer checks: {composerChecks.length ? composerChecks.join(' ') : 'Looks good.'} Use insert options for {`{{Name}}`} and {`{{Course}}`}.
         </p>
-        <Button type="button" loading={loading} onClick={() => void sendCampaign()} disabled={!subject.trim()}>
-          Start send
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" loading={loading} onClick={() => void sendCampaign()} disabled={!subject.trim()}>
+            Start send
+          </Button>
+          <Button type="button" variant="danger" loading={loading} onClick={() => void stopCampaign()}>
+            Stop automation
+          </Button>
+        </div>
       </Card>
 
       <Card>
