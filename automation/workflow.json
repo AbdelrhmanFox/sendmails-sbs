@@ -7,13 +7,13 @@
         "responseMode": "responseNode",
         "options": {}
       },
-      "id": "674a0030-3cc1-418f-a491-4baacb1d0fcd",
+      "id": "c587b18c-0c97-498c-982e-d7fd6698c387",
       "name": "Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
-        8736,
-        4064
+        17040,
+        4416
       ],
       "webhookId": "sendmails-sbs-dash"
     },
@@ -23,13 +23,13 @@
         "responseBody": "={{ { \"ok\": true, \"message\": \"Sending started\" } }}",
         "options": {}
       },
-      "id": "424364b0-8c52-46dd-a1c7-79dcf741ec6e",
+      "id": "19892bab-1333-4e04-9f34-116e6ab5dab0",
       "name": "Respond to Webhook",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        9408,
-        3680
+        17712,
+        4032
       ]
     },
     {
@@ -48,13 +48,13 @@
         },
         "options": {}
       },
-      "id": "04386d39-5b29-4132-b21f-5c8fc34ccd37",
+      "id": "31e5f89c-bd9b-414e-9e10-0a806e691511",
       "name": "Read All Rows",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
       "position": [
-        9408,
-        3872
+        17712,
+        4224
       ],
       "credentials": {
         "googleSheetsOAuth2Api": {
@@ -67,13 +67,13 @@
       "parameters": {
         "jsCode": "// Exclude rows already sent. Aggressive email trim (spaces, NBSP, zero-width) so SMTP never sees bad addresses.\nfunction cleanStr(v) {\n  if (v === null || v === undefined) return v;\n  if (typeof v !== 'string') {\n    if (typeof v === 'number' && !Number.isNaN(v)) v = String(v);\n    else return v;\n  }\n  return v.replace(/[\\u200B-\\u200D\\uFEFF]/g, '').replace(/\\u00A0/g, ' ').trim();\n}\nfunction cleanEmail(v) {\n  if (v === null || v === undefined) return '';\n  return String(v).replace(/[\\u200B-\\u200D\\uFEFF]/g, '').replace(/\\u00A0/g, ' ').trim();\n}\nconst out = [];\nconst items = $input.all();\nfor (let i = 0; i < items.length; i++) {\n  const j = { ...(items[i].json || {}) };\n  for (const k of Object.keys(j)) {\n    if (typeof j[k] === 'string') j[k] = cleanStr(j[k]);\n  }\n  if ('Email' in j) j['Email'] = cleanEmail(j['Email']);\n  if ('email' in j) j['email'] = cleanEmail(j['email']);\n  for (const k of Object.keys(j)) {\n    if (/^email$/i.test(k.trim())) j[k] = cleanEmail(j[k]);\n  }\n  const sheetRow = j['Row'] ?? j['row'];\n  j.Row = (sheetRow !== undefined && sheetRow !== null && sheetRow !== '') ? Number(sheetRow) : (2 + i);\n  let sentVal = j['Email Sent'] ?? j['Email  Sent'] ?? j['email sent'] ?? '';\n  if (sentVal === undefined || sentVal === null) {\n    const key = Object.keys(j).find(k => k !== 'Row' && /email\\s*sent/i.test(String(k).trim()));\n    sentVal = key ? j[key] : '';\n  }\n  const sent = String(sentVal).toLowerCase().trim();\n  if (sent === 'sent') continue;\n  out.push({ json: j, pairedItem: { item: i } });\n}\nreturn out;"
       },
-      "id": "b20ad101-7a88-4fc0-9873-fa36aa8d7ad5",
+      "id": "5ed2bd2a-2b1a-45a3-babb-41258c4977ea",
       "name": "Only Rows Not Yet Sent",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        9632,
-        3872
+        17936,
+        4224
       ]
     },
     {
@@ -100,60 +100,60 @@
         },
         "options": {}
       },
-      "id": "11af96c8-cf50-4e40-beef-357b2003fc99",
+      "id": "bb614e61-4494-44ca-a407-798530bebe51",
       "name": "Has Email",
       "type": "n8n-nodes-base.filter",
       "typeVersion": 2,
       "position": [
-        9856,
-        3872
+        18160,
+        4224
       ]
     },
     {
       "parameters": {
         "options": {}
       },
-      "id": "cf9b1536-7649-4965-a553-07327110b95d",
+      "id": "fac73a4d-6a4c-455a-af81-4deafb0770b8",
       "name": "Split In Batches",
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        10080,
-        3872
+        18384,
+        4224
       ]
     },
     {
       "parameters": {
         "jsCode": "// Merge Subject and Body; normalize email again + _toEmail for SMTP (never spaces in To:).\nfunction cleanEmail(v) {\n  if (v === null || v === undefined) return '';\n  return String(v).replace(/[\\u200B-\\u200D\\uFEFF]/g, '').replace(/\\u00A0/g, ' ').trim();\n}\nfunction cleanEmailList(v) {\n  return String(v || '')\n    .split(/[;,]/)\n    .map(cleanEmail)\n    .filter(Boolean)\n    .join(', ');\n}\nfunction normalizeKey(key) {\n  return String(key || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '');\n}\nfunction escapeRegExp(str) {\n  return String(str).replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&');\n}\nfunction replacePlaceholderCI(text, key, value) {\n  const pattern = new RegExp('\\\\{\\\\{\\\\s*' + escapeRegExp(key) + '\\\\s*\\\\}\\\\}', 'gi');\n  return String(text).replace(pattern, String(value));\n}\nconst webhook = $('Webhook').first().json;\nconst body = webhook.body || webhook;\nlet subject = String(body.subject ?? webhook.subject ?? '');\nlet html = String(body.bodyHtml ?? webhook.bodyHtml ?? '');\nconst row = { ...$input.item.json };\nif ('Email' in row) row.Email = cleanEmail(row.Email);\nif ('email' in row) row.email = cleanEmail(row.email);\nconst _toEmail = cleanEmail(row.Email || row.email);\nconst _ccEmail = cleanEmailList(body.cc ?? webhook.cc ?? '');\nconst rowKeyByNormalized = {};\nfor (const key of Object.keys(row)) {\n  const nk = normalizeKey(key);\n  if (nk && !rowKeyByNormalized[nk]) rowKeyByNormalized[nk] = key;\n}\nfunction getRowValueByAliases(aliases) {\n  for (const alias of aliases) {\n    const key = rowKeyByNormalized[normalizeKey(alias)];\n    if (!key) continue;\n    const value = row[key];\n    if (value !== null && value !== undefined && String(value).trim() !== '') return value;\n  }\n  return null;\n}\nconst courseValue = getRowValueByAliases(['course', 'course_name', 'courseid', 'coures']);\nif (courseValue !== null) {\n  for (const alias of ['course', 'course_name', 'coures']) {\n    subject = replacePlaceholderCI(subject, alias, courseValue);\n    html = replacePlaceholderCI(html, alias, courseValue);\n  }\n}\nfor (const [k, v] of Object.entries(row)) {\n  if (v === null || v === undefined) continue;\n  subject = replacePlaceholderCI(subject, k, v);\n  html = replacePlaceholderCI(html, k, v);\n}\nreturn { json: { ...row, _subject: subject, _html: html, _toEmail, _ccEmail } };"
       },
-      "id": "dfe4d3d5-e98f-4187-9147-5e8b364f1831",
+      "id": "8b93de30-526e-421c-8c69-9d5cfcade888",
       "name": "Prepare Email Body",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        10304,
-        3808
+        18608,
+        4160
       ]
     },
     {
       "parameters": {
         "fromEmail": "SBS – Sustainable Business Solutions <info@sbsolutions-eg.com>",
         "toEmail": "={{ $json._toEmail || $json.Email || $json.email || '' }}",
-        "ccEmail": "={{ $json._ccEmail || '' }}",
         "subject": "={{ $json._subject }}",
         "html": "={{ $json._html }}",
         "options": {
           "appendAttribution": false,
-          "attachments": ""
+          "attachments": "",
+          "ccEmail": "={{ $json._ccEmail }}"
         }
       },
-      "id": "bdeab4bc-e957-4186-aceb-79bdd1bab849",
+      "id": "cb105270-140f-496e-b8a5-6c4e7ac6d7de",
       "name": "Send Email (Hostinger SMTP)",
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2.1,
       "position": [
-        10528,
-        3808
+        18832,
+        4160
       ],
       "webhookId": "c445eb1d-7e26-42ca-a9b8-68d7c71f5efa",
       "credentials": {
@@ -188,24 +188,24 @@
         },
         "options": {}
       },
-      "id": "54d08a06-35ad-4a64-b866-78cbc63ec77a",
+      "id": "c2ff9a24-3b64-4585-8694-5eca6bb1f8fb",
       "name": "Send OK?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        10752,
-        3808
+        19056,
+        4160
       ]
     },
     {
       "parameters": {},
-      "id": "6eabd313-b4a5-457e-a526-8ce1f9e7520e",
+      "id": "c269e065-2d58-4ec4-9d33-dbb405a1818b",
       "name": "Wait 5 Minutes",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        10976,
-        3712
+        19280,
+        4064
       ],
       "webhookId": "9c2229d9-27e2-4511-a2c3-a38106515223"
     },
@@ -229,26 +229,26 @@
         },
         "options": {}
       },
-      "id": "0de2e227-2d9d-4347-9cdb-0b755b36e121",
+      "id": "d3c249be-f6e2-40fd-a9ee-1652dd0f2b84",
       "name": "Mark Email Sent",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        11200,
-        3712
+        19504,
+        4064
       ]
     },
     {
       "parameters": {
         "jsCode": "// Email Sent = Error + store SMTP/n8n error text in column \"Send Error\" (add this column to your sheet).\nconst j = { ...($input.item.json || {}) };\nlet msg = '';\nconst e = j.error;\nif (e && typeof e === 'object' && e.message) msg = String(e.message);\nelse if (typeof e === 'string') msg = e;\nif (!msg && j.message && typeof j.message === 'string') {\n  const looksLikeRow = j.Email != null || j.email != null || j.Name != null;\n  if (!looksLikeRow || String(j.message).length < 200) msg = String(j.message);\n}\nif (!msg) {\n  try {\n    const se = $('Send Email (Hostinger SMTP)').item?.json;\n    if (se?.error?.message) msg = String(se.error.message);\n    else if (typeof se?.error === 'string') msg = se.error;\n  } catch (_) {}\n}\nif (!msg) msg = 'Send failed — open this execution in n8n to see the error.';\nj['Email Sent'] = 'Error';\nj['Send Error'] = msg.replace(/\\s+/g, ' ').trim().slice(0, 500);\ndelete j.error;\nreturn { json: j };"
       },
-      "id": "4ae93be9-9fec-4468-a0a3-2c30e731dadc",
+      "id": "cbf65b9f-285d-4692-a431-5eea5a6b4882",
       "name": "Mark Email Error",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        11200,
-        3904
+        19504,
+        4256
       ]
     },
     {
@@ -268,8 +268,13 @@
         },
         "columns": {
           "mappingMode": "defineBelow",
-          "value": {},
-          "matchingColumns": [],
+          "value": {
+            "Email": "={{ $('Send Email (Hostinger SMTP)').item.json.accepted[0] }}",
+            "Email Sent": "Sent"
+          },
+          "matchingColumns": [
+            "Email"
+          ],
           "schema": [
             {
               "id": "Name",
@@ -287,7 +292,8 @@
               "defaultMatch": false,
               "display": true,
               "type": "string",
-              "canBeUsedToMatch": true
+              "canBeUsedToMatch": true,
+              "removed": false
             },
             {
               "id": "Email Sent",
@@ -299,8 +305,8 @@
               "canBeUsedToMatch": true
             },
             {
-              "id": "Send Error",
-              "displayName": "Send Error",
+              "id": "Coures",
+              "displayName": "Coures",
               "required": false,
               "defaultMatch": false,
               "display": true,
@@ -308,8 +314,18 @@
               "canBeUsedToMatch": true
             },
             {
-              "id": "Coures",
-              "displayName": "Coures",
+              "id": "Subject",
+              "displayName": "Subject",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Send Error",
+              "displayName": "Send Error",
               "required": false,
               "defaultMatch": false,
               "display": true,
@@ -333,13 +349,13 @@
         },
         "options": {}
       },
-      "id": "0f56bacb-51e4-4fde-b047-5daa9e4859ac",
+      "id": "7f770710-610f-49a9-81c6-21810fb85c69",
       "name": "Update Row as Sent",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
       "position": [
-        11424,
-        3872
+        19728,
+        4224
       ],
       "credentials": {
         "googleSheetsOAuth2Api": {
@@ -355,13 +371,13 @@
         "width": 360,
         "color": 4
       },
-      "id": "1fc4cce1-f29f-4f03-8af5-8ccb9179d2eb",
+      "id": "09b21f43-95a5-496c-896e-7c57899767f0",
       "name": "Sticky Note",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        8496,
-        3616
+        16800,
+        3968
       ]
     },
     {
@@ -388,13 +404,13 @@
         },
         "options": {}
       },
-      "id": "c9007b33-f53e-4983-90ac-b4349d1eaace",
+      "id": "2ee8ad4b-ea6e-40f7-a914-754941779718",
       "name": "Action = preview?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        8960,
-        4064
+        17264,
+        4416
       ]
     },
     {
@@ -413,13 +429,13 @@
         },
         "options": {}
       },
-      "id": "57553b1d-7689-4da0-a97d-39bb2b9d5fa0",
+      "id": "950d46eb-3199-4846-b6b6-84e5889bf0ab",
       "name": "Read Sheet Preview",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
       "position": [
-        9184,
-        4256
+        17488,
+        4608
       ],
       "credentials": {
         "googleSheetsOAuth2Api": {
@@ -432,13 +448,13 @@
       "parameters": {
         "jsCode": "const items = $input.all();\nif (items.length === 0) return [{ json: { columns: [], sampleRow: {}, error: 'No data' } }];\nconst first = items[0].json;\nconst columns = Object.keys(first);\nconst sampleRow = { ...first };\nreturn [{ json: { columns, sampleRow } }];"
       },
-      "id": "7e67d6e6-6c9b-4594-87ea-2105e7c94a66",
+      "id": "295b08e7-3bd6-484e-ba21-e4da250d51f0",
       "name": "Prepare Preview Data",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        9408,
-        4256
+        17712,
+        4608
       ]
     },
     {
@@ -447,13 +463,13 @@
         "responseBody": "={{ $json }}",
         "options": {}
       },
-      "id": "20a53f46-2f96-44f9-a292-bc1aa3e25035",
+      "id": "700558a4-28b7-4872-b48e-b5afe929527e",
       "name": "Respond Preview",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        9632,
-        4256
+        17936,
+        4608
       ]
     },
     {
@@ -480,13 +496,13 @@
         },
         "options": {}
       },
-      "id": "71cec7f5-b734-40b2-aac7-23804b8d4ba4",
+      "id": "380796ad-c603-4df0-8c22-5905435a141e",
       "name": "Action = status?1",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        9184,
-        3872
+        17488,
+        4224
       ]
     },
     {
@@ -505,13 +521,13 @@
         },
         "options": {}
       },
-      "id": "5ed74255-b135-47c6-b5c5-9be4162b4475",
+      "id": "0348b267-3d77-439d-bb06-35cd7b84027f",
       "name": "Read Sheet for Status1",
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4,
       "position": [
-        9408,
-        4064
+        17712,
+        4416
       ],
       "credentials": {
         "googleSheetsOAuth2Api": {
@@ -524,13 +540,13 @@
       "parameters": {
         "jsCode": "// Count sent vs pending from sheet for dashboard status.\nconst items = $input.all();\nlet sent = 0;\nlet pending = 0;\nlet lastSentRow = 0;\nconst emailSentKey = (row) => {\n  const k = Object.keys(row).find(key => key !== 'Row' && key !== 'row_number' && /email\\s*sent/i.test(String(key).trim()));\n  return k || 'Email Sent';\n};\nconst emailVal = (row) => String((row['Email'] ?? row['email'] ?? '')).trim();\nfor (let i = 0; i < items.length; i++) {\n  const j = items[i].json || {};\n  const rowNum = (j['row_number'] != null) ? Number(j['row_number']) : (j['Row'] != null && j['Row'] !== '') ? Number(j['Row']) : (2 + i);\n  const sentVal = j[emailSentKey(j)];\n  const sentStr = String(sentVal ?? '').toLowerCase().trim();\n  if (sentStr === 'sent') {\n    sent++;\n    lastSentRow = Math.max(lastSentRow, rowNum);\n  } else {\n    if (emailVal(j).length > 0) pending++;\n  }\n}\nconst total = items.length;\nconst nextRowToSend = lastSentRow > 0 ? lastSentRow + 1 : 2;\nreturn [{ json: { ok: true, sent, pending, total, lastSentRow, nextRowToSend } }];"
       },
-      "id": "68fba539-45d6-45cc-8af1-c91af3aa9fe8",
+      "id": "f3398d61-a29d-4b3f-a177-68666e920cf8",
       "name": "Compute Status1",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        9632,
-        4064
+        17936,
+        4416
       ]
     },
     {
@@ -539,13 +555,13 @@
         "responseBody": "={{ $json }}",
         "options": {}
       },
-      "id": "45762977-ce88-4a21-ad2f-bab24df3d891",
+      "id": "1d0d9125-3f3a-4c14-ad1b-15a6d5d19bb1",
       "name": "Respond Status1",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        9856,
-        4064
+        18160,
+        4416
       ]
     }
   ],

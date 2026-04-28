@@ -69,7 +69,7 @@ Workbook exports under `docs/excel-export/` drive the data model (`docs/DATA_MOD
 Dashboard sends:
 
 - `{ action: "preview", sheetUrl }`
-- `{ action: "send", sheetUrl, subject, bodyHtml }`
+- `{ action: "send", sheetUrl, cc?, subject, bodyHtml }`
 - `{ action: "status", sheetUrl }`
 
 ## UX requirements

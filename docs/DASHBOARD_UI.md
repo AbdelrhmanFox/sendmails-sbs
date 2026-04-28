@@ -22,7 +22,8 @@ The published site now uses React as the only dashboard surface.
 ## APIs
 
 - Shared Netlify functions under `/.netlify/functions/*` (Vercel: rewrites to `/api/*`).
-- Campaigns continue to call the **client-configured n8n webhook** from the browser; webhook URL is stored in **`localStorage`** as `sbs_sendmails_webhook` (same as legacy).
+- Campaigns continue to call the **client-configured n8n webhook** from the browser; webhook URL is stored in **`localStorage`** as `sbs_sendmails_webhook` (same as legacy), and the sheet URL is stored as `sbs_sendmails_sheet_url`.
+- Campaign send payload now supports optional `cc` from the React Campaigns page (`{ action: "send", sheetUrl, cc?, subject, bodyHtml }`), and n8n maps it to SMTP `ccEmail`.
 
 ## Deployment notes
 
