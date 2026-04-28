@@ -5,6 +5,10 @@ import { Input } from '../components/design-system/Input';
 import { jsonFetch } from '../../lib/api';
 
 const WEBHOOK_KEY = 'sbs_sendmails_webhook';
+const SHEET_KEY = 'sbs_sendmails_sheet_url';
+const DEFAULT_WEBHOOK_URL = 'https://n8n.growleadpro.com/webhook/sendmails-sbs';
+const DEFAULT_SHEET_URL =
+  'https://docs.google.com/spreadsheets/d/1sUUpVcRs5tE1KzNGaVA4cnQShvr1eI1bvkO44jAsKtI/edit?gid=0#gid=0';
 
 type PreviewResponse = { columns?: string[]; sampleRow?: Record<string, string> };
 
@@ -21,12 +25,15 @@ export function CampaignsPage() {
 
   useEffect(() => {
     const w = localStorage.getItem(WEBHOOK_KEY);
-    if (w) setWebhook(w);
+    const s = localStorage.getItem(SHEET_KEY);
+    setWebhook((w || DEFAULT_WEBHOOK_URL).trim());
+    setSheetUrl((s || DEFAULT_SHEET_URL).trim());
   }, []);
 
   const saveWebhook = () => {
-    localStorage.setItem(WEBHOOK_KEY, webhook.trim());
-    setMsg('Webhook URL saved in this browser.');
+    localStorage.setItem(WEBHOOK_KEY, webhook.trim() || DEFAULT_WEBHOOK_URL);
+    localStorage.setItem(SHEET_KEY, sheetUrl.trim() || DEFAULT_SHEET_URL);
+    setMsg('Webhook and sheet URL saved in this browser.');
   };
 
   const previewColumns = async () => {
