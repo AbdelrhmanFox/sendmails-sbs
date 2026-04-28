@@ -44,6 +44,7 @@ function normalizeToken(value: string) {
 export function CampaignsPage() {
   const [webhook, setWebhook] = useState('');
   const [sheetUrl, setSheetUrl] = useState('');
+  const [cc, setCc] = useState('');
   const [subject, setSubject] = useState('');
   const [bodyHtml, setBodyHtml] = useState('<p>Hello {{name}}</p>');
   const [template, setTemplate] = useState<CampaignTemplateKey>('');
@@ -102,7 +103,7 @@ export function CampaignsPage() {
       await jsonFetch(webhook.trim(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'send', sheetUrl: sheetUrl.trim(), subject: subject.trim(), bodyHtml }),
+        body: JSON.stringify({ action: 'send', sheetUrl: sheetUrl.trim(), cc: cc.trim(), subject: subject.trim(), bodyHtml }),
       });
       setMsg('Campaign dispatch started.');
       void refreshStatus();
@@ -306,6 +307,13 @@ export function CampaignsPage() {
           </div>
         </div>
         <Input ref={subjectRef} label="Subject" value={subject} onChange={(e) => setSubject(e.target.value)} />
+        <Input
+          label="CC (optional)"
+          value={cc}
+          onChange={(e) => setCc(e.target.value)}
+          placeholder="manager@example.com, team@example.com"
+          helpText="You can add one or multiple emails separated by comma."
+        />
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="secondary" onClick={titleCaseSubject}>
             Title Case Subject
