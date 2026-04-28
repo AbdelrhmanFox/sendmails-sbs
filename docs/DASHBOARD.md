@@ -1,6 +1,6 @@
 # Dashboard Overview
 
-`dashboard/` is a static staff-facing web app with **area-based navigation** (primary tabs) and **role-based visibility**. All server access uses Netlify Functions (or the Vercel single entry `api/[name].js` that dispatches to the same handlers).
+`dashboard-ui/` is the React staff-facing web app. Build output is published into `dashboard/spa/`, and root `dashboard/index.html` redirects to `/spa/`.
 
 ## Information architecture
 
@@ -14,9 +14,7 @@ Top-level areas (sidebar):
 | **Automation** | admin, staff, user | Email Campaigns (n8n webhook + Google Sheets) |
 | **Admin** | admin | Users, backend config hints, finance audit log (admin only) |
 
-Role-to-areas mapping is defined in `dashboard/js/shared.js` (`ROLE_AREAS`): e.g. `accountant` sees Finance only; `trainer` sees Training only; `user` sees Automation only.
-
-The shell now also supports hash-route state (`#/<area>/<view>`) through `dashboard/js/shell-routes.js` and `dashboard/js/nav.js`, with workspace breadcrumb/context and role-scoped quick actions.
+Role-to-areas mapping is defined in `dashboard-ui/src/lib/roleAccess.ts`: e.g. `accountant` sees Finance only; `trainer` sees Training only; `user` sees Automation only.
 
 ## Modules (detail)
 
@@ -48,15 +46,12 @@ The shell now also supports hash-route state (`#/<area>/<view>`) through `dashbo
 
 ## Frontend files
 
-- `dashboard/index.html` (Quill, Supabase client, SheetJS, **Chart.js** for Finance; `<script type="module" src="js/app.js">`)
-- `dashboard/css/tokens.css`, `dashboard/css/main.css` plus modular layers (`layout.css`, `components.css`, `forms.css`, `tables.css`, `role-shells.css`, `utilities.css`)
-- `dashboard/js/app.js` — ES module entry (bootstraps shell, wires imports)
-- `dashboard/js/shared.js` — API base helpers, `ROLE_AREAS`, shared UI utilities
-- `dashboard/js/config.js` — runtime config
-- `dashboard/js/nav.js` — role-aware shell navigation + hash route sync + workspace context
-- `dashboard/js/shell-routes.js` — route metadata, labels, and quick actions
-- `dashboard/js/domains/*` — domain adapters (`operations`, `training`, `classroom`, `library`, `finance`, `automation`, `admin`, `credentials`, `trainee`, `public`)
-- `dashboard/js/operations.js`, `finance.js`, `training.js`, `campaigns.js`, `admin.js` — domain implementations imported through adapters
+- `dashboard-ui/src/app/App.tsx` — React Router app entry and protected routes
+- `dashboard-ui/src/app/pages/**` — workspace and public pages
+- `dashboard-ui/src/app/components/**` — layout, domain, and design-system components
+- `dashboard-ui/src/lib/**` — API and role-access helpers
+- `dashboard/index.html` — lightweight redirect to `/spa/`
+- `dashboard/spa/**` — built static SPA output
 
 ## Key behavior
 

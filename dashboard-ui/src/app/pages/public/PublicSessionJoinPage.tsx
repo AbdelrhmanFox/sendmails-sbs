@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createClient, type RealtimeChannel } from '@supabase/supabase-js';
 import { Card } from '../../components/design-system/Card';
 import { Button } from '../../components/design-system/Button';
@@ -24,6 +24,7 @@ type JoinResponse = {
 type ChatMessage = { id: string; sender_name: string; body: string; created_at: string };
 type PresencePeer = { id: string; name: string; muted: boolean; sticker: string };
 type Reaction = { id: string; text: string };
+type JoinStage = 'loadingGroups' | 'pickGroup' | 'enterName' | 'joining' | 'joined';
 
 const STICKERS = ['😀', '🔥', '👏'];
 
@@ -31,6 +32,7 @@ export function PublicSessionJoinPage({ sessionId, groupToken }: { sessionId?: s
   const [displayName, setDisplayName] = useState('');
   const [meta, setMeta] = useState<SessionMeta | null>(null);
   const [selectedToken, setSelectedToken] = useState(groupToken || '');
+  const [stage, setStage] = useState<JoinStage>(sessionId ? 'loadingGroups' : 'enterName');
   const [joinData, setJoinData] = useState<JoinResponse | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
@@ -47,13 +49,37 @@ export function PublicSessionJoinPage({ sessionId, groupToken }: { sessionId?: s
   const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
 
-  const stage = useMemo(() => {
-    if (!displayName.trim()) return 'enterName';
-    if (!joinData && sessionId) return 'chooseGroup';
-    if (!joinData && groupToken) return 'joinByToken';
-    if (joinData) return 'joined';
-    return 'enterName';
-  }, [displayName, joinData, sessionId, groupToken]);
+  useEffect(() => {
+    if (groupToken) {
+      setSelectedToken(groupToken);
+      if (!sessionId) setStage('enterName');
+    }
+  }, [groupToken, sessionId]);
+
+  useEffect(() => {
+    if (!sessionId) {
+      setStage('enterName');
+      return;
+    }
+    let cancelled = false;
+    setStage('loadingGroups');
+    setErr('');
+    (async () => {
+      try {
+        const data = await jsonFetch<SessionMeta>(`${functionsBase()}/public-training-session?sessionId=${encodeURIComponent(sessionId)}`);
+        if (cancelled) return;
+        setMeta(data);
+        setStage('pickGroup');
+      } catch (e) {
+        if (cancelled) return;
+        setErr(e instanceof Error ? e.message : 'Could not load session groups');
+        setStage('pickGroup');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionId]);
 
   const addReaction = (text: string) => {
     setReactions((prev) => [{ id: `${Date.now()}-${Math.random()}`, text }, ...prev].slice(0, 20));
@@ -177,34 +203,31 @@ export function PublicSessionJoinPage({ sessionId, groupToken }: { sessionId?: s
     [],
   );
 
-  const prepareJoin = async () => {
-    if (!displayName.trim()) return;
+  const toNameStep = (token: string) => {
     setErr('');
-    setBusy(true);
-    try {
-      if (sessionId) {
-        const data = await jsonFetch<SessionMeta>(`${functionsBase()}/public-training-session?sessionId=${encodeURIComponent(sessionId)}`);
-        setMeta(data);
-      } else if (groupToken) {
-        setSelectedToken(groupToken);
-        await doJoin(groupToken);
-      }
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Could not load session');
-    } finally {
-      setBusy(false);
-    }
+    setSelectedToken(token);
+    setStage('enterName');
   };
 
   const doJoin = async (token: string) => {
     setErr('');
-    const joined = await jsonFetch<JoinResponse>(`${functionsBase()}/training-join?token=${encodeURIComponent(token)}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ displayName: displayName.trim() }),
-    });
-    setJoinData(joined);
-    await startRealtime(joined);
+    setStage('joining');
+    setBusy(true);
+    try {
+      const joined = await jsonFetch<JoinResponse>(`${functionsBase()}/training-join?token=${encodeURIComponent(token)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ displayName: displayName.trim() }),
+      });
+      setJoinData(joined);
+      await startRealtime(joined);
+      setStage('joined');
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Could not join session');
+      setStage('enterName');
+    } finally {
+      setBusy(false);
+    }
   };
 
   const sendChat = async () => {
@@ -265,33 +288,43 @@ export function PublicSessionJoinPage({ sessionId, groupToken }: { sessionId?: s
         {err ? <p className="text-sm text-[var(--brand-danger)]">{err}</p> : null}
       </Card>
 
-      {stage === 'enterName' ? (
+      {stage === 'loadingGroups' ? (
         <Card className="space-y-3">
-          <Input label="Your name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
-          <Button type="button" loading={busy} onClick={() => void prepareJoin()}>
-            Continue
-          </Button>
+          <p className="text-sm text-[var(--brand-muted)]">Loading available groups…</p>
         </Card>
       ) : null}
 
-      {stage === 'chooseGroup' && meta ? (
+      {stage === 'pickGroup' && sessionId ? (
         <Card className="space-y-3">
-          <p className="text-sm text-[var(--brand-muted)]">Choose your group.</p>
+          <p className="text-sm text-[var(--brand-muted)]">Choose your group first.</p>
           <div className="flex flex-wrap gap-2">
-            {meta.groups.map((g) => (
-              <Button
-                key={g.join_token}
-                type="button"
-                variant={selectedToken === g.join_token ? 'primary' : 'secondary'}
-                onClick={() => setSelectedToken(g.join_token)}
-              >
+            {(meta?.groups || []).map((g) => (
+              <Button key={g.join_token} type="button" variant="secondary" onClick={() => toNameStep(g.join_token)}>
                 Group {g.group_number}
               </Button>
             ))}
           </div>
-          <Button type="button" loading={busy} disabled={!selectedToken} onClick={() => void doJoin(selectedToken)}>
-            Join group
+          {meta && meta.groups.length === 0 ? <p className="text-sm text-[var(--brand-muted)]">No groups available yet.</p> : null}
+        </Card>
+      ) : null}
+
+      {stage === 'enterName' ? (
+        <Card className="space-y-3">
+          <Input label="Your name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
+          <Button
+            type="button"
+            loading={busy}
+            disabled={!selectedToken || displayName.trim().length < 2}
+            onClick={() => void doJoin(selectedToken)}
+          >
+            Join now
           </Button>
+        </Card>
+      ) : null}
+
+      {stage === 'joining' ? (
+        <Card className="space-y-3">
+          <p className="text-sm text-[var(--brand-muted)]">Joining session…</p>
         </Card>
       ) : null}
 

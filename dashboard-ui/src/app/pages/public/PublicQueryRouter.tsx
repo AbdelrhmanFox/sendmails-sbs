@@ -22,14 +22,15 @@ export function hasPublicQuery(): boolean {
 
 export function PublicQueryRouter() {
   const q = readQuery();
+  const target = q.group || q.session ? 'session' : q.classroom ? 'classroom' : q.credential || q.learner ? 'credential' : 'none';
   return (
     <PublicShell>
-      {q.group || q.session ? <PublicSessionJoinPage groupToken={q.group || undefined} sessionId={q.session || undefined} /> : null}
-      {!q.group && !q.session && q.classroom ? <PublicClassroomPage token={q.classroom} /> : null}
-      {!q.group && !q.session && !q.classroom && (q.credential || q.learner) ? (
+      {target === 'session' ? <PublicSessionJoinPage groupToken={q.group || undefined} sessionId={q.session || undefined} /> : null}
+      {target === 'classroom' ? <PublicClassroomPage token={q.classroom} /> : null}
+      {target === 'credential' ? (
         <PublicCredentialLearnerPage token={q.credential || undefined} learnerSlug={q.learner || undefined} />
       ) : null}
-      {!hasPublicQuery() ? (
+      {target === 'none' ? (
         <Card>
           <p className="text-sm text-[var(--brand-muted)]">No public query parameter was found.</p>
         </Card>

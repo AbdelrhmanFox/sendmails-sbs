@@ -2036,11 +2036,11 @@
         <div class="card">
           <label for="webhookUrl">n8n Webhook URL</label>
           <div class="row">
-            <input type="url" id="webhookUrl" value="https://s3odyn8n.tech/webhook/sendmails-sbs" />
+            <input type="url" id="webhookUrl" value="https://n8n.growleadpro.com/webhook/sendmails-sbs" />
             <button type="button" class="btn btn-secondary" id="btnSaveWebhook">Save</button>
           </div>
           <label for="sheetUrl">Google Sheet URL</label>
-          <input type="url" id="sheetUrl" placeholder="https://docs.google.com/spreadsheets/d/..." />
+          <input type="url" id="sheetUrl" value="https://docs.google.com/spreadsheets/d/1sUUpVcRs5tE1KzNGaVA4cnQShvr1eI1bvkO44jAsKtI/edit?gid=0#gid=0" placeholder="https://docs.google.com/spreadsheets/d/..." />
           <div class="row">
             <button type="button" class="btn btn-secondary" id="btnLoadColumns">Load Columns</button>
             <button type="button" class="btn btn-primary" id="btnSend" disabled>Start Sending Emails</button>
@@ -2055,14 +2055,30 @@
         </div>
         <div class="card">
           <h3>Compose Email</h3>
+          <div class="row">
+            <label for="campaignTemplateSelect">Quick template</label>
+            <select id="campaignTemplateSelect">
+              <option value="">Choose template...</option>
+              <option value="welcome">Welcome / Onboarding</option>
+              <option value="reminder">Reminder / Follow-up</option>
+              <option value="announcement">Announcement</option>
+              <option value="offer">Offer / Promotion</option>
+            </select>
+            <button type="button" class="btn btn-secondary" id="btnApplyTemplate">Apply</button>
+          </div>
           <label for="subject">Subject</label>
           <input id="subject" placeholder="Use {{Name}} in text" />
+          <div class="row">
+            <button type="button" class="btn btn-secondary" id="btnSubjectTitleCase">Title Case Subject</button>
+            <button type="button" class="btn btn-secondary" id="btnSubjectAddName">Add {{Name}}</button>
+          </div>
           <div class="row">
             <label for="placeholderSelect">Insert merge field</label>
             <select id="placeholderSelect"></select>
             <button type="button" class="btn btn-secondary" id="btnInsertPlaceholder">Insert</button>
           </div>
           <div id="editor-wrap"></div>
+          <div class="inline-note" id="campaignComposerHints"></div>
           <h4>Preview</h4>
           <div class="preview-box" id="previewSubject"></div>
           <div class="preview-box" id="previewBody"></div>

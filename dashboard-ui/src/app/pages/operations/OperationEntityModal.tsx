@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../../components/ui/dialog';
 import { Button } from '../../components/design-system/Button';
 import { Input } from '../../components/design-system/Input';
+import { BatchMaterialManager } from '../../components/training/BatchMaterialManager';
 import { functionsBase, getAuthHeaders, jsonFetch } from '../../../lib/api';
 
 export type OpsEntity = 'trainees' | 'courses' | 'batches' | 'enrollments';
@@ -182,6 +183,12 @@ export function OperationEntityModal({ open, onOpenChange, entity, mode, row, on
             <Input label="Capacity" value={f.capacity || ''} onChange={(e) => patch('capacity', e.target.value)} />
             <Input label="Start date" value={f.start_date || ''} onChange={(e) => patch('start_date', e.target.value)} placeholder="YYYY-MM-DD" />
             <Input label="End date" value={f.end_date || ''} onChange={(e) => patch('end_date', e.target.value)} placeholder="YYYY-MM-DD" />
+            {mode === 'edit' && f.batch_id ? (
+              <div className="mt-2 space-y-2 rounded-[var(--brand-radius-dense)] border border-[var(--brand-border)] p-3">
+                <h3 className="text-sm font-semibold text-[var(--brand-text)]">Materials</h3>
+                <BatchMaterialManager batchId={f.batch_id} />
+              </div>
+            ) : null}
           </div>
         ) : null}
 

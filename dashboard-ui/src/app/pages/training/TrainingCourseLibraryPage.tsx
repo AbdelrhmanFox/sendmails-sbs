@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Card } from '../../components/design-system/Card';
+import { EmptyState } from '../../components/design-system/EmptyState';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/design-system/Table';
 import { functionsBase, getAuthHeaders, jsonFetch } from '../../../lib/api';
 
@@ -15,6 +16,7 @@ export function TrainingCourseLibraryPage() {
   const [uncategorized, setUncategorized] = useState<Mat[]>([]);
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(true);
+  const [libraryLoading, setLibraryLoading] = useState(false);
 
   useEffect(() => {
     let c = false;
@@ -45,6 +47,7 @@ export function TrainingCourseLibraryPage() {
     let c = false;
     (async () => {
       setErr('');
+      setLibraryLoading(true);
       try {
         const data = await jsonFetch<{
           course_name?: string;
@@ -59,12 +62,16 @@ export function TrainingCourseLibraryPage() {
         setCourseName(data.course_name || courseId);
       } catch (e) {
         if (!c) setErr(e instanceof Error ? e.message : 'Could not load library');
+      } finally {
+        if (!c) setLibraryLoading(false);
       }
     })();
     return () => {
       c = true;
     };
   }, [courseId]);
+
+  const hasMaterials = chapters.some((ch) => (ch.materials || []).length > 0) || uncategorized.length > 0;
 
   return (
     <div className="space-y-4">
@@ -89,6 +96,13 @@ export function TrainingCourseLibraryPage() {
       </Card>
       {courseId ? (
         <Card noPadding>
+          {libraryLoading ? <p className="p-4 text-sm text-[var(--brand-muted)]">Loading course library…</p> : null}
+          {!libraryLoading && !hasMaterials ? (
+            <EmptyState
+              title="No course library content yet"
+              description="This course does not have chapters or materials available right now."
+            />
+          ) : null}
           {chapters.map((ch) => (
             <div key={ch.id} className="border-b border-[var(--brand-border)] last:border-b-0">
               <div className="border-b border-[var(--brand-border)] bg-[var(--brand-surface)]/50 p-4">
@@ -115,6 +129,13 @@ export function TrainingCourseLibraryPage() {
                       </TableCell>
                     </TableRow>
                   ))}
+                  {(ch.materials || []).length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={2} className="text-sm text-[var(--brand-muted)]">
+                        No materials in this chapter yet.
+                      </TableCell>
+                    </TableRow>
+                  ) : null}
                 </TableBody>
               </Table>
             </div>

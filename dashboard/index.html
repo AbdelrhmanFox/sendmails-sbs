@@ -7,25 +7,12 @@
   <link rel="icon" type="image/png" href="/assets/logo.png" />
   <script>
     (function () {
-      var path = location.pathname;
-      if (path !== '/' && path !== '/index.html') return;
-      var h = location.hash || '';
-      if (/public-classroom|public-credential|public-learner/i.test(h)) {
-        location.replace('/classic/index.html' + h + location.search);
-        return;
-      }
       try {
-        var q = new URLSearchParams(location.search);
-        if (q.get('session') || q.get('group') || q.get('classroom') || q.get('credential') || q.get('learner')) {
-          location.replace('/spa/' + location.search);
-          return;
-        }
-      } catch (e) {}
-      if (!h || h === '#') {
-        location.replace('/spa/' + location.search);
-        return;
+        var qs = location.search || '';
+        location.replace('/spa/' + qs);
+      } catch (_) {
+        location.replace('/spa/');
       }
-      location.replace('/classic/index.html' + h + location.search);
     })();
   </script>
   <noscript>
@@ -34,7 +21,7 @@
 </head>
 <body>
   <p style="font-family: system-ui, sans-serif; padding: 2rem">
-    <a href="/spa/">Open staff dashboard</a>. Public training links with query parameters are handled by the redirect script above.
+    <a href="/spa/">Open dashboard</a>.
   </p>
 </body>
 </html>

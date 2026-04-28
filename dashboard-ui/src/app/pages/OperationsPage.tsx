@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useNavigate, useParams, Link } from 'react-router-dom';
 import { Card } from '../components/design-system/Card';
 import { Button } from '../components/design-system/Button';
 import { Input } from '../components/design-system/Input';
@@ -10,6 +10,7 @@ import { functionsBase, getAuthHeaders, jsonFetch } from '../../lib/api';
 import { OperationEntityModal } from './operations/OperationEntityModal';
 
 type Tab = 'trainees' | 'courses' | 'batches' | 'enrollments';
+type SortDir = 'asc' | 'desc';
 
 type ListResponse<T> = { items: T[]; total: number; page: number; pageSize: number };
 
@@ -42,6 +43,8 @@ export function OperationsPage() {
   const [rows, setRows] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState('');
+  const [clientFilter, setClientFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [tabTotals, setTabTotals] = useState<Partial<Record<Tab, number>>>({});
   const [courseAccess, setCourseAccess] = useState<Array<{ id: string; trainer_username: string; course_id: string }>>([]);
   const [mapTrainer, setMapTrainer] = useState('');
@@ -138,6 +141,27 @@ export function OperationsPage() {
     label: id.charAt(0).toUpperCase() + id.slice(1),
     count: tabTotals[id],
   }));
+
+  const displayedRows = rows
+    .filter((r) => {
+      if (clientFilter === 'all') return true;
+      const status = String(r.status || r.enrollment_status || '').toLowerCase();
+      if (clientFilter === 'active') return ['active', 'registered', 'attended', 'paid'].includes(status);
+      return ['inactive', 'archived', 'dropped', 'failed'].includes(status);
+    })
+    .sort((a, b) => {
+      const keyByTab: Record<Tab, string> = {
+        trainees: 'full_name',
+        courses: 'course_name',
+        batches: 'batch_name',
+        enrollments: 'created_at',
+      };
+      const key = keyByTab[activeTab];
+      const av = String(a[key] ?? '');
+      const bv = String(b[key] ?? '');
+      const cmp = av.localeCompare(bv, undefined, { numeric: true, sensitivity: 'base' });
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
 
   const openCreate = () => {
     setModalMode('create');
@@ -274,7 +298,12 @@ export function OperationsPage() {
               </svg>
             }
           />
-          <Button variant="secondary" type="button" fullWidth>
+          <Button
+            variant={clientFilter === 'all' ? 'secondary' : 'primary'}
+            type="button"
+            fullWidth
+            onClick={() => setClientFilter((prev) => (prev === 'all' ? 'active' : prev === 'active' ? 'inactive' : 'all'))}
+          >
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
@@ -283,13 +312,13 @@ export function OperationsPage() {
                 d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
               />
             </svg>
-            Filter
+            Filter: {clientFilter}
           </Button>
-          <Button variant="secondary" type="button" fullWidth>
+          <Button variant="secondary" type="button" fullWidth onClick={() => setSortDir((prev) => (prev === 'asc' ? 'desc' : 'asc'))}>
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
             </svg>
-            Sort
+            Sort: {sortDir.toUpperCase()}
           </Button>
           <Button variant="secondary" type="button" fullWidth onClick={() => void load()}>
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -331,14 +360,14 @@ export function OperationsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {!rows.length && !loading ? (
+              {!displayedRows.length && !loading ? (
                 <TableRow>
                   <TableCell colSpan={9}>
                     <EmptyState title="No trainees" description="Try another search or switch tab." />
                   </TableCell>
                 </TableRow>
               ) : (
-                rows.map((r) => (
+                displayedRows.map((r) => (
                   <TableRow key={String(r.trainee_id)} interactive>
                     <TableCell>
                       <input type="checkbox" readOnly className="rounded border-[var(--brand-border)]" aria-label="Select row" />
@@ -364,6 +393,20 @@ export function OperationsPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
+                        <Link
+                          to={`/operations/trainees/${encodeURIComponent(String(r.id || ''))}`}
+                          className="rounded p-1 transition-colors hover:bg-[var(--brand-surface-2)]"
+                          aria-label="Profile"
+                        >
+                          <svg className="h-4 w-4 text-[var(--brand-muted)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M5.121 17.804A7.968 7.968 0 0112 14a7.968 7.968 0 016.879 3.804M15 10a3 3 0 11-6 0 3 3 0 016 0z"
+                            />
+                          </svg>
+                        </Link>
                         <button
                           type="button"
                           className="rounded p-1 transition-colors hover:bg-[var(--brand-surface-2)]"
@@ -421,14 +464,14 @@ export function OperationsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {!rows.length && !loading ? (
+              {!displayedRows.length && !loading ? (
                 <TableRow>
                   <TableCell colSpan={9}>
                     <EmptyState title="No courses" description="Try another search." />
                   </TableCell>
                 </TableRow>
               ) : (
-                rows.map((r) => (
+                displayedRows.map((r) => (
                   <TableRow key={String(r.course_id)} interactive>
                     <TableCell>
                       <span className="font-mono text-xs">{String(r.course_id || '')}</span>
@@ -510,14 +553,14 @@ export function OperationsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {!rows.length && !loading ? (
+              {!displayedRows.length && !loading ? (
                 <TableRow>
                   <TableCell colSpan={8}>
                     <EmptyState title="No batches" description="Try another search." />
                   </TableCell>
                 </TableRow>
               ) : (
-                rows.map((r) => {
+                displayedRows.map((r) => {
                   const cap = r.capacity != null ? Number(r.capacity) : 0;
                   const en = r.enrolled_count != null ? Number(r.enrolled_count) : 0;
                   const pct = cap > 0 ? Math.min(100, Math.round((100 * en) / cap)) : 0;
@@ -617,14 +660,14 @@ export function OperationsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {!rows.length && !loading ? (
+              {!displayedRows.length && !loading ? (
                 <TableRow>
                   <TableCell colSpan={8}>
                     <EmptyState title="No enrollments" description="Try another search." />
                   </TableCell>
                 </TableRow>
               ) : (
-                rows.map((r) => {
+                displayedRows.map((r) => {
                   const es = String(r.enrollment_status || '');
                   const ev =
                     es === 'Attended' ? ('success' as const) : es === 'Registered' ? ('info' as const) : ('neutral' as const);
