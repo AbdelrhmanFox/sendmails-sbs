@@ -53,6 +53,8 @@ export function CampaignsPage() {
   const [statusHtml, setStatusHtml] = useState('');
   const [loading, setLoading] = useState(false);
   const editorRef = useRef<HTMLDivElement | null>(null);
+  const subjectRef = useRef<HTMLInputElement | null>(null);
+  const [insertToken, setInsertToken] = useState<'{{Name}}' | '{{Course}}'>('{{Name}}');
 
   useEffect(() => {
     const w = localStorage.getItem(WEBHOOK_KEY);
@@ -210,6 +212,41 @@ export function CampaignsPage() {
     });
   };
 
+  const insertIntoSubject = (token: '{{Name}}' | '{{Course}}') => {
+    const input = subjectRef.current;
+    if (!input) {
+      setSubject((prev) => `${String(prev || '').trim()} ${token}`.trim());
+      return;
+    }
+    const start = input.selectionStart ?? input.value.length;
+    const end = input.selectionEnd ?? start;
+    const next = `${input.value.slice(0, start)}${token}${input.value.slice(end)}`;
+    setSubject(next);
+    requestAnimationFrame(() => {
+      input.focus();
+      const cursor = start + token.length;
+      input.setSelectionRange(cursor, cursor);
+    });
+  };
+
+  const insertIntoBody = (token: '{{Name}}' | '{{Course}}') => {
+    editorRef.current?.focus();
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) {
+      setBodyHtml((prev) => `${String(prev || '').trim()} ${token}`.trim());
+      return;
+    }
+    const range = selection.getRangeAt(0);
+    range.deleteContents();
+    const node = document.createTextNode(token);
+    range.insertNode(node);
+    range.setStartAfter(node);
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    setBodyHtml(editorRef.current?.innerHTML || '');
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -220,14 +257,18 @@ export function CampaignsPage() {
       </div>
 
       <Card className="space-y-4">
-        <Input label="Webhook URL (n8n)" value={webhook} onChange={(e) => setWebhook(e.target.value)} />
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-[var(--brand-text)]">Connection Settings</h2>
+          <p className="text-xs text-[var(--brand-muted)]">Figma-style grouped controls</p>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          <Input label="Webhook URL (n8n)" value={webhook} onChange={(e) => setWebhook(e.target.value)} />
+          <Input label="Google Sheet URL" value={sheetUrl} onChange={(e) => setSheetUrl(e.target.value)} />
+        </div>
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="secondary" onClick={saveWebhook}>
             Save webhook locally
           </Button>
-        </div>
-        <Input label="Google Sheet URL" value={sheetUrl} onChange={(e) => setSheetUrl(e.target.value)} />
-        <div className="flex flex-wrap gap-2">
           <Button type="button" variant="secondary" loading={loading} onClick={() => void previewColumns()}>
             Load columns
           </Button>
@@ -235,14 +276,16 @@ export function CampaignsPage() {
             Check status
           </Button>
         </div>
-        {columns.length ? (
-          <p className="text-sm text-[var(--brand-muted)]">Columns: {columns.join(', ')}</p>
-        ) : null}
+        {columns.length ? <p className="text-sm text-[var(--brand-muted)]">Columns: {columns.join(', ')}</p> : null}
         {msg ? <p className="text-sm text-[var(--brand-text)]">{msg}</p> : null}
         {statusHtml ? <p className="text-sm text-[var(--brand-muted)]">{statusHtml}</p> : null}
       </Card>
 
       <Card className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-[var(--brand-text)]">Composer</h2>
+          <p className="text-xs text-[var(--brand-muted)]">Template, insert, and formatting tools</p>
+        </div>
         <div>
           <label className="mb-1.5 block text-sm font-medium text-[var(--brand-text)]">Quick template</label>
           <div className="flex flex-wrap gap-2">
@@ -262,7 +305,7 @@ export function CampaignsPage() {
             </Button>
           </div>
         </div>
-        <Input label="Subject" value={subject} onChange={(e) => setSubject(e.target.value)} />
+        <Input ref={subjectRef} label="Subject" value={subject} onChange={(e) => setSubject(e.target.value)} />
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="secondary" onClick={titleCaseSubject}>
             Title Case Subject
@@ -270,6 +313,25 @@ export function CampaignsPage() {
           <Button type="button" variant="secondary" onClick={addNameToSubject}>
             Add {`{{Name}}`}
           </Button>
+        </div>
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-[var(--brand-text)]">Insert options</label>
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              className="h-[42px] min-w-[200px] rounded-[var(--brand-radius-dense)] border border-[var(--brand-border)] bg-[var(--brand-surface)] px-3 text-sm text-[var(--brand-text)]"
+              value={insertToken}
+              onChange={(e) => setInsertToken(e.target.value as '{{Name}}' | '{{Course}}')}
+            >
+              <option value="{{Name}}">Name ({{`{{Name}}`}})</option>
+              <option value="{{Course}}">Course ({{`{{Course}}`}})</option>
+            </select>
+            <Button type="button" variant="secondary" onClick={() => insertIntoSubject(insertToken)}>
+              Add to Subject
+            </Button>
+            <Button type="button" variant="secondary" onClick={() => insertIntoBody(insertToken)}>
+              Add to Body
+            </Button>
+          </div>
         </div>
         <div>
           <label className="mb-1.5 block text-sm font-medium text-[var(--brand-text)]">Body (HTML)</label>
@@ -302,7 +364,7 @@ export function CampaignsPage() {
           />
         </div>
         <p className="text-sm text-[var(--brand-muted)]">
-          Composer checks: {composerChecks.length ? composerChecks.join(' ') : 'Looks good.'}
+          Composer checks: {composerChecks.length ? composerChecks.join(' ') : 'Looks good.'} Use insert options for {`{{Name}}`} and {`{{Course}}`}.
         </p>
         <Button type="button" loading={loading} onClick={() => void sendCampaign()} disabled={!subject.trim()}>
           Start send
@@ -310,7 +372,7 @@ export function CampaignsPage() {
       </Card>
 
       <Card>
-        <h3 className="mb-2 text-sm font-semibold text-[var(--brand-text)]">Preview</h3>
+        <h2 className="mb-2 text-lg font-semibold text-[var(--brand-text)]">Preview</h2>
         <p className="text-sm font-medium text-[var(--brand-text)]">{replacePlaceholders(subject)}</p>
         <div
           className="prose prose-invert mt-2 max-w-none text-sm text-[var(--brand-muted)]"
