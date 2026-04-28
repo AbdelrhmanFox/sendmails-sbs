@@ -322,8 +322,8 @@ export function CampaignsPage() {
               value={insertToken}
               onChange={(e) => setInsertToken(e.target.value as '{{Name}}' | '{{Course}}')}
             >
-              <option value="{{Name}}">Name ({{`{{Name}}`}})</option>
-              <option value="{{Course}}">Course ({{`{{Course}}`}})</option>
+              <option value="{{Name}}">Name ({'{{Name}}'})</option>
+              <option value="{{Course}}">Course ({'{{Course}}'})</option>
             </select>
             <Button type="button" variant="secondary" onClick={() => insertIntoSubject(insertToken)}>
               Add to Subject
