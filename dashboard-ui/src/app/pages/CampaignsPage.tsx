@@ -11,12 +11,33 @@ const DEFAULT_SHEET_URL =
   'https://docs.google.com/spreadsheets/d/1sUUpVcRs5tE1KzNGaVA4cnQShvr1eI1bvkO44jAsKtI/edit?gid=0#gid=0';
 
 type PreviewResponse = { columns?: string[]; sampleRow?: Record<string, string> };
+type CampaignTemplateKey = '' | 'welcome' | 'reminder' | 'announcement' | 'offer';
+
+const CAMPAIGN_TEMPLATES: Record<Exclude<CampaignTemplateKey, ''>, { subject: string; body: string }> = {
+  welcome: {
+    subject: 'Welcome {{Name}} to SBS',
+    body: '<p>Hello {{Name}},</p><p>Welcome to SBS. We are excited to have you with us.</p><p>Best regards,<br/>SBS Team</p>',
+  },
+  reminder: {
+    subject: 'Reminder for {{Name}}',
+    body: '<p>Hello {{Name}},</p><p>This is a friendly reminder about your upcoming item.</p><p>Please reply if you need support.</p>',
+  },
+  announcement: {
+    subject: 'Important update for {{Name}}',
+    body: '<p>Hello {{Name}},</p><p>We have an important update to share with you.</p><p>Thank you.</p>',
+  },
+  offer: {
+    subject: 'Special offer for {{Name}}',
+    body: '<p>Hello {{Name}},</p><p>We prepared a special offer for you.</p><p>Contact us to learn more details.</p>',
+  },
+};
 
 export function CampaignsPage() {
   const [webhook, setWebhook] = useState('');
   const [sheetUrl, setSheetUrl] = useState('');
   const [subject, setSubject] = useState('');
   const [bodyHtml, setBodyHtml] = useState('<p>Hello {{name}}</p>');
+  const [template, setTemplate] = useState<CampaignTemplateKey>('');
   const [columns, setColumns] = useState<string[]>([]);
   const [sampleRow, setSampleRow] = useState<Record<string, string>>({});
   const [msg, setMsg] = useState('');
@@ -94,8 +115,56 @@ export function CampaignsPage() {
     }
   };
 
+  const resolveSampleValue = (rawToken: string) => {
+    const token = String(rawToken || '').trim();
+    if (!token) return null;
+    const lower = token.toLowerCase();
+    const key = Object.keys(sampleRow).find((k) => String(k || '').trim().toLowerCase() === lower);
+    return key ? sampleRow[key] : null;
+  };
+
   const replacePlaceholders = (text: string) =>
-    text.replace(/\{\{([^}]+)\}\}/g, (_, k) => sampleRow[k.trim()] ?? `{{${k.trim()}}}`);
+    text.replace(/\{\{([^}]+)\}\}/g, (_, k) => resolveSampleValue(k.trim()) ?? `{{${k.trim()}}}`);
+
+  const extractPlaceholders = (text: string) =>
+    [...String(text || '').matchAll(/\{\{([^}]+)\}\}/g)].map((m) => String(m[1] || '').trim()).filter(Boolean);
+
+  const unknownPlaceholders = [...new Set([...extractPlaceholders(subject), ...extractPlaceholders(bodyHtml)])].filter(
+    (p) => resolveSampleValue(p) == null && !columns.some((c) => String(c).trim().toLowerCase() === p.toLowerCase()),
+  );
+
+  const composerChecks: string[] = [];
+  if (!subject.trim()) composerChecks.push('Subject is empty.');
+  if (subject.trim().length > 70) composerChecks.push('Subject is long (recommended under 70 characters).');
+  if (/(free|urgent|act now|guarantee|winner|100%)/i.test(subject)) composerChecks.push('Subject may look spammy.');
+  if (unknownPlaceholders.length) composerChecks.push(`Unknown placeholders: ${unknownPlaceholders.map((p) => `{{${p}}}`).join(', ')}`);
+  if (!columns.length) composerChecks.push('Load columns before final send for accurate placeholder matching.');
+
+  const applyTemplate = () => {
+    if (!template) return;
+    const selected = CAMPAIGN_TEMPLATES[template];
+    if (!selected) return;
+    setSubject(selected.subject);
+    setBodyHtml(selected.body);
+    setMsg('Template applied.');
+  };
+
+  const titleCaseSubject = () => {
+    setSubject((prev) =>
+      String(prev || '')
+        .split(/\s+/)
+        .filter(Boolean)
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' '),
+    );
+  };
+
+  const addNameToSubject = () => {
+    setSubject((prev) => {
+      if (/\{\{\s*name\s*\}\}/i.test(prev)) return prev;
+      return `${String(prev || '').trim()} {{Name}}`.trim();
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -130,7 +199,34 @@ export function CampaignsPage() {
       </Card>
 
       <Card className="space-y-4">
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-[var(--brand-text)]">Quick template</label>
+          <div className="flex flex-wrap gap-2">
+            <select
+              className="h-[42px] min-w-[220px] rounded-[var(--brand-radius-dense)] border border-[var(--brand-border)] bg-[var(--brand-surface)] px-3 text-sm text-[var(--brand-text)]"
+              value={template}
+              onChange={(e) => setTemplate(e.target.value as CampaignTemplateKey)}
+            >
+              <option value="">Choose template...</option>
+              <option value="welcome">Welcome / Onboarding</option>
+              <option value="reminder">Reminder / Follow-up</option>
+              <option value="announcement">Announcement</option>
+              <option value="offer">Offer / Promotion</option>
+            </select>
+            <Button type="button" variant="secondary" onClick={applyTemplate}>
+              Apply
+            </Button>
+          </div>
+        </div>
         <Input label="Subject" value={subject} onChange={(e) => setSubject(e.target.value)} />
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="secondary" onClick={titleCaseSubject}>
+            Title Case Subject
+          </Button>
+          <Button type="button" variant="secondary" onClick={addNameToSubject}>
+            Add {`{{Name}}`}
+          </Button>
+        </div>
         <div>
           <label className="mb-1.5 block text-sm font-medium text-[var(--brand-text)]">Body (HTML)</label>
           <textarea
@@ -139,6 +235,9 @@ export function CampaignsPage() {
             onChange={(e) => setBodyHtml(e.target.value)}
           />
         </div>
+        <p className="text-sm text-[var(--brand-muted)]">
+          Composer checks: {composerChecks.length ? composerChecks.join(' ') : 'Looks good.'}
+        </p>
         <Button type="button" loading={loading} onClick={() => void sendCampaign()} disabled={!subject.trim()}>
           Start send
         </Button>
