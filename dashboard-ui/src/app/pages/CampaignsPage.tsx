@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Card } from '../components/design-system/Card';
 import { Button } from '../components/design-system/Button';
 import { Input } from '../components/design-system/Input';
@@ -32,6 +32,15 @@ const CAMPAIGN_TEMPLATES: Record<Exclude<CampaignTemplateKey, ''>, { subject: st
   },
 };
 
+const COURSE_HEADER_ALIASES = ['course', 'course_name', 'courseid', 'coures'];
+
+function normalizeToken(value: string) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '');
+}
+
 export function CampaignsPage() {
   const [webhook, setWebhook] = useState('');
   const [sheetUrl, setSheetUrl] = useState('');
@@ -43,6 +52,7 @@ export function CampaignsPage() {
   const [msg, setMsg] = useState('');
   const [statusHtml, setStatusHtml] = useState('');
   const [loading, setLoading] = useState(false);
+  const editorRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const w = localStorage.getItem(WEBHOOK_KEY);
@@ -50,6 +60,13 @@ export function CampaignsPage() {
     setWebhook((w || DEFAULT_WEBHOOK_URL).trim());
     setSheetUrl((s || DEFAULT_SHEET_URL).trim());
   }, []);
+
+  useEffect(() => {
+    if (!editorRef.current) return;
+    if (editorRef.current.innerHTML !== bodyHtml) {
+      editorRef.current.innerHTML = bodyHtml;
+    }
+  }, [bodyHtml]);
 
   const saveWebhook = () => {
     localStorage.setItem(WEBHOOK_KEY, webhook.trim() || DEFAULT_WEBHOOK_URL);
@@ -116,11 +133,26 @@ export function CampaignsPage() {
   };
 
   const resolveSampleValue = (rawToken: string) => {
-    const token = String(rawToken || '').trim();
-    if (!token) return null;
-    const lower = token.toLowerCase();
-    const key = Object.keys(sampleRow).find((k) => String(k || '').trim().toLowerCase() === lower);
-    return key ? sampleRow[key] : null;
+    const tokenNorm = normalizeToken(rawToken);
+    if (!tokenNorm) return null;
+
+    const rowKeyByNorm: Record<string, string> = {};
+    Object.keys(sampleRow).forEach((k) => {
+      const nk = normalizeToken(k);
+      if (nk && !rowKeyByNorm[nk]) rowKeyByNorm[nk] = k;
+    });
+
+    const candidateNorms = COURSE_HEADER_ALIASES.map(normalizeToken).includes(tokenNorm)
+      ? COURSE_HEADER_ALIASES.map(normalizeToken)
+      : [tokenNorm];
+
+    for (const candidate of candidateNorms) {
+      const key = rowKeyByNorm[candidate];
+      if (!key) continue;
+      const value = sampleRow[key];
+      if (value != null && String(value).trim() !== '') return value;
+    }
+    return null;
   };
 
   const replacePlaceholders = (text: string) =>
@@ -147,6 +179,18 @@ export function CampaignsPage() {
     setSubject(selected.subject);
     setBodyHtml(selected.body);
     setMsg('Template applied.');
+  };
+
+  const runEditorCommand = (command: string, value?: string) => {
+    editorRef.current?.focus();
+    document.execCommand(command, false, value);
+    setBodyHtml(editorRef.current?.innerHTML || '');
+  };
+
+  const insertLink = () => {
+    const url = window.prompt('Enter URL');
+    if (!url) return;
+    runEditorCommand('createLink', url);
   };
 
   const titleCaseSubject = () => {
@@ -229,10 +273,32 @@ export function CampaignsPage() {
         </div>
         <div>
           <label className="mb-1.5 block text-sm font-medium text-[var(--brand-text)]">Body (HTML)</label>
-          <textarea
-            className="min-h-[200px] w-full rounded-[var(--brand-radius-dense)] border border-[var(--brand-border)] bg-[var(--brand-surface)] p-3 text-sm text-[var(--brand-text)]"
-            value={bodyHtml}
-            onChange={(e) => setBodyHtml(e.target.value)}
+          <div className="mb-2 flex flex-wrap gap-2">
+            <Button type="button" variant="secondary" onClick={() => runEditorCommand('bold')}>
+              Bold
+            </Button>
+            <Button type="button" variant="secondary" onClick={() => runEditorCommand('italic')}>
+              Italic
+            </Button>
+            <Button type="button" variant="secondary" onClick={() => runEditorCommand('underline')}>
+              Underline
+            </Button>
+            <Button type="button" variant="secondary" onClick={() => runEditorCommand('insertUnorderedList')}>
+              Bullet List
+            </Button>
+            <Button type="button" variant="secondary" onClick={() => runEditorCommand('insertOrderedList')}>
+              Numbered List
+            </Button>
+            <Button type="button" variant="secondary" onClick={insertLink}>
+              Link
+            </Button>
+          </div>
+          <div
+            ref={editorRef}
+            contentEditable
+            suppressContentEditableWarning
+            className="min-h-[200px] w-full rounded-[var(--brand-radius-dense)] border border-[var(--brand-border)] bg-[var(--brand-surface)] p-3 text-sm text-[var(--brand-text)] focus:outline-none"
+            onInput={(e) => setBodyHtml((e.target as HTMLDivElement).innerHTML)}
           />
         </div>
         <p className="text-sm text-[var(--brand-muted)]">
