@@ -37,6 +37,16 @@ This matrix tracks parity between the legacy dashboard in `dashboard/` and the R
 - Demo WhatsApp support CTA in app chrome: **Complete**
 - Change password route/screen: **Complete**
 
+## Legacy Live Session Room (Classic HTML vs React)
+
+- In-page Jitsi voice (External API, same tab): **Complete** (`PublicSessionJoinPage`, `dashboard-ui/src/lib/jitsiVoice.ts`)
+- Whiteboard tools (pen / line / text / eraser, color, stroke) + broadcast sync: **Complete**
+- Group poll (broadcast-only, ephemeral): **Complete**
+- Session-ended detection (poll `public-training-session`) + teardown: **Complete**
+- Presence “sticker” columns (left/right on large screens): **Complete**
+- Mobile Chat / Board tabs: **Complete**
+- Presenter tools (QR from URL, script TTS, teleprompter): **Complete** (`TrainingPresenterPage` + `presenter/PresenterToolsPanel.tsx`)
+
 ## Remaining Known Gaps
 
-None in current migration scope. Legacy parity items from this matrix are implemented in `dashboard-ui`.
+None tracked for the legacy live-session parity slice above. Older `dashboard/classic/js/app.js` bundles (if any) are not in-repo; behavior is aligned to `dashboard/classic/index.html` structure and these React implementations.

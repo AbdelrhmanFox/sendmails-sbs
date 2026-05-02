@@ -3,6 +3,8 @@ import { Card } from '../../components/design-system/Card';
 import { Button } from '../../components/design-system/Button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/design-system/Table';
 import { functionsBase, getAuthHeaders, jsonFetch } from '../../../lib/api';
+import { parseJitsiVoiceUrl } from '../../../lib/jitsiVoice';
+import { PresenterToolsPanel } from './presenter/PresenterToolsPanel';
 
 type Session = {
   id: string;
@@ -38,9 +40,9 @@ export function TrainingPresenterPage() {
     `${window.location.origin}${window.location.pathname.replace(/\/spa\/?.*$/, '/')}?session=${encodeURIComponent(id)}`;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <p className="text-sm text-[var(--brand-muted)]">
-        Use your session title and participant link when presenting. Optional voice room URL is stored on the session when created.
+        Participant links open the in-page live room (chat, board, polls, embedded Jitsi voice). Use presenter tools below for QR, read-aloud, and teleprompter.
       </p>
       {err ? <p className="text-sm text-[var(--brand-danger)]">{err}</p> : null}
       {loading ? <p className="text-sm text-[var(--brand-muted)]">Loading…</p> : null}
@@ -58,29 +60,37 @@ export function TrainingPresenterPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sessions.map((s) => (
-              <TableRow key={s.id}>
-                <TableCell className="font-medium">{s.title || 'Session'}</TableCell>
-                <TableCell>{s.trainer_username || '—'}</TableCell>
-                <TableCell className="max-w-[200px] truncate text-xs">
-                  {s.voice_room_url ? (
-                    <a className="text-[var(--brand-primary)] underline" href={s.voice_room_url} target="_blank" rel="noreferrer">
-                      Open room
-                    </a>
-                  ) : (
-                    '—'
-                  )}
-                </TableCell>
-                <TableCell>
-                  <Button size="sm" variant="secondary" type="button" onClick={() => void navigator.clipboard.writeText(share(s.id))}>
-                    Copy participant link
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
+            {sessions.map((s) => {
+              const parsed = s.voice_room_url ? parseJitsiVoiceUrl(s.voice_room_url) : null;
+              return (
+                <TableRow key={s.id}>
+                  <TableCell className="font-medium">{s.title || 'Session'}</TableCell>
+                  <TableCell>{s.trainer_username || '—'}</TableCell>
+                  <TableCell className="max-w-[220px] truncate text-xs">
+                    {s.voice_room_url ? (
+                      <span className="text-[var(--brand-muted)]" title={s.voice_room_url}>
+                        {parsed ? `Jitsi · ${parsed.roomName}` : 'Custom URL'}
+                      </span>
+                    ) : (
+                      '—'
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Button size="sm" variant="secondary" type="button" onClick={() => void navigator.clipboard.writeText(share(s.id))}>
+                      Copy participant link
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </Card>
+
+      <div>
+        <h2 className="mb-3 text-lg font-semibold text-[var(--brand-text)]">Presenter tools</h2>
+        <PresenterToolsPanel />
+      </div>
     </div>
   );
 }

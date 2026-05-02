@@ -44,6 +44,17 @@ Use this checklist after parity changes between `dashboard/` and `dashboard-ui/`
 - `/?credential=<token>` verifies a credential.
 - `/?learner=<slug>` opens learner profile with credential links.
 
+## Live Session Join (React public page)
+
+- After join: chat sends and optional whiteboard draws sync to a second browser on the same group (Realtime enabled).
+- Jitsi voice: embedded meeting loads in-page when `voice_room_url` is a Jitsi URL (default from `training-sessions`); Leave voice disposes the iframe; Rejoin voice remounts.
+- Poll: start with two+ choices, vote from second participant, tallies update; End poll clears for others.
+- Trainer deletes session in dashboard: within ~20s the public join page should show **Session ended** and disable sending (poll failure on `public-training-session`).
+
+## Presenter Tools (staff)
+
+- `/spa/training/presenter`: table loads; **Presenter tools** section — QR generates and downloads; Script reader plays a short line (browser TTS); Teleprompter scroll and fullscreen work.
+
 ## Regression Checks
 
 - Batch material upload/link/delete works in both classroom and batch edit contexts.
