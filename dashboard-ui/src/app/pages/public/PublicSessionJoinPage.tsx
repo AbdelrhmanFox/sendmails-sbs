@@ -209,16 +209,10 @@ export function PublicSessionJoinPage({ sessionId, groupToken }: { sessionId?: s
   };
 
   useEffect(() => {
-    if (stage !== 'joined' || !joinData || !jitsiParsed || sessionEnded) {
+    if (stage !== 'joined' || sessionEnded) {
       disposeJitsi();
-      return;
     }
-    void mountJitsi();
-    return () => {
-      disposeJitsi();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount only when room identity or session state changes
-  }, [stage, joinData?.groupId, jitsiParsed?.domain, jitsiParsed?.roomName, sessionEnded]);
+  }, [stage, sessionEnded]);
 
   const startRealtime = async (joined: JoinResponse) => {
     const cfg = await jsonFetch<{ supabaseUrl: string; supabaseAnonKey: string; realtimeEnabled: boolean }>(`${functionsBase()}/public-config`);
@@ -571,7 +565,7 @@ export function PublicSessionJoinPage({ sessionId, groupToken }: { sessionId?: s
       <Card className="space-y-2">
         <h1 className="text-xl font-semibold text-[var(--brand-text)]">{joinData?.sessionTitle || meta?.title || 'Live session'}</h1>
         <p className="text-sm text-[var(--brand-muted)]">
-          Pick a group, enter your name, then use chat, shared board, in-page Jitsi voice, polls, and presence. Session status is checked periodically; when the trainer removes the session, this room closes here.
+          Pick a group, enter your name, then use chat, shared board, optional Jitsi voice (starts only when you choose), polls, and presence. Session status is checked periodically; when the trainer removes the session, this room closes here.
         </p>
         {err ? <p className="text-sm text-[var(--brand-danger)]">{err}</p> : null}
       </Card>
@@ -669,7 +663,7 @@ export function PublicSessionJoinPage({ sessionId, groupToken }: { sessionId?: s
                             document.getElementById('voice-room-anchor')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                           }}
                         >
-                          Rejoin voice
+                          Join voice room
                         </Button>
                       )
                     ) : null}
@@ -829,8 +823,26 @@ export function PublicSessionJoinPage({ sessionId, groupToken }: { sessionId?: s
               {jitsiParsed ? (
                 <Card id="voice-room-anchor" className="space-y-2 p-4">
                   <p className="text-sm font-medium text-[var(--brand-text)]">Voice room (Jitsi, in page)</p>
+                  {!voiceRoomActive ? (
+                    <p className="text-sm text-[var(--brand-muted)]">
+                      Voice chat does not load until you start it. Use the button below or &quot;Join voice room&quot; in the chat header when you are ready.
+                    </p>
+                  ) : null}
                   {jitsiError ? <p className="text-sm text-[var(--brand-danger)]">{jitsiError}</p> : null}
-                  <div ref={jitsiParentRef} className="min-h-[480px] w-full overflow-hidden rounded-[var(--brand-radius-dense)] border border-[var(--brand-border)] bg-black" />
+                  {!voiceRoomActive ? (
+                    <Button type="button" onClick={() => void mountJitsi()}>
+                      Join voice room
+                    </Button>
+                  ) : null}
+                  <div
+                    ref={jitsiParentRef}
+                    className={
+                      voiceRoomActive
+                        ? 'min-h-[480px] w-full overflow-hidden rounded-[var(--brand-radius-dense)] border border-[var(--brand-border)] bg-black'
+                        : 'sr-only'
+                    }
+                    aria-hidden={!voiceRoomActive}
+                  />
                 </Card>
               ) : joinData.voiceRoomUrl ? (
                 <Card className="p-4">

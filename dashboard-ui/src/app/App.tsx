@@ -15,6 +15,7 @@ import { TrainingOverviewPage } from './pages/training/TrainingOverviewPage';
 import { TrainingSessionsPage } from './pages/training/TrainingSessionsPage';
 import { TrainingPresenterPage } from './pages/training/TrainingPresenterPage';
 import { TrainingClassroomPage } from './pages/training/TrainingClassroomPage';
+import { TrainingAssignmentsPage } from './pages/training/TrainingAssignmentsPage';
 import { TrainingMaterialsAttendancePage } from './pages/training/TrainingMaterialsAttendancePage';
 import { TrainingCourseLibraryPage } from './pages/training/TrainingCourseLibraryPage';
 import { TrainingCredentialsPage } from './pages/training/TrainingCredentialsPage';
@@ -120,6 +121,7 @@ export default function App() {
           <Route path="sessions" element={<TrainingSessionsPage />} />
           <Route path="presenter" element={<TrainingPresenterPage />} />
           <Route path="classroom" element={<TrainingClassroomPage />} />
+          <Route path="assignments" element={<TrainingAssignmentsPage />} />
           <Route path="materials" element={<TrainingMaterialsAttendancePage />} />
           <Route path="library" element={<TrainingCourseLibraryPage />} />
           <Route path="credentials" element={<TrainingCredentialsPage />} />

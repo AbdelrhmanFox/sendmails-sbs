@@ -1,6 +1,8 @@
+import { useMemo } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
+import { AUTH_ROLE } from '../../../lib/api';
 
-const LINKS: { to: string; label: string }[] = [
+const BASE_LINKS: { to: string; label: string }[] = [
   { to: '/training/overview', label: 'Overview' },
   { to: '/training/sessions', label: 'Sessions' },
   { to: '/training/presenter', label: 'Presenter tools' },
@@ -11,6 +13,20 @@ const LINKS: { to: string; label: string }[] = [
 ];
 
 export function TrainingLayout() {
+  const role = String(localStorage.getItem(AUTH_ROLE) || '').toLowerCase();
+  const links = useMemo(() => {
+    if (role === 'admin' || role === 'trainer') {
+      const i = BASE_LINKS.findIndex((l) => l.to === '/training/materials');
+      if (i === -1) return BASE_LINKS;
+      return [
+        ...BASE_LINKS.slice(0, i),
+        { to: '/training/assignments', label: 'Assignments' },
+        ...BASE_LINKS.slice(i),
+      ];
+    }
+    return BASE_LINKS;
+  }, [role]);
+
   return (
     <div className="space-y-6">
       <div>
@@ -18,7 +34,7 @@ export function TrainingLayout() {
         <p className="mt-1 text-sm text-[var(--brand-muted)]">Delivery workflows, classroom tools, and resources</p>
       </div>
       <div className="flex flex-wrap gap-2 border-b border-[var(--brand-border)] pb-3">
-        {LINKS.map((l) => (
+        {links.map((l) => (
           <NavLink
             key={l.to}
             to={l.to}

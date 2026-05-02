@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Card } from '../../components/design-system/Card';
 import { Button } from '../../components/design-system/Button';
 import { Input } from '../../components/design-system/Input';
@@ -112,6 +113,12 @@ export function TrainingClassroomPage() {
                         >
                           {isOpen ? 'Hide materials' : 'Manage materials'}
                         </Button>
+                        <Link
+                          to={`/training/assignments?batch=${encodeURIComponent(r.batch_id)}`}
+                          className="inline-flex h-8 items-center justify-center rounded-[var(--brand-radius-dense)] border border-[var(--brand-border)] bg-[var(--brand-surface-2)] px-3 text-sm font-medium text-[var(--brand-text)] hover:bg-[var(--brand-indigo)]"
+                        >
+                          Assignments
+                        </Link>
                       </div>
                     </TableCell>
                   </TableRow>

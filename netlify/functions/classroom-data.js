@@ -677,5 +677,63 @@ exports.handler = async (event) => {
     return json({ error: 'Method not allowed' }, 405);
   }
 
+  if (resource === 'pending-submissions' && event.httpMethod === 'GET') {
+    let batchQuery = supabase.from('batches').select('batch_id').order('created_at', { ascending: false }).limit(500);
+    if (auth.role !== 'admin') {
+      const { data: maps, error: me } = await supabase.from('trainer_course_access').select('course_id').eq('trainer_username', username);
+      if (me) return json({ error: me.message || 'Could not load course access' }, 500);
+      const cids = [...new Set((maps || []).map((m) => m.course_id).filter(Boolean))];
+      if (!cids.length) return json({ items: [], total_pending: 0 });
+      batchQuery = supabase.from('batches').select('batch_id').in('course_id', cids).order('created_at', { ascending: false }).limit(500);
+    }
+    const { data: batches, error: be } = await batchQuery;
+    if (be) return json({ error: be.message || 'Could not load batches' }, 500);
+    const batchIds = (batches || []).map((b) => b.batch_id).filter(Boolean);
+    if (!batchIds.length) return json({ items: [], total_pending: 0 });
+
+    const { data: asgs, error: ae } = await supabase.from('classroom_assignments').select('id, batch_id, title').in('batch_id', batchIds);
+    if (ae) return json({ error: ae.message || 'Could not load assignments' }, 500);
+    const asgList = asgs || [];
+    const MAX_ASSIGNMENTS = 400;
+    const cappedAsgs = asgList.length > MAX_ASSIGNMENTS ? asgList.slice(0, MAX_ASSIGNMENTS) : asgList;
+    const asgIds = cappedAsgs.map((a) => a.id);
+    const asgMeta = {};
+    cappedAsgs.forEach((a) => {
+      asgMeta[a.id] = a;
+    });
+    if (!asgIds.length) return json({ items: [], total_pending: 0 });
+
+    const { data: subs, error: se } = await supabase
+      .from('classroom_assignment_submissions')
+      .select('id, assignment_id, trainee_name, trainee_email, submitted_at, status')
+      .in('assignment_id', asgIds)
+      .eq('status', 'submitted')
+      .order('submitted_at', { ascending: false })
+      .limit(40);
+    if (se) return json({ error: se.message || 'Could not load submissions' }, 500);
+
+    const { count: totalPending, error: ce } = await supabase
+      .from('classroom_assignment_submissions')
+      .select('id', { count: 'exact', head: true })
+      .in('assignment_id', asgIds)
+      .eq('status', 'submitted');
+    if (ce) return json({ error: ce.message || 'Could not count submissions' }, 500);
+
+    const items = (subs || []).map((s) => {
+      const meta = asgMeta[s.assignment_id] || {};
+      return {
+        id: s.id,
+        assignment_id: s.assignment_id,
+        assignment_title: meta.title || '',
+        batch_id: meta.batch_id || '',
+        trainee_name: s.trainee_name,
+        trainee_email: s.trainee_email,
+        submitted_at: s.submitted_at,
+        status: s.status,
+      };
+    });
+    return json({ items, total_pending: typeof totalPending === 'number' ? totalPending : items.length });
+  }
+
   return json({ error: 'Unknown resource' }, 400);
 };

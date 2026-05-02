@@ -9,7 +9,7 @@ Internal staff dashboard for **SBS** (educational and training services). The ap
 | **Operations Data** | Workbook-driven CRUD for trainees, courses, batches, and enrollments; **Excel (.xlsx) import** in the UI and bulk upsert via `operations-data` (see below). |
 | **Email Campaigns** | n8n-powered preview, send, and status; webhook + Google Sheets integration. |
 | **Live Session Groups** | Trainers create sessions and groups; participants join with links; realtime chat (Supabase); optional **shared whiteboard** per session (Realtime broadcast, not persisted). |
-| **Trainer Classroom** | Classroom includes shareable participant links, assignment submissions/review, trainer-side multi-file assignment attachments, course-mapped access control for trainers, and a fully redesigned Google Classroom-inspired UI with assignment cards, badges, collapsible forms, and inline submission review (`classroom-data`, `public-classroom`, `classroom-assignment-upload`). |
+| **Trainer Classroom** | Classroom includes shareable participant links, assignment submissions/review, trainer-side multi-file assignment attachments, course-mapped access control for trainers, and the React **Training → Assignments** page for staff assignment CRUD and inline submission review (`classroom-data` including `pending-submissions`, `public-classroom`, `classroom-assignment-upload`). |
 | **Finance** | KPIs, Chart.js visuals (revenue, payment mix, AR aging), ledger, invoices, and exports via `finance-data`. |
 | **User management** | Admin flows for listing, creating, resetting, and deleting users. |
 | **Authentication** | JWT-based login; same contracts for Netlify Functions and Vercel. Signed-in users can change their own password from the sidebar (`change-password`). |

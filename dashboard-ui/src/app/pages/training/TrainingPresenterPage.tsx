@@ -42,7 +42,7 @@ export function TrainingPresenterPage() {
   return (
     <div className="space-y-6">
       <p className="text-sm text-[var(--brand-muted)]">
-        Participant links open the in-page live room (chat, board, polls, embedded Jitsi voice). Use presenter tools below for QR, read-aloud, and teleprompter.
+        Participant links open the in-page live room (chat, board, polls; Jitsi voice only after the participant taps Join voice room). Use presenter tools below for QR, read-aloud, and teleprompter.
       </p>
       {err ? <p className="text-sm text-[var(--brand-danger)]">{err}</p> : null}
       {loading ? <p className="text-sm text-[var(--brand-muted)]">Loading…</p> : null}

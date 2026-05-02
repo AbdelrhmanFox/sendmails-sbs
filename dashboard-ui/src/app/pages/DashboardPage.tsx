@@ -48,6 +48,17 @@ type TrainingSession = {
   training_groups?: { id: string }[] | null;
 };
 
+type PendingSubmission = {
+  id: string;
+  assignment_id: string;
+  assignment_title: string;
+  batch_id: string;
+  trainee_name?: string | null;
+  trainee_email?: string | null;
+  submitted_at?: string | null;
+  status: string;
+};
+
 function fmtMoney(n: number) {
   if (!Number.isFinite(n) || n === 0) return 'EGP 0';
   if (n >= 1_000_000) return `EGP ${(n / 1_000_000).toFixed(1)}M`;
@@ -61,6 +72,7 @@ export function DashboardPage() {
   const [ops, setOps] = useState<OpsOverview | null>(null);
   const [fin, setFin] = useState<FinanceKpis | null>(null);
   const [sessions, setSessions] = useState<TrainingSession[]>([]);
+  const [pendingSubmissions, setPendingSubmissions] = useState<{ items: PendingSubmission[]; total_pending: number } | null>(null);
   const [loadErr, setLoadErr] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -111,6 +123,21 @@ export function DashboardPage() {
               if (!cancelled) setSessions(d.sessions || []);
             } catch {
               if (!cancelled) setSessions([]);
+            }
+          })(),
+        );
+        tasks.push(
+          (async () => {
+            try {
+              const d = await jsonFetch<{ items: PendingSubmission[]; total_pending: number }>(
+                `${functionsBase()}/classroom-data?resource=pending-submissions`,
+                { headers },
+              );
+              const items = d.items || [];
+              const total = typeof d.total_pending === 'number' ? d.total_pending : items.length;
+              if (!cancelled) setPendingSubmissions({ items, total_pending: total });
+            } catch {
+              if (!cancelled) setPendingSubmissions(null);
             }
           })(),
         );
@@ -283,10 +310,46 @@ export function DashboardPage() {
         <Card>
           <CardHeader title="Pending Submissions" subtitle="Awaiting review" />
           <div className="space-y-3">
-            <p className="p-3 text-sm text-[var(--brand-muted)]">
-              Assignment queues are not surfaced on this dashboard yet. Open Training for sessions, materials, and classroom
-              tools.
-            </p>
+            {['admin', 'trainer'].includes(role) ? (
+              loading ? (
+                <p className="p-3 text-sm text-[var(--brand-muted)]">Loading…</p>
+              ) : pendingSubmissions == null ? (
+                <p className="p-3 text-sm text-[var(--brand-muted)]">Submission queue is unavailable (check access or try again).</p>
+              ) : pendingSubmissions.total_pending === 0 ? (
+                <p className="p-3 text-sm text-[var(--brand-muted)]">No submissions awaiting review.</p>
+              ) : (
+                <>
+                  <p className="px-3 text-sm text-[var(--brand-muted)]">
+                    {pendingSubmissions.total_pending} submission{pendingSubmissions.total_pending === 1 ? '' : 's'} awaiting review
+                    {pendingSubmissions.total_pending > pendingSubmissions.items.length ? ' (showing the most recent)' : ''}.
+                  </p>
+                  <div className="max-h-56 space-y-2 overflow-y-auto px-3">
+                    {pendingSubmissions.items.map((row) => (
+                      <button
+                        key={row.id}
+                        type="button"
+                        className="w-full rounded-lg border border-[var(--brand-border)] p-2 text-left text-sm transition hover:bg-[var(--brand-surface-2)]"
+                        onClick={() => navigate(`/training/assignments?batch=${encodeURIComponent(row.batch_id)}`)}
+                      >
+                        <p className="font-medium text-[var(--brand-text)]">{row.assignment_title || 'Assignment'}</p>
+                        <p className="text-xs text-[var(--brand-muted)]">
+                          {(row.trainee_name || 'Trainee').trim()} · {row.submitted_at || '—'}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="px-3 pb-2">
+                    <Button type="button" variant="secondary" size="sm" onClick={() => navigate('/training/assignments')}>
+                      Open assignments
+                    </Button>
+                  </div>
+                </>
+              )
+            ) : (
+              <p className="p-3 text-sm text-[var(--brand-muted)]">
+                Trainers and admins can review submissions under Training → Assignments.
+              </p>
+            )}
           </div>
         </Card>
       </div>
@@ -302,6 +365,9 @@ export function DashboardPage() {
           </Button>
           <Button type="button" variant="secondary" size="sm" onClick={() => navigate('/training/classroom')}>
             Classroom links
+          </Button>
+          <Button type="button" variant="secondary" size="sm" onClick={() => navigate('/training/assignments')}>
+            Assignments
           </Button>
           <Button type="button" variant="secondary" size="sm" onClick={() => navigate('/operations/import')}>
             Data import
