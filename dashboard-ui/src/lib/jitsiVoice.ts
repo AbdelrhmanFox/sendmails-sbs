@@ -23,6 +23,7 @@ export function parseJitsiVoiceUrl(href: string): { domain: string; roomName: st
 export type JitsiApiInstance = {
   dispose: () => void;
   executeCommand?: (cmd: string, ...args: unknown[]) => void;
+  on?: (event: string, listener: (...args: unknown[]) => void) => void;
 };
 
 declare global {
@@ -53,34 +54,67 @@ export function loadJitsiScript(domain: string): Promise<void> {
   });
 }
 
+/** Resolve a Vite asset URL to an absolute URL (Jitsi loads avatar from its origin). */
+export function absoluteAssetUrl(href: string): string {
+  try {
+    return new URL(href, window.location.origin).href;
+  } catch {
+    return href;
+  }
+}
+
+function attachLobbyMitigation(api: JitsiApiInstance): void {
+  if (typeof api.on !== 'function') return;
+  api.on('videoConferenceJoined', () => {
+    try {
+      api.executeCommand?.('toggleLobby', false);
+    } catch {
+      /* deployment may not expose command */
+    }
+  });
+}
+
 export function createJitsiEmbed(options: {
   domain: string;
   roomName: string;
   parentNode: HTMLElement;
   displayName: string;
+  avatarURL?: string;
   height?: number | string;
 }): JitsiApiInstance {
   const Api = window.JitsiMeetExternalAPI;
   if (!Api) throw new Error('JitsiMeetExternalAPI not available');
 
-  return new Api(options.domain, {
+  const userInfo: Record<string, string> = {
+    displayName: options.displayName,
+  };
+  if (options.avatarURL) userInfo.avatarURL = options.avatarURL;
+
+  const api = new Api(options.domain, {
     roomName: options.roomName,
     parentNode: options.parentNode,
     width: '100%',
     height: options.height ?? 480,
-    userInfo: {
-      displayName: options.displayName,
-    },
+    userInfo,
     configOverwrite: {
       prejoinConfig: {
         enabled: false,
       },
+      startAudioOnly: true,
       startWithAudioMuted: false,
       startWithVideoMuted: true,
+      disableDeepLinking: true,
     },
     interfaceConfigOverwrite: {
       SHOW_JITSI_WATERMARK: false,
-      DEFAULT_BACKGROUND: '#1a1d2e',
+      SHOW_WATERMARK_FOR_GUESTS: false,
+      SHOW_BRAND_WATERMARK: false,
+      SHOW_POWERED_BY: false,
+      DEFAULT_BACKGROUND: '#0b1220',
+      TOOLBAR_BUTTONS: ['microphone', 'hangup'],
     },
   });
+
+  attachLobbyMitigation(api);
+  return api;
 }

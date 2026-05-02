@@ -4,7 +4,8 @@ import { Card } from '../../components/design-system/Card';
 import { Button } from '../../components/design-system/Button';
 import { Input } from '../../components/design-system/Input';
 import { functionsBase, jsonFetch } from '../../../lib/api';
-import { createJitsiEmbed, loadJitsiScript, parseJitsiVoiceUrl, type JitsiApiInstance } from '../../../lib/jitsiVoice';
+import sbsVoiceBrandUrl from '../../../assets/sbs-voice-brand.svg';
+import { absoluteAssetUrl, createJitsiEmbed, loadJitsiScript, parseJitsiVoiceUrl, type JitsiApiInstance } from '../../../lib/jitsiVoice';
 
 const BOARD_BG = '#0b1230';
 
@@ -199,6 +200,7 @@ export function PublicSessionJoinPage({ sessionId, groupToken }: { sessionId?: s
         roomName: jitsiParsed.roomName,
         parentNode: parent,
         displayName: joinData.participant.display_name,
+        avatarURL: absoluteAssetUrl(sbsVoiceBrandUrl),
         height: 480,
       });
       jitsiApiRef.current = api;
@@ -822,11 +824,20 @@ export function PublicSessionJoinPage({ sessionId, groupToken }: { sessionId?: s
 
               {jitsiParsed ? (
                 <Card id="voice-room-anchor" className="space-y-2 p-4">
-                  <p className="text-sm font-medium text-[var(--brand-text)]">Voice room (Jitsi, in page)</p>
+                  <p className="text-sm font-medium text-[var(--brand-text)]">SBS voice (in page)</p>
                   {!voiceRoomActive ? (
                     <p className="text-sm text-[var(--brand-muted)]">
-                      Voice chat does not load until you start it. Use the button below or &quot;Join voice room&quot; in the chat header when you are ready.
+                      Start voice when you are ready. Use the button below or &quot;Join voice room&quot; in the chat header. Your name is already set; the SBS mark appears as your voice tile avatar.
                     </p>
+                  ) : null}
+                  {voiceRoomActive ? (
+                    <div className="flex items-center gap-3 rounded-[var(--brand-radius-dense)] border border-[var(--brand-border)] bg-[var(--brand-surface-2)] px-3 py-2">
+                      <img src={sbsVoiceBrandUrl} alt="" width={44} height={44} className="h-11 w-11 shrink-0 rounded-lg object-cover" />
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-[var(--brand-muted)]">SBS voice</p>
+                        <p className="text-sm font-medium text-[var(--brand-text)]">Joined as {joinData.participant.display_name}</p>
+                      </div>
+                    </div>
                   ) : null}
                   {jitsiError ? <p className="text-sm text-[var(--brand-danger)]">{jitsiError}</p> : null}
                   {!voiceRoomActive ? (
