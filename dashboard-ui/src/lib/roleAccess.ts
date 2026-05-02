@@ -13,8 +13,17 @@ export function areasForRole(role: string): string[] {
   return ROLE_AREAS[r] || ROLE_AREAS.user;
 }
 
+/** Path as seen by React Router (basename `/spa` stripped by the router). */
+function normalizedPath(pathname: string): string {
+  let p = pathname || '/';
+  if (p.startsWith('/spa')) p = p.slice(4) || '/';
+  if (!p.startsWith('/')) p = `/${p}`;
+  const trimmed = p.replace(/\/+$/, '');
+  return trimmed === '' ? '/' : trimmed;
+}
+
 export function pathToArea(pathname: string): string | null {
-  const p = pathname.replace(/^\/spa/, '') || '/';
+  const p = normalizedPath(pathname);
   if (p === '/' || p.startsWith('/account')) return null;
   const seg = p.split('/').filter(Boolean)[0];
   if (!seg) return null;
@@ -23,6 +32,11 @@ export function pathToArea(pathname: string): string | null {
 }
 
 export function canAccessPath(role: string, pathname: string): boolean {
+  const r = String(role || '').toLowerCase();
+  const p = normalizedPath(pathname);
+  if (r === 'trainee') {
+    return p === '/trainee/portal' || p.startsWith('/trainee/portal/') || p === '/account/password' || p.startsWith('/account/password/');
+  }
   const area = pathToArea(pathname);
   if (area == null) return true;
   return areasForRole(role).includes(area);

@@ -8,8 +8,8 @@ Top-level areas (sidebar):
 
 | Area | Typical roles | Notes |
 | --- | --- | --- |
-| **Operations** | admin, staff | Overview, Operations Data (CRUD + Excel import), Pipeline, Capacity, Data quality |
-| **Training** | admin, trainer | Live Session Groups (one `?session=` share URL; multi-group picker), Attendance and materials |
+| **Operations** | admin, staff | Overview, Operations Data (CRUD + Excel import), Pipeline, Capacity, Data quality, **LMS admin** (`lms-admin-data`), **Integration events** (`integration-events`) |
+| **Training** | admin, trainer | Live Session Groups (one `?session=` share URL; multi-group picker), **LMS analytics** (`lms-analytics`), **LMS catalog** (read-only `lms-admin-data` GET), **Assessments** (`assessment-data`), Attendance and materials |
 | **Finance** | admin, accountant | KPIs, **charts** (revenue trend, payment mix, AR aging), ledger, invoices, exports; staff may have read-only access where configured |
 | **Automation** | admin, staff, user | Email Campaigns (n8n webhook + Google Sheets) |
 | **Admin** | admin | Users, backend config hints, finance audit log (admin only) |
@@ -28,6 +28,12 @@ Role-to-areas mapping is defined in `dashboard-ui/src/lib/roleAccess.ts`: e.g. `
 3. **Operations — Bulk (enrollments)**  
    Status updates for multiple enrollment business IDs via `operations-data` bulk endpoint (see implementation).
 
+3b. **Operations — LMS admin**  
+   `/.netlify/functions/lms-admin-data?resource=programs|cohorts|cohort-enrollments|rubric-templates|rubric-criteria|certificates|transcripts` — staff/admin UI at `/spa/operations/lms-admin` (GET lists + POST creates per handler rules).
+
+3c. **Operations — Integration events**  
+   `GET`/`PATCH` `/.netlify/functions/integration-events` for admin/staff triage (`/spa/operations/integration-events`). External ingestion uses `POST` with `X-Integration-Secret`.
+
 4. **Finance**  
    `/.netlify/functions/finance-data?resource=kpis|ledger|payment|ar-aging|invoices|companies|audit|chart-revenue-trend|chart-payment-methods` (exact routes depend on method and query). Chart endpoints are GET-only aggregations for the Finance tab (Chart.js 4.x loaded from jsDelivr in `index.html`). KPIs and charts use **`payments`** (cash ledger) and **`invoices`**; Operations Excel import does **not** create payment rows—use **Record payment** with the enrollment business key (`enrollment_id`) to post cash that appears here.  
    Scheduled snapshot for n8n: `POST finance-data?resource=n8n-report` with header `X-N8n-Secret` matching `N8N_FINANCE_WEBHOOK_SECRET` (see `docs/N8N_FINANCE.md`).
@@ -37,6 +43,15 @@ Role-to-areas mapping is defined in `dashboard-ui/src/lib/roleAccess.ts`: e.g. `
 
 6. **Training — Tools**  
    `/.netlify/functions/training-data?resource=attendance|materials` for attendance rows and material links.
+
+6b. **Training — LMS analytics**  
+   `GET /.netlify/functions/lms-analytics?resource=overview|completion-by-course` — React page `/spa/training/lms-analytics`.
+
+6c. **Training — LMS catalog**  
+   Read-only `GET` on `lms-admin-data` for programs, cohorts, cohort enrollments (by `cohort_id`), rubrics, certificates, transcripts — `/spa/training/lms-catalog`.
+
+6d. **Training — Assessments**  
+   `/.netlify/functions/assessment-data?resource=assessments|questions|attempts` plus `PATCH …?resource=progress` — `/spa/training/assessments` (create/list for admin and trainer per handler).
 
 7. **Automation**  
    n8n webhook: `preview`, `send`, `status` (unchanged contract).

@@ -7,6 +7,8 @@ const BASE_LINKS: { to: string; label: string }[] = [
   { to: '/training/sessions', label: 'Sessions' },
   { to: '/training/presenter', label: 'Presenter tools' },
   { to: '/training/classroom', label: 'Classroom' },
+  { to: '/training/lms-analytics', label: 'LMS analytics' },
+  { to: '/training/lms-catalog', label: 'LMS catalog' },
   { to: '/training/materials', label: 'Attendance & Materials' },
   { to: '/training/library', label: 'Course Library' },
   { to: '/training/credentials', label: 'Credentials' },
@@ -21,6 +23,7 @@ export function TrainingLayout() {
       return [
         ...BASE_LINKS.slice(0, i),
         { to: '/training/assignments', label: 'Assignments' },
+        { to: '/training/assessments', label: 'Assessments' },
         ...BASE_LINKS.slice(i),
       ];
     }

@@ -8,6 +8,8 @@ const LINKS: { to: string; label: string }[] = [
   { to: '/operations/enrollments', label: 'Enrollments' },
   { to: '/operations/import', label: 'Import' },
   { to: '/operations/insights', label: 'Insights' },
+  { to: '/operations/lms-admin', label: 'LMS admin' },
+  { to: '/operations/integration-events', label: 'Integration events' },
 ];
 
 export function OperationsLayout() {

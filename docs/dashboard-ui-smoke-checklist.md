@@ -20,6 +20,7 @@ Use this checklist after parity changes between `dashboard/` and `dashboard-ui/`
   - Can authenticate with trainee account type.
   - Lands on `/spa/trainee/portal` by default.
   - Sees trainee-only layout without sidebar and can sign out.
+  - Cannot open staff areas by URL (redirect to portal except password change).
   - Can load enrolled courses, classroom assignments/materials, and submit assignment text/files.
   - Can update password from trainee portal.
 - Accountant
@@ -30,8 +31,12 @@ Use this checklist after parity changes between `dashboard/` and `dashboard-ui/`
 
 - `/spa/login` signs in and stores `sbs_token`, `sbs_role`, `sbs_username`.
 - `/spa/operations/*` loads tabs and CRUD modal.
+- `/spa/operations/integration-events` lists integration events and can mark rows processed.
+- `/spa/operations/lms-admin` loads LMS admin tabs (list + create for admin/staff).
 - `/spa/operations/trainees/:traineeId` opens trainee profile deep-link page from trainees list.
 - `/spa/training/*` loads all nested pages.
+- `/spa/training/lms-analytics` and `/spa/training/lms-catalog` load for admin and trainer.
+- `/spa/training/assessments` loads assessments, questions, and attempts (create flows for admin and trainer).
 - `/spa/trainee/portal` loads trainee-only portal flows.
 - `/spa/finance`, `/spa/automation`, `/spa/admin` respect role access.
 - Unknown private route redirects to role home.

@@ -9,6 +9,8 @@ import { OperationsLayout } from './pages/operations/OperationsLayout';
 import { OperationsOverviewPage } from './pages/operations/OperationsOverviewPage';
 import { OperationsInsightsPage } from './pages/operations/OperationsInsightsPage';
 import { OperationsImportPage } from './pages/operations/OperationsImportPage';
+import { OperationsIntegrationEventsPage } from './pages/operations/OperationsIntegrationEventsPage';
+import { OperationsLmsAdminPage } from './pages/operations/OperationsLmsAdminPage';
 import { TraineeProfilePage } from './pages/operations/TraineeProfilePage';
 import { TrainingLayout } from './pages/training/TrainingLayout';
 import { TrainingOverviewPage } from './pages/training/TrainingOverviewPage';
@@ -19,6 +21,9 @@ import { TrainingAssignmentsPage } from './pages/training/TrainingAssignmentsPag
 import { TrainingMaterialsAttendancePage } from './pages/training/TrainingMaterialsAttendancePage';
 import { TrainingCourseLibraryPage } from './pages/training/TrainingCourseLibraryPage';
 import { TrainingCredentialsPage } from './pages/training/TrainingCredentialsPage';
+import { TrainingLmsAnalyticsPage } from './pages/training/TrainingLmsAnalyticsPage';
+import { TrainingLmsCatalogPage } from './pages/training/TrainingLmsCatalogPage';
+import { TrainingAssessmentsPage } from './pages/training/TrainingAssessmentsPage';
 import { FinancePage } from './pages/FinancePage';
 import { CampaignsPage } from './pages/CampaignsPage';
 import { AdminPage } from './pages/AdminPage';
@@ -105,6 +110,8 @@ export default function App() {
           <Route path="overview" element={<OperationsOverviewPage />} />
           <Route path="insights" element={<OperationsInsightsPage />} />
           <Route path="import" element={<OperationsImportPage />} />
+          <Route path="integration-events" element={<OperationsIntegrationEventsPage />} />
+          <Route path="lms-admin" element={<OperationsLmsAdminPage />} />
           <Route path="trainees/:traineeId" element={<TraineeProfilePage />} />
           <Route path=":tab" element={<OperationsPage />} />
         </Route>
@@ -122,6 +129,9 @@ export default function App() {
           <Route path="presenter" element={<TrainingPresenterPage />} />
           <Route path="classroom" element={<TrainingClassroomPage />} />
           <Route path="assignments" element={<TrainingAssignmentsPage />} />
+          <Route path="lms-analytics" element={<TrainingLmsAnalyticsPage />} />
+          <Route path="lms-catalog" element={<TrainingLmsCatalogPage />} />
+          <Route path="assessments" element={<TrainingAssessmentsPage />} />
           <Route path="materials" element={<TrainingMaterialsAttendancePage />} />
           <Route path="library" element={<TrainingCourseLibraryPage />} />
           <Route path="credentials" element={<TrainingCredentialsPage />} />
