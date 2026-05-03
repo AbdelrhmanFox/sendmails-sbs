@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { Card } from '../components/design-system/Card';
+import { Callout } from '../components/design-system/Callout';
 import { Button } from '../components/design-system/Button';
 import { Input, Textarea } from '../components/design-system/Input';
 import { AUTH_ROLE, functionsBase, getAuthHeaders, jsonFetch } from '../../lib/api';
@@ -191,6 +193,7 @@ export function TraineePortalPage() {
         { headers: getAuthHeaders() },
       );
       setClassroom(refreshed);
+      toast.success('Submission saved.');
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Could not save submission.');
     } finally {
@@ -212,6 +215,7 @@ export function TraineePortalPage() {
       });
       setPasswordForm({ current: '', next: '', confirm: '' });
       setPasswordMsg('Password updated successfully.');
+      toast.success('Password updated.');
       const refreshed = await jsonFetch<TraineeMeResponse>(`${functionsBase()}/trainee-me`, { headers: getAuthHeaders() });
       setMe(refreshed);
     } catch (e) {
@@ -229,7 +233,7 @@ export function TraineePortalPage() {
 
   return (
     <div className="space-y-6">
-      <div>
+      <div id="trainee-overview" className="scroll-mt-28">
         <h1 className="text-2xl font-bold text-[var(--brand-text)]">Trainee portal</h1>
         <p className="mt-1 text-sm text-[var(--brand-muted)]">
           Assignments, classroom resources, and account updates in one place.
@@ -243,23 +247,47 @@ export function TraineePortalPage() {
         </div>
       ) : null}
 
-      <Card>
+      {!loading && me?.account?.must_change_password ? (
+        <Callout
+          title="Security update required"
+          action={{
+            label: 'Go to password form',
+            onClick: () => document.getElementById('trainee-password')?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+          }}
+        >
+          Change your temporary password now to protect your account and continue using the portal.
+        </Callout>
+      ) : null}
+
+      <Card id="trainee-profile" className="scroll-mt-28">
         <h2 className="text-lg font-semibold text-[var(--brand-text)]">Welcome {me?.trainee?.full_name || me?.account?.email || 'Trainee'}</h2>
         <p className="mt-1 text-sm text-[var(--brand-muted)]">
           {me?.account?.must_change_password
-            ? 'Security update required: change your temporary password now.'
+            ? 'Use the highlighted action above, then complete the password section at the bottom of this page.'
             : 'Your account password is up to date.'}
         </p>
-        <div className="mt-4 grid gap-3 text-sm text-[var(--brand-muted)] md:grid-cols-4">
-          <p>Status: <span className="font-medium text-[var(--brand-text)]">{me?.trainee?.status || '—'}</span></p>
-          <p>Type: <span className="font-medium text-[var(--brand-text)]">{me?.trainee?.trainee_type || '—'}</span></p>
-          <p>City: <span className="font-medium text-[var(--brand-text)]">{me?.trainee?.city || '—'}</span></p>
-          <p>Phone: <span className="font-medium text-[var(--brand-text)]">{me?.trainee?.phone || '—'}</span></p>
-        </div>
+        <dl className="mt-4 grid gap-x-6 gap-y-4 text-sm sm:grid-cols-2">
+          <div className="min-w-0">
+            <dt className="text-[var(--brand-muted)]">Status</dt>
+            <dd className="mt-0.5 font-medium text-[var(--brand-text)]">{me?.trainee?.status || '—'}</dd>
+          </div>
+          <div className="min-w-0">
+            <dt className="text-[var(--brand-muted)]">Type</dt>
+            <dd className="mt-0.5 font-medium text-[var(--brand-text)]">{me?.trainee?.trainee_type || '—'}</dd>
+          </div>
+          <div className="min-w-0">
+            <dt className="text-[var(--brand-muted)]">City</dt>
+            <dd className="mt-0.5 font-medium text-[var(--brand-text)]">{me?.trainee?.city || '—'}</dd>
+          </div>
+          <div className="min-w-0">
+            <dt className="text-[var(--brand-muted)]">Phone</dt>
+            <dd className="mt-0.5 font-medium text-[var(--brand-text)]">{me?.trainee?.phone || '—'}</dd>
+          </div>
+        </dl>
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-1">
+        <Card id="trainee-courses" className="scroll-mt-28 lg:col-span-1">
           <h2 className="text-lg font-semibold text-[var(--brand-text)]">My courses</h2>
           <div className="mt-3 space-y-2">
             {!courses.length ? <p className="text-sm text-[var(--brand-muted)]">No enrollments are assigned yet.</p> : null}
@@ -287,19 +315,30 @@ export function TraineePortalPage() {
           </div>
         </Card>
 
-        <div className="space-y-6 lg:col-span-2">
-          <Card>
-            <h2 className="text-lg font-semibold text-[var(--brand-text)]">Classroom</h2>
+        <Card className="scroll-mt-28 lg:col-span-2">
+          <h2 className="text-lg font-semibold text-[var(--brand-text)]">Learning workspace</h2>
+          <p className="mt-1 text-sm text-[var(--brand-muted)]">
+            Assignments, batch files, and library content for your selected enrollment.
+          </p>
+
+          <div
+            id="trainee-classroom"
+            className="scroll-mt-28 transition-opacity duration-200 motion-reduce:transition-none"
+            style={{ opacity: classroomLoading ? 0.65 : 1 }}
+          >
+            <h3 className="mt-5 text-base font-semibold text-[var(--brand-text)]">Classroom context</h3>
             <p className="mt-1 text-sm text-[var(--brand-muted)]">
               {activeCourse?.course_name || classroom?.batch?.course_name || '—'} · {activeCourse?.batch_name || classroom?.batch?.batch_name || '—'}
             </p>
             {classroomLoading ? <p className="mt-3 text-sm text-[var(--brand-muted)]">Loading classroom…</p> : null}
             {!activeBatchId && !classroomLoading ? (
-              <p className="mt-3 text-sm text-[var(--brand-muted)]">Select a course to view assignments and materials.</p>
+              <p className="mt-3 text-sm text-[var(--brand-muted)]">Select a course from the list to load this workspace.</p>
             ) : null}
-          </Card>
+          </div>
 
-          <Card>
+          <div className="my-6 border-t border-[var(--brand-border)]" role="presentation" />
+
+          <section id="trainee-assignments" className="scroll-mt-28">
             <h3 className="text-base font-semibold text-[var(--brand-text)]">Assignments</h3>
             <div className="mt-3 space-y-4">
               {!classroom?.assignments?.length ? <p className="text-sm text-[var(--brand-muted)]">No assignments yet.</p> : null}
@@ -307,14 +346,18 @@ export function TraineePortalPage() {
                 <AssignmentCard key={a.id} assignment={a} busy={Boolean(submissionBusy[a.id])} onSave={saveSubmission} />
               ))}
             </div>
-          </Card>
+          </section>
 
-          <Card>
+          <div className="my-6 border-t border-[var(--brand-border)]" role="presentation" />
+
+          <section id="trainee-materials" className="scroll-mt-28">
             <h3 className="text-base font-semibold text-[var(--brand-text)]">Batch materials</h3>
             <ResourceList items={classroom?.materials || []} />
-          </Card>
+          </section>
 
-          <Card>
+          <div className="my-6 border-t border-[var(--brand-border)]" role="presentation" />
+
+          <section id="trainee-library" className="scroll-mt-28">
             <h3 className="text-base font-semibold text-[var(--brand-text)]">Course library</h3>
             <ResourceList items={classroom?.course_library?.uncategorized || []} />
             <div className="mt-3 space-y-3">
@@ -327,11 +370,11 @@ export function TraineePortalPage() {
                 </details>
               ))}
             </div>
-          </Card>
-        </div>
+          </section>
+        </Card>
       </div>
 
-      <Card>
+      <Card id="trainee-password" className="scroll-mt-28">
         <h2 className="text-lg font-semibold text-[var(--brand-text)]">Change password</h2>
         <div className="mt-3 grid gap-3 md:grid-cols-3">
           <Input
@@ -393,8 +436,16 @@ function AssignmentCard({
   busy: boolean;
   onSave: (assignmentId: string, values: { text: string; file: File | null }) => Promise<void>;
 }) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [text, setText] = useState(assignment.my_submission?.submission_text || '');
   const [file, setFile] = useState<File | null>(null);
+
+  useEffect(() => {
+    setText(assignment.my_submission?.submission_text || '');
+    setFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }, [assignment.id, assignment.my_submission?.submission_text]);
+
   return (
     <article className="rounded-[var(--brand-radius-dense)] border border-[var(--brand-border)] p-4">
       <h4 className="font-semibold text-[var(--brand-text)]">{assignment.title}</h4>
@@ -403,12 +454,40 @@ function AssignmentCard({
       <div className="mt-3 space-y-3">
         <Textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="Write your answer" rows={4} />
         <input
+          ref={fileInputRef}
           type="file"
+          className="sr-only"
+          aria-label="Upload file"
           onChange={(e) => {
             const next = e.target.files && e.target.files[0] ? e.target.files[0] : null;
             setFile(next);
           }}
         />
+        <div className="flex flex-wrap items-center gap-2">
+          <Button type="button" variant="secondary" size="sm" onClick={() => fileInputRef.current?.click()}>
+            Choose file
+          </Button>
+          {file ? (
+            <>
+              <span className="max-w-[min(100%,14rem)] truncate text-sm text-[var(--brand-text)]" title={file.name}>
+                {file.name}
+              </span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setFile(null);
+                  if (fileInputRef.current) fileInputRef.current.value = '';
+                }}
+              >
+                Clear
+              </Button>
+            </>
+          ) : (
+            <span className="text-sm text-[var(--brand-muted)]">No file selected</span>
+          )}
+        </div>
         {assignment.my_submission?.file_url ? (
           <a className="inline-block text-xs text-[var(--brand-primary)] hover:underline" href={assignment.my_submission.file_url} target="_blank" rel="noreferrer">
             Open current uploaded file

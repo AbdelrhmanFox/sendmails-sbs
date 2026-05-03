@@ -1,4 +1,35 @@
 {
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@latest",
+        "--caps=vision,pdf,devtools",
+        "--output-dir",
+        "C:/Users/abdelrahmanahmed/Downloads/Sendmails SBS/.mcp-playwright-output",
+        "--viewport-size",
+        "1440x900"
+      ]
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "C:/Users/abdelrahmanahmed/Downloads/Sendmails SBS"
+      ]
+    },
+    "domAnalyzer": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "chrome-devtools-mcp@latest",
+        "--no-usage-statistics",
+        "--no-performance-crux"
+      ]
+    }
+  },
   "plugins": {
     "figma": {
       "enabled": true

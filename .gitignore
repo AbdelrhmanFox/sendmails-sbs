@@ -9,3 +9,6 @@ node_modules
 # Vite SPA build output (rebuilt by Netlify/Vercel from dashboard-ui)
 dashboard/spa/
 
+# Playwright MCP screenshots, snapshots, traces
+.mcp-playwright-output/
+

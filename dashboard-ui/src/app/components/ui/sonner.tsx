@@ -1,25 +1,23 @@
-"use client";
+import { Toaster as Sonner, type ToasterProps } from 'sonner';
 
-import { useTheme } from "next-themes";
-import { Toaster as Sonner, ToasterProps } from "sonner";
-
-const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme();
-
+/**
+ * App-wide toast host. Dark theme matches the dashboard shell (no next-themes in this Vite app).
+ */
+export function Toaster(props: ToasterProps) {
   return (
     <Sonner
-      theme={theme as ToasterProps["theme"]}
+      theme="dark"
       className="toaster group"
-      style={
-        {
-          "--normal-bg": "var(--popover)",
-          "--normal-text": "var(--popover-foreground)",
-          "--normal-border": "var(--border)",
-        } as React.CSSProperties
-      }
+      toastOptions={{
+        classNames: {
+          toast:
+            'border border-[var(--brand-border)] bg-[var(--brand-surface)] text-[var(--brand-text)] shadow-[var(--brand-shadow-soft)]',
+          description: 'text-[var(--brand-muted)]',
+          success: 'border-[var(--brand-success)]/40',
+          error: 'border-[var(--brand-danger)]/40',
+        },
+      }}
       {...props}
     />
   );
-};
-
-export { Toaster };
+}

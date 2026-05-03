@@ -11,8 +11,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ label, error, helpText, icon, className = '', ...props }, ref) => {
     const baseStyles = 'w-full px-4 py-2.5 rounded-[var(--brand-radius-dense)] border transition-all duration-200 bg-[var(--brand-surface)] text-[var(--brand-text)] placeholder:text-[var(--brand-muted)]';
     const stateStyles = error
-      ? 'border-[var(--brand-danger)] focus:border-[var(--brand-danger)] focus:ring-2 focus:ring-[var(--brand-danger)]/20'
-      : 'border-[var(--brand-border)] focus:border-[var(--brand-primary)] focus:ring-2 focus:ring-[var(--brand-primary)]/20';
+      ? 'border-[var(--brand-danger)] focus:border-[var(--brand-danger)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-danger)]/35'
+      : 'border-[var(--brand-border)] focus:border-[var(--brand-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-focus-ring)]';
     const iconPadding = icon ? 'pl-11' : '';
 
     return (
@@ -56,8 +56,8 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
   ({ label, error, helpText, options, className = '', ...props }, ref) => {
     const baseStyles = 'w-full px-4 py-2.5 rounded-[var(--brand-radius-dense)] border transition-all duration-200 bg-[var(--brand-surface)] text-[var(--brand-text)] cursor-pointer';
     const stateStyles = error
-      ? 'border-[var(--brand-danger)] focus:border-[var(--brand-danger)] focus:ring-2 focus:ring-[var(--brand-danger)]/20'
-      : 'border-[var(--brand-border)] focus:border-[var(--brand-primary)] focus:ring-2 focus:ring-[var(--brand-primary)]/20';
+      ? 'border-[var(--brand-danger)] focus:border-[var(--brand-danger)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-danger)]/35'
+      : 'border-[var(--brand-border)] focus:border-[var(--brand-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-focus-ring)]';
 
     return (
       <div className="w-full">
@@ -99,8 +99,8 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ label, error, helpText, rows = 4, className = '', ...props }, ref) => {
     const baseStyles = 'w-full px-4 py-2.5 rounded-[var(--brand-radius-dense)] border transition-all duration-200 bg-[var(--brand-surface)] text-[var(--brand-text)] placeholder:text-[var(--brand-muted)] resize-vertical';
     const stateStyles = error
-      ? 'border-[var(--brand-danger)] focus:border-[var(--brand-danger)] focus:ring-2 focus:ring-[var(--brand-danger)]/20'
-      : 'border-[var(--brand-border)] focus:border-[var(--brand-primary)] focus:ring-2 focus:ring-[var(--brand-primary)]/20';
+      ? 'border-[var(--brand-danger)] focus:border-[var(--brand-danger)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-danger)]/35'
+      : 'border-[var(--brand-border)] focus:border-[var(--brand-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-focus-ring)]';
 
     return (
       <div className="w-full">

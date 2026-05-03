@@ -12,7 +12,8 @@
     "import:workbook": "node scripts/import-workbook-data.js",
     "workbook:export": "node scripts/export-workbook.js",
     "data-model:build": "node scripts/build-data-model.js",
-    "sample-import:xlsx": "node scripts/generate-sample-import-xlsx.js"
+    "sample-import:xlsx": "node scripts/generate-sample-import-xlsx.js",
+    "mcp:verify": "node scripts/verify-mcp-env.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",

@@ -1,6 +1,10 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { Sidebar } from './components/layout/Sidebar';
+import { useEffect, useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Sidebar, SidebarPanel } from './components/layout/Sidebar';
 import { TopBar } from './components/layout/TopBar';
+import { TraineeSubNav } from './components/layout/TraineeSubNav';
+import { PageScaffold } from './components/layout/PageScaffold';
+import { Sheet, SheetContent } from './components/ui/sheet';
 import { AreaGuard } from './components/AreaGuard';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
@@ -32,6 +36,7 @@ import { TraineePortalPage } from './pages/TraineePortalPage';
 import { AUTH_TOKEN } from '../lib/api';
 import { PublicQueryRouter, hasPublicQuery } from './pages/public/PublicQueryRouter';
 import { defaultPathForRole } from '../lib/roleAccess';
+import { getRouteMeta } from '../lib/routeMeta';
 
 function RootEntry() {
   if (hasPublicQuery()) return <PublicQueryRouter />;
@@ -49,25 +54,62 @@ function RoleHomeRedirect() {
 function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem(AUTH_TOKEN);
   const role = localStorage.getItem('sbs_role') || 'user';
+  const location = useLocation();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [location.pathname, location.search]);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 768px)');
+    const onChange = () => {
+      if (mq.matches) setMobileNavOpen(false);
+    };
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
 
   if (!token) {
     return <Navigate to="/login" replace />;
   }
 
   const isTrainee = String(role).toLowerCase() === 'trainee';
+  const meta = getRouteMeta(location.pathname);
+
   return (
-    <div className="flex h-screen bg-[var(--brand-bg)]">
-      {!isTrainee ? <Sidebar currentRole={role} /> : null}
-      <div className={`${isTrainee ? 'ml-0' : 'ml-64'} flex flex-1 flex-col overflow-hidden`}>
-        <TopBar />
-        <main className="flex-1 overflow-y-auto p-6">
-          <AreaGuard role={role}>{children}</AreaGuard>
+    <div className="flex h-screen min-h-0 bg-[var(--brand-bg)]">
+      {!isTrainee ? (
+        <>
+          <Sidebar currentRole={role} />
+          <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
+            <SheetContent
+              side="left"
+              className="w-64 max-w-[min(100vw,16rem)] border-[var(--brand-border)] bg-[var(--brand-surface)] p-0 !shadow-[var(--brand-shadow)] sm:max-w-[min(100vw,16rem)] [&>button]:text-[var(--brand-text)] [&>button]:hover:bg-[var(--brand-surface-2)]"
+            >
+              <SidebarPanel currentRole={role} onNavigate={() => setMobileNavOpen(false)} />
+            </SheetContent>
+          </Sheet>
+        </>
+      ) : null}
+      <div className={`flex min-w-0 flex-1 flex-col overflow-hidden ${isTrainee ? '' : 'md:ml-64'}`}>
+        <TopBar
+          title={meta.title}
+          subtitle={meta.subtitle}
+          showMenuButton={!isTrainee}
+          onMenuClick={() => setMobileNavOpen(true)}
+        />
+        {isTrainee ? <TraineeSubNav /> : null}
+        <main className="min-h-0 min-w-0 flex-1 overflow-y-auto p-4 md:p-6">
+          <PageScaffold>
+            <AreaGuard role={role}>{children}</AreaGuard>
+          </PageScaffold>
         </main>
       </div>
     </div>
   );
 }
- 
+
 export default function App() {
   return (
     <BrowserRouter basename="/spa">
