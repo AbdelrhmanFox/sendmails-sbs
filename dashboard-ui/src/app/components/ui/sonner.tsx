@@ -1,12 +1,23 @@
+import { useEffect, useState } from 'react';
+import { useTheme } from 'next-themes';
 import { Toaster as Sonner, type ToasterProps } from 'sonner';
 
 /**
- * App-wide toast host. Dark theme matches the dashboard shell (no next-themes in this Vite app).
+ * App-wide toast host. Theme follows next-themes resolved appearance.
  */
 export function Toaster(props: ToasterProps) {
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const sonnerTheme = !mounted ? 'dark' : resolvedTheme === 'dark' ? 'dark' : 'light';
+
   return (
     <Sonner
-      theme="dark"
+      theme={sonnerTheme}
       className="toaster group"
       toastOptions={{
         classNames: {

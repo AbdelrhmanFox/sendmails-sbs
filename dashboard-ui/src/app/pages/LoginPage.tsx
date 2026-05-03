@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/design-system/Button';
+import { ThemeToggle } from '../components/layout/ThemeToggle';
 import { Input, Select } from '../components/design-system/Input';
 import { Card } from '../components/design-system/Card';
 import { AUTH_ROLE, AUTH_TOKEN, AUTH_USER, functionsBase, jsonFetch } from '../../lib/api';
@@ -50,6 +51,9 @@ export function LoginPage() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-[var(--brand-bg)] p-4">
+      <div className="absolute right-4 top-4 z-20 md:right-6 md:top-6">
+        <ThemeToggle className="border border-[var(--brand-border)] bg-[var(--brand-surface)]/90 backdrop-blur-sm" />
+      </div>
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute left-20 top-20 h-64 w-64 rounded-full bg-[var(--brand-primary)]/5 blur-3xl" />
         <div className="absolute bottom-20 right-20 h-96 w-96 rounded-full bg-[var(--brand-accent)]/5 blur-3xl" />

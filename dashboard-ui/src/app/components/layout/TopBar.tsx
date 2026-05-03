@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../design-system/Button';
+import { ThemeToggle } from './ThemeToggle';
 import { AUTH_ROLE, AUTH_USER, functionsBase, jsonFetch, clearAuthSession } from '../../../lib/api';
 
 export function TopBar({
@@ -91,6 +92,7 @@ export function TopBar({
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-2 md:gap-3">
+        <ThemeToggle />
         {actions}
         {supportHref ? (
           <a href={supportHref} target="_blank" rel="noreferrer">

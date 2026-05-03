@@ -203,3 +203,47 @@
 ::-webkit-scrollbar-thumb:hover {
   background: var(--brand-indigo);
 }
+
+/* Light appearance (next-themes sets class "light" on html). Dark tokens remain in :root above. */
+html.light {
+  --brand-bg: #eef0fb;
+  --brand-surface: #ffffff;
+  --brand-surface-2: #e4e7f5;
+  --brand-navy: #e8e9f7;
+  --brand-indigo: #d6d8f0;
+
+  --brand-border: #c5c9e0;
+
+  --brand-text: #0e1035;
+  --brand-muted: #5a5678;
+
+  --brand-primary: #008f86;
+  --brand-primary-2: #1a8fc4;
+  --brand-primary-deep: #006aa8;
+
+  --brand-accent: #d97706;
+  --brand-accent-2: #ea580c;
+
+  --brand-danger: #c81e1e;
+  --brand-success: #2d8a3a;
+
+  --brand-focus-ring: rgba(26, 143, 196, 0.45);
+
+  --brand-shadow: 0 6px 20px rgba(14, 16, 53, 0.1);
+  --brand-shadow-soft: 0 2px 10px rgba(14, 16, 53, 0.06);
+  --shadow-sm: 0 1px 3px rgba(14, 16, 53, 0.08);
+  --shadow-md: 0 4px 16px rgba(14, 16, 53, 0.1);
+  --shadow-lg: 0 6px 20px rgba(14, 16, 53, 0.12);
+}
+
+html.light ::-webkit-scrollbar-track {
+  background: var(--brand-surface-2);
+}
+
+html.light ::-webkit-scrollbar-thumb {
+  background: var(--brand-border);
+}
+
+html.light ::-webkit-scrollbar-thumb:hover {
+  background: #9ca3c9;
+}
