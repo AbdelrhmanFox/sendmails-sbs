@@ -1,7 +1,7 @@
 /** Mirrors `dashboard/js/shared.js` ROLE_AREAS / areasForRole. */
 export const ROLE_AREAS: Record<string, string[]> = {
   admin: ['operations', 'training', 'finance', 'automation', 'admin'],
-  staff: ['operations', 'automation'],
+  staff: ['operations', 'training', 'automation'],
   trainer: ['training'],
   trainee: ['training'],
   user: ['automation'],

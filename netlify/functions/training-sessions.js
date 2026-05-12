@@ -27,12 +27,12 @@ exports.handler = async (event) => {
 
   const auth = verifyAuth(event);
   if (!auth) return json({ error: 'Unauthorized' }, 401);
-  if (!['admin', 'trainer'].includes(auth.role)) return json({ error: 'Trainer or admin role required' }, 403);
 
   const supabase = getSupabaseServiceClient();
   if (!supabase) return json({ error: 'Server config missing' }, 500);
 
   if (event.httpMethod === 'GET') {
+    if (!['admin', 'trainer', 'staff'].includes(auth.role)) return json({ error: 'Trainer or admin role required' }, 403);
     let q = supabase
       .from('training_sessions')
       .select(
@@ -49,6 +49,7 @@ exports.handler = async (event) => {
   }
 
   if (event.httpMethod === 'DELETE') {
+    if (!['admin', 'trainer'].includes(auth.role)) return json({ error: 'Trainer or admin role required' }, 403);
     const sessionId = String(event.queryStringParameters?.id || '').trim();
     if (!sessionId) return json({ error: 'id is required' }, 400);
     const { data: row, error: loadErr } = await supabase
@@ -65,6 +66,8 @@ exports.handler = async (event) => {
     if (delErr) return json({ error: delErr.message || 'Could not delete session' }, 500);
     return json({ ok: true });
   }
+
+  if (!['admin', 'trainer'].includes(auth.role)) return json({ error: 'Trainer or admin role required' }, 403);
 
   let body;
   try {
