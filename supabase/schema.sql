@@ -368,3 +368,86 @@ begin
   return 'SBS-BA-' || cid || '-' || lpad(nn::text, 2, '0');
 end;
 $$;
+
+-- Finance expansion (20260513_finance_access_control + 20260513_finance_expenses)
+
+alter table public.enrollments
+  add column if not exists agreed_fee numeric(12, 2);
+
+create table if not exists public.finance_user_batch_access (
+  id uuid primary key default gen_random_uuid(),
+  username text not null,
+  batch_id text not null,
+  created_by text not null,
+  created_at timestamptz not null default now(),
+  unique (username, batch_id)
+);
+
+create index if not exists idx_finance_access_username on public.finance_user_batch_access (username);
+create index if not exists idx_finance_access_batch_id on public.finance_user_batch_access (batch_id);
+
+alter table public.finance_user_batch_access enable row level security;
+
+drop policy if exists finance_user_batch_access_deny_all on public.finance_user_batch_access;
+create policy finance_user_batch_access_deny_all
+  on public.finance_user_batch_access
+  for all using (false);
+
+create sequence if not exists public.cash_receipts_seq;
+
+create table if not exists public.cash_receipts (
+  id uuid primary key default gen_random_uuid(),
+  serial_number text unique not null,
+  payment_id uuid references public.payments (id) on delete set null,
+  enrollment_uuid uuid references public.enrollments (id) on delete set null,
+  amount numeric(12, 2) not null,
+  currency text not null default 'EGP',
+  payer_name text,
+  payer_address text,
+  method text not null default 'cash',
+  cheque_number text,
+  cheque_date date,
+  notes text,
+  issued_by text not null,
+  issued_at timestamptz not null default now(),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_cash_receipts_payment_id on public.cash_receipts (payment_id);
+create index if not exists idx_cash_receipts_issued_at on public.cash_receipts (issued_at desc);
+
+alter table public.cash_receipts enable row level security;
+
+drop policy if exists cash_receipts_deny_all on public.cash_receipts;
+create policy cash_receipts_deny_all on public.cash_receipts for all using (false);
+
+create or replace function public.next_receipt_serial() returns text
+language sql
+set search_path = public
+as $$
+  select 'SBS-RCP-' || lpad(nextval('public.cash_receipts_seq')::text, 6, '0');
+$$;
+
+create table if not exists public.finance_expenses (
+  id uuid primary key default gen_random_uuid(),
+  spent_at date not null,
+  amount numeric(12, 2) not null check (amount > 0),
+  currency text not null default 'EGP',
+  description text not null,
+  recorded_by text,
+  funding_source text,
+  batch_id text,
+  is_refund boolean not null default false,
+  refund_settled_at date,
+  created_by text not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists idx_finance_expenses_spent_at on public.finance_expenses (spent_at desc);
+create index if not exists idx_finance_expenses_batch_id on public.finance_expenses (batch_id);
+
+alter table public.finance_expenses enable row level security;
+
+drop policy if exists finance_expenses_deny_all on public.finance_expenses;
+create policy finance_expenses_deny_all on public.finance_expenses for all using (false);

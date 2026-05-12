@@ -14,7 +14,7 @@ export function getRouteMeta(pathname: string): RouteMeta {
   if (p === '/dashboard') return { title: 'Dashboard', subtitle: 'Platform overview' };
   if (p === '/trainee/portal') return { title: 'My Learning', subtitle: 'Courses, classroom, and assignments' };
   if (p === '/account/password') return { title: 'Change Password', subtitle: 'Update your account password' };
-  if (p === '/finance') return { title: 'Payments', subtitle: 'Revenue and payment flows' };
+  if (p === '/finance') return { title: 'Finance', subtitle: 'Receivables, cash book, payments and receipts' };
   if (p === '/automation') return { title: 'Campaigns', subtitle: 'Email automation and outreach' };
   if (p === '/admin') return { title: 'Admin', subtitle: 'System administration' };
   if (p === '/tools') return { title: 'Tools', subtitle: 'QR code generator and utilities' };

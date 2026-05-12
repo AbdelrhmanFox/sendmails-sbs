@@ -205,7 +205,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'BUSINESS',
     items: [
       { id: 'analytics', label: 'Analytics', path: '/operations/insights', area: 'operations', icon: iconAnalytics() },
-      { id: 'payments', label: 'Payments', path: '/finance', area: 'finance', icon: iconPayments() },
+      { id: 'payments', label: 'Finance', path: '/finance', area: 'finance', icon: iconPayments() },
       { id: 'campaigns', label: 'Campaigns', path: '/automation', area: 'automation', icon: iconCampaigns() },
     ],
   },
