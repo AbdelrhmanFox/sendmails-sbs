@@ -28,7 +28,15 @@ import { TrainingCredentialsPage } from './pages/training/TrainingCredentialsPag
 import { TrainingLmsAnalyticsPage } from './pages/training/TrainingLmsAnalyticsPage';
 import { TrainingLmsCatalogPage } from './pages/training/TrainingLmsCatalogPage';
 import { TrainingAssessmentsPage } from './pages/training/TrainingAssessmentsPage';
-import { FinancePage } from './pages/FinancePage';
+import { FinanceLayout } from './pages/finance/FinanceLayout';
+import { FinanceOverviewPage } from './pages/finance/FinanceOverviewPage';
+import { FinanceReceivablesPage } from './pages/finance/FinanceReceivablesPage';
+import { FinanceCashBookPage } from './pages/finance/FinanceCashBookPage';
+import { FinanceExpensesPage } from './pages/finance/FinanceExpensesPage';
+import { FinancePaymentsPage } from './pages/finance/FinancePaymentsPage';
+import { FinanceReceiptsPage } from './pages/finance/FinanceReceiptsPage';
+import { FinanceInvoicesPage } from './pages/finance/FinanceInvoicesPage';
+import { FinanceLedgerPage } from './pages/finance/FinanceLedgerPage';
 import { CampaignsPage } from './pages/CampaignsPage';
 import { AdminPage } from './pages/AdminPage';
 import { ToolsPage } from './pages/ToolsPage';
@@ -183,10 +191,20 @@ export default function App() {
           path="/finance"
           element={
             <ProtectedLayout>
-              <FinancePage />
+              <FinanceLayout />
             </ProtectedLayout>
           }
-        />
+        >
+          <Route index element={<Navigate to="overview" replace />} />
+          <Route path="overview" element={<FinanceOverviewPage />} />
+          <Route path="receivables" element={<FinanceReceivablesPage />} />
+          <Route path="cashbook" element={<FinanceCashBookPage />} />
+          <Route path="expenses" element={<FinanceExpensesPage />} />
+          <Route path="payments" element={<FinancePaymentsPage />} />
+          <Route path="receipts" element={<FinanceReceiptsPage />} />
+          <Route path="invoices" element={<FinanceInvoicesPage />} />
+          <Route path="ledger" element={<FinanceLedgerPage />} />
+        </Route>
         <Route
           path="/automation"
           element={

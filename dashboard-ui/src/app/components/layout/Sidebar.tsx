@@ -205,7 +205,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'BUSINESS',
     items: [
       { id: 'analytics', label: 'Analytics', path: '/operations/insights', area: 'operations', icon: iconAnalytics() },
-      { id: 'payments', label: 'Finance', path: '/finance', area: 'finance', icon: iconPayments() },
+      { id: 'payments', label: 'Finance', path: '/finance/overview', area: 'finance', icon: iconPayments() },
       { id: 'campaigns', label: 'Campaigns', path: '/automation', area: 'automation', icon: iconCampaigns() },
     ],
   },
@@ -228,6 +228,31 @@ const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
+/** Dedicated nav for accountant role — finance-focused only. */
+const FINANCE_NAV_GROUPS: NavGroup[] = [
+  {
+    id: 'overview',
+    label: null,
+    items: [
+      { id: 'dashboard', label: 'Dashboard', path: '/dashboard', area: null, icon: iconDashboard() },
+    ],
+  },
+  {
+    id: 'finance',
+    label: 'FINANCE',
+    items: [
+      { id: 'fin-overview',     label: 'Overview',     path: '/finance/overview',     area: 'finance', icon: iconAnalytics() },
+      { id: 'fin-receivables',  label: 'Receivables',  path: '/finance/receivables',  area: 'finance', icon: iconStudents() },
+      { id: 'fin-cashbook',     label: 'Cash Book',    path: '/finance/cashbook',     area: 'finance', icon: iconCourses() },
+      { id: 'fin-expenses',     label: 'Expenses',     path: '/finance/expenses',     area: 'finance', icon: iconPayments() },
+      { id: 'fin-payments',     label: 'Payments',     path: '/finance/payments',     area: 'finance', icon: iconAttendance() },
+      { id: 'fin-receipts',     label: 'Receipts',     path: '/finance/receipts',     area: 'finance', icon: iconCertificates() },
+      { id: 'fin-invoices',     label: 'Invoices',     path: '/finance/invoices',     area: 'finance', icon: iconAssignments() },
+      { id: 'fin-ledger',       label: 'Ledger',       path: '/finance/ledger',       area: 'finance', icon: iconLearningPaths() },
+    ],
+  },
+];
+
 function itemIsActive(pathname: string, item: NavItem): boolean {
   if (!item.path) return false;
   if (item.id === 'dashboard') return pathname === '/dashboard' || pathname === '/';
@@ -236,6 +261,7 @@ function itemIsActive(pathname: string, item: NavItem): boolean {
   if (item.id === 'learning-paths') return pathname === '/operations/batches';
   if (item.id === 'analytics') return pathname === '/operations/insights';
   if (item.id === 'import') return pathname === '/operations/import';
+  if (item.id === 'payments') return pathname.startsWith('/finance');
   return pathname === item.path || pathname.startsWith(`${item.path}/`);
 }
 
@@ -264,7 +290,8 @@ export function SidebarPanel({
       : 'User';
   const initial = displayName.charAt(0).toUpperCase() || 'U';
 
-  const visibleGroups = NAV_GROUPS.map((group) => ({
+  const baseGroups = role === 'accountant' ? FINANCE_NAV_GROUPS : NAV_GROUPS;
+  const visibleGroups = baseGroups.map((group) => ({
     ...group,
     items: group.items.filter((item) => item.comingSoon || !item.area || allowed.has(item.area)),
   })).filter((group) => group.items.length > 0);

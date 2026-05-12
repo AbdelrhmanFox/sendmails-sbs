@@ -14,7 +14,15 @@ export function getRouteMeta(pathname: string): RouteMeta {
   if (p === '/dashboard') return { title: 'Dashboard', subtitle: 'Platform overview' };
   if (p === '/trainee/portal') return { title: 'My Learning', subtitle: 'Courses, classroom, and assignments' };
   if (p === '/account/password') return { title: 'Change Password', subtitle: 'Update your account password' };
-  if (p === '/finance') return { title: 'Finance', subtitle: 'Receivables, cash book, payments and receipts' };
+  if (p === '/finance' || p === '/finance/overview') return { title: 'Finance Overview', subtitle: 'KPIs and revenue analytics' };
+  if (p === '/finance/receivables') return { title: 'Receivables', subtitle: 'Student balances and installments' };
+  if (p === '/finance/cashbook') return { title: 'Cash Book', subtitle: 'Income and expense register' };
+  if (p === '/finance/expenses') return { title: 'Expenses', subtitle: 'Add and manage expenses' };
+  if (p === '/finance/payments') return { title: 'Payments', subtitle: 'Record student payments' };
+  if (p === '/finance/receipts') return { title: 'Receipts', subtitle: 'Issue and print cash receipts' };
+  if (p === '/finance/invoices') return { title: 'Invoices', subtitle: 'Invoice management' };
+  if (p === '/finance/ledger') return { title: 'Ledger', subtitle: 'Full payment transaction log' };
+  if (p.startsWith('/finance')) return { title: 'Finance', subtitle: 'Accounting workspace' };
   if (p === '/automation') return { title: 'Campaigns', subtitle: 'Email automation and outreach' };
   if (p === '/admin') return { title: 'Admin', subtitle: 'System administration' };
   if (p === '/tools') return { title: 'Tools', subtitle: 'QR code generator and utilities' };
