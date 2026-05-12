@@ -3,7 +3,6 @@ import { useSearchParams } from 'react-router-dom';
 import { Card } from '../../components/design-system/Card';
 import { Button } from '../../components/design-system/Button';
 import { Input, Textarea } from '../../components/design-system/Input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/design-system/Table';
 import { Badge } from '../../components/design-system/Badge';
 import { AUTH_ROLE, functionsBase, getAuthHeaders, jsonFetch } from '../../../lib/api';
 
@@ -59,11 +58,7 @@ type SubmissionRow = {
 const ASSIGNMENT_FILE_ACCEPT =
   '.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.mp4,.webm,.mov,.mkv,.avi,.m4v,.mp3,.wav,.m4a,.aac,.ogg,.flac';
 
-type SignedUploadResponse = {
-  signedUrl: string;
-  publicUrl: string;
-  path: string;
-};
+type SignedUploadResponse = { signedUrl: string; publicUrl: string; path: string };
 
 function staffRoleOk(): boolean {
   const r = String(localStorage.getItem(AUTH_ROLE) || '').toLowerCase();
@@ -83,6 +78,8 @@ export function TrainingAssignmentsPage() {
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [err, setErr] = useState('');
   const [msg, setMsg] = useState('');
+  const [showNewForm, setShowNewForm] = useState(false);
+  const [reviewSubject, setReviewSubject] = useState<SubmissionRow | null>(null);
 
   const [newTitle, setNewTitle] = useState('');
   const [newInstructions, setNewInstructions] = useState('');
@@ -97,8 +94,9 @@ export function TrainingAssignmentsPage() {
   const [trainerFileKey, setTrainerFileKey] = useState(0);
   const [busyFile, setBusyFile] = useState(false);
 
-  const [reviewDraft, setReviewDraft] = useState<Record<string, { grade: string; feedback: string }>>({});
-  const [reviewBusy, setReviewBusy] = useState<Record<string, boolean>>({});
+  const [reviewGrade, setReviewGrade] = useState('');
+  const [reviewFeedback, setReviewFeedback] = useState('');
+  const [reviewBusy, setReviewBusy] = useState(false);
 
   const selected = useMemo(() => assignments.find((a) => a.id === selectedId) || null, [assignments, selectedId]);
 
@@ -123,16 +121,11 @@ export function TrainingAssignmentsPage() {
         if (!c) setLoadingClassrooms(false);
       }
     })();
-    return () => {
-      c = true;
-    };
+    return () => { c = true; };
   }, []);
 
   const loadAssignments = useCallback(async (bid: string) => {
-    if (!bid) {
-      setAssignments([]);
-      return;
-    }
+    if (!bid) { setAssignments([]); return; }
     setLoadingAssignments(true);
     setErr('');
     try {
@@ -149,16 +142,10 @@ export function TrainingAssignmentsPage() {
     }
   }, []);
 
-  useEffect(() => {
-    void loadAssignments(batchId);
-  }, [batchId, loadAssignments]);
+  useEffect(() => { void loadAssignments(batchId); }, [batchId, loadAssignments]);
 
   const loadDetail = useCallback(async (assignmentId: string) => {
-    if (!assignmentId) {
-      setFiles([]);
-      setSubmissions([]);
-      return;
-    }
+    if (!assignmentId) { setFiles([]); setSubmissions([]); return; }
     setLoadingDetail(true);
     setErr('');
     try {
@@ -167,25 +154,16 @@ export function TrainingAssignmentsPage() {
           `${functionsBase()}/classroom-data?resource=assignment-files&assignment_id=${encodeURIComponent(assignmentId)}`,
           { headers: getAuthHeaders() },
         ),
-        jsonFetch<{ items: SubmissionRow[]; assignment?: unknown }>(
+        jsonFetch<{ items: SubmissionRow[] }>(
           `${functionsBase()}/classroom-data?resource=submissions&assignment_id=${encodeURIComponent(assignmentId)}`,
           { headers: getAuthHeaders() },
         ),
       ]);
       setFiles(f.items || []);
       setSubmissions(s.items || []);
-      const drafts: Record<string, { grade: string; feedback: string }> = {};
-      (s.items || []).forEach((row) => {
-        drafts[row.id] = {
-          grade: row.review?.grade != null && !Number.isNaN(Number(row.review.grade)) ? String(row.review.grade) : '',
-          feedback: row.review?.feedback != null ? String(row.review.feedback) : '',
-        };
-      });
-      setReviewDraft(drafts);
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Could not load assignment detail');
-      setFiles([]);
-      setSubmissions([]);
+      setFiles([]); setSubmissions([]);
     } finally {
       setLoadingDetail(false);
     }
@@ -193,10 +171,7 @@ export function TrainingAssignmentsPage() {
 
   useEffect(() => {
     if (selectedId) void loadDetail(selectedId);
-    else {
-      setFiles([]);
-      setSubmissions([]);
-    }
+    else { setFiles([]); setSubmissions([]); }
   }, [selectedId, loadDetail]);
 
   useEffect(() => {
@@ -204,163 +179,99 @@ export function TrainingAssignmentsPage() {
       setEditTitle(selected.title);
       setEditInstructions(selected.instructions || '');
       setEditDue(selected.due_date ? String(selected.due_date).slice(0, 10) : '');
-    } else {
-      setEditTitle('');
-      setEditInstructions('');
-      setEditDue('');
     }
   }, [selected]);
 
   const onBatchChange = (next: string) => {
-    setBatchId(next);
-    setSelectedId('');
-    setSearchParams(next ? { batch: next } : {});
-    setMsg('');
+    setBatchId(next); setSelectedId(''); setSearchParams(next ? { batch: next } : {}); setMsg('');
   };
 
   const createAssignment = async () => {
     if (!batchId || !newTitle.trim()) return;
-    setErr('');
-    setMsg('');
+    setErr(''); setMsg('');
     try {
       await jsonFetch(`${functionsBase()}/classroom-data?resource=assignments`, {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({
-          batch_id: batchId,
-          title: newTitle.trim(),
-          instructions: newInstructions.trim() || null,
-          due_date: newDue.trim() || null,
-        }),
+        body: JSON.stringify({ batch_id: batchId, title: newTitle.trim(), instructions: newInstructions.trim() || null, due_date: newDue.trim() || null }),
       });
-      setNewTitle('');
-      setNewInstructions('');
-      setNewDue('');
-      setMsg('Assignment created.');
+      setNewTitle(''); setNewInstructions(''); setNewDue('');
+      setShowNewForm(false); setMsg('Assignment created.');
       await loadAssignments(batchId);
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Could not create assignment');
-    }
+    } catch (e) { setErr(e instanceof Error ? e.message : 'Could not create assignment'); }
   };
 
   const saveAssignment = async () => {
     if (!selectedId || !editTitle.trim()) return;
-    setErr('');
-    setMsg('');
+    setErr(''); setMsg('');
     try {
       await jsonFetch(`${functionsBase()}/classroom-data?resource=assignments&id=${encodeURIComponent(selectedId)}`, {
         method: 'PATCH',
         headers: getAuthHeaders(),
-        body: JSON.stringify({
-          title: editTitle.trim(),
-          instructions: editInstructions.trim() || null,
-          due_date: editDue.trim() || null,
-        }),
+        body: JSON.stringify({ title: editTitle.trim(), instructions: editInstructions.trim() || null, due_date: editDue.trim() || null }),
       });
-      setMsg('Assignment updated.');
-      await loadAssignments(batchId);
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Could not update assignment');
-    }
+      setMsg('Saved.'); await loadAssignments(batchId);
+    } catch (e) { setErr(e instanceof Error ? e.message : 'Could not update assignment'); }
   };
 
   const removeAssignment = async () => {
-    if (!selectedId) return;
-    if (!window.confirm('Delete this assignment and related files metadata?')) return;
-    setErr('');
-    setMsg('');
+    if (!selectedId || !window.confirm('Delete this assignment?')) return;
+    setErr(''); setMsg('');
     try {
       await jsonFetch(`${functionsBase()}/classroom-data?resource=assignments&id=${encodeURIComponent(selectedId)}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders(),
+        method: 'DELETE', headers: getAuthHeaders(),
       });
-      setSelectedId('');
-      setMsg('Assignment deleted.');
-      await loadAssignments(batchId);
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Could not delete assignment');
-    }
+      setSelectedId(''); setMsg('Deleted.'); await loadAssignments(batchId);
+    } catch (e) { setErr(e instanceof Error ? e.message : 'Could not delete assignment'); }
   };
 
   const uploadTrainerAttachment = async () => {
     if (!selectedId || !trainerFile) return;
-    setBusyFile(true);
-    setErr('');
-    setMsg('');
+    setBusyFile(true); setErr(''); setMsg('');
     try {
       const prep = await jsonFetch<SignedUploadResponse>(`${functionsBase()}/classroom-assignment-upload`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({
-          assignment_id: selectedId,
-          filename: trainerFile.name,
-          contentType: trainerFile.type || 'application/octet-stream',
-        }),
+        method: 'POST', headers: getAuthHeaders(),
+        body: JSON.stringify({ assignment_id: selectedId, filename: trainerFile.name, contentType: trainerFile.type || 'application/octet-stream' }),
       });
-      const putRes = await fetch(prep.signedUrl, {
-        method: 'PUT',
-        headers: { 'Content-Type': trainerFile.type || 'application/octet-stream' },
-        body: trainerFile,
-      });
+      const putRes = await fetch(prep.signedUrl, { method: 'PUT', headers: { 'Content-Type': trainerFile.type || 'application/octet-stream' }, body: trainerFile });
       if (!putRes.ok) throw new Error(`Upload failed (${putRes.status})`);
       await jsonFetch(`${functionsBase()}/classroom-data?resource=assignment-files`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({
-          assignment_id: selectedId,
-          title: trainerFileTitle.trim() || trainerFile.name,
-          file_url: prep.publicUrl,
-          file_storage_key: prep.path,
-          mime_type: trainerFile.type || null,
-          file_size_bytes: trainerFile.size || null,
-        }),
+        method: 'POST', headers: getAuthHeaders(),
+        body: JSON.stringify({ assignment_id: selectedId, title: trainerFileTitle.trim() || trainerFile.name, file_url: prep.publicUrl, file_storage_key: prep.path, mime_type: trainerFile.type || null, file_size_bytes: trainerFile.size || null }),
       });
-      setTrainerFileTitle('');
-      setTrainerFile(null);
-      setTrainerFileKey((k) => k + 1);
-      setMsg('File attached to assignment.');
-      await loadDetail(selectedId);
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Could not upload file');
-    } finally {
-      setBusyFile(false);
-    }
+      setTrainerFileTitle(''); setTrainerFile(null); setTrainerFileKey((k) => k + 1);
+      setMsg('File attached.'); await loadDetail(selectedId);
+    } catch (e) { setErr(e instanceof Error ? e.message : 'Could not upload file'); }
+    finally { setBusyFile(false); }
   };
 
   const removeTrainerFile = async (fileId: string) => {
     setErr('');
     try {
       await jsonFetch(`${functionsBase()}/classroom-data?resource=assignment-files&id=${encodeURIComponent(fileId)}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders(),
+        method: 'DELETE', headers: getAuthHeaders(),
       });
-      setMsg('Attachment removed.');
       await loadDetail(selectedId);
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Could not remove file');
-    }
+    } catch (e) { setErr(e instanceof Error ? e.message : 'Could not remove file'); }
   };
 
-  const saveReview = async (submissionId: string) => {
-    const d = reviewDraft[submissionId] || { grade: '', feedback: '' };
-    setReviewBusy((prev) => ({ ...prev, [submissionId]: true }));
-    setErr('');
+  const openReview = (sub: SubmissionRow) => {
+    setReviewSubject(sub);
+    setReviewGrade(sub.review?.grade != null ? String(sub.review.grade) : '');
+    setReviewFeedback(sub.review?.feedback || '');
+  };
+
+  const saveReview = async () => {
+    if (!reviewSubject) return;
+    setReviewBusy(true); setErr('');
     try {
-      await jsonFetch(`${functionsBase()}/classroom-data?resource=submissions&id=${encodeURIComponent(submissionId)}`, {
-        method: 'PATCH',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({
-          grade: d.grade.trim() === '' ? null : Number(d.grade),
-          feedback: d.feedback.trim() || null,
-        }),
+      await jsonFetch(`${functionsBase()}/classroom-data?resource=submissions&id=${encodeURIComponent(reviewSubject.id)}`, {
+        method: 'PATCH', headers: getAuthHeaders(),
+        body: JSON.stringify({ grade: reviewGrade.trim() === '' ? null : Number(reviewGrade), feedback: reviewFeedback.trim() || null }),
       });
-      setMsg('Review saved.');
-      await loadDetail(selectedId);
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Could not save review');
-    } finally {
-      setReviewBusy((prev) => ({ ...prev, [submissionId]: false }));
-    }
+      setReviewSubject(null); setMsg('Review saved.'); await loadDetail(selectedId);
+    } catch (e) { setErr(e instanceof Error ? e.message : 'Could not save review'); }
+    finally { setReviewBusy(false); }
   };
 
   if (!staffRoleOk()) {
@@ -371,214 +282,260 @@ export function TrainingAssignmentsPage() {
     );
   }
 
-  const batchOptions = [{ value: '', label: 'Select batch…' }].concat(
-    rows.map((r) => ({
-      value: r.batch_id,
-      label: `${r.batch_name || r.batch_id} · ${r.course_name || r.course_id || 'Course'}`,
-    })),
-  );
-
   return (
     <div className="space-y-4">
-      <p className="text-sm text-[var(--brand-muted)]">
-        Create assignments, attach trainer files, and review trainee submissions for each batch. Uses the same APIs as the legacy trainer classroom.
-      </p>
-      {err ? <p className="text-sm text-[var(--brand-danger)]">{err}</p> : null}
-      {msg ? <p className="text-sm text-[var(--brand-text)]">{msg}</p> : null}
+      {err ? <p className="rounded-lg border border-[var(--brand-danger)]/30 bg-[var(--brand-danger)]/10 px-3 py-2 text-sm text-[var(--brand-danger)]">{err}</p> : null}
+      {msg ? <p className="rounded-lg border border-[var(--brand-success)]/30 bg-[var(--brand-success)]/10 px-3 py-2 text-sm text-[var(--brand-success)]">{msg}</p> : null}
 
-      <Card>
-        <h2 className="text-lg font-semibold text-[var(--brand-text)]">Batch</h2>
-        {loadingClassrooms ? <p className="mt-2 text-sm text-[var(--brand-muted)]">Loading classrooms…</p> : null}
-        <div className="mt-3 max-w-xl">
-          <label className="mb-1.5 block text-sm font-medium text-[var(--brand-text)]">Classroom batch</label>
+      {/* Batch + action bar */}
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="min-w-0 flex-1">
+          <label className="mb-1 block text-xs font-medium text-[var(--brand-muted)]">Learning Path / Batch</label>
           <select
-            className="w-full rounded-[var(--brand-radius-dense)] border border-[var(--brand-border)] bg-[var(--brand-surface)] px-4 py-2.5 text-[var(--brand-text)]"
+            className="w-full max-w-sm rounded-[var(--brand-radius-dense)] border border-[var(--brand-border)] bg-[var(--brand-surface)] px-3 py-2 text-sm text-[var(--brand-text)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-focus-ring)]"
             value={batchId}
             onChange={(e) => onBatchChange(e.target.value)}
           >
-            {batchOptions.map((o) => (
-              <option key={o.value || 'empty'} value={o.value}>
-                {o.label}
+            <option value="">{loadingClassrooms ? 'Loading…' : 'Select batch…'}</option>
+            {rows.map((r) => (
+              <option key={r.batch_id} value={r.batch_id}>
+                {r.batch_name || r.batch_id} · {r.course_name || r.course_id || 'Course'}
               </option>
             ))}
           </select>
         </div>
-      </Card>
+        {batchId && (
+          <Button type="button" variant="primary" size="sm" onClick={() => setShowNewForm((v) => !v)}>
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            New Assignment
+          </Button>
+        )}
+      </div>
 
-      {batchId ? (
-        <>
-          <Card>
-            <h2 className="text-lg font-semibold text-[var(--brand-text)]">New assignment</h2>
-            <div className="mt-3 grid gap-3 md:grid-cols-2">
-              <Input label="Title" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} required />
-              <Input label="Due date" type="date" value={newDue} onChange={(e) => setNewDue(e.target.value)} />
-              <div className="md:col-span-2">
-                <Textarea label="Instructions" value={newInstructions} onChange={(e) => setNewInstructions(e.target.value)} rows={3} />
-              </div>
+      {/* New assignment form (collapsible) */}
+      {showNewForm && (
+        <Card>
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-[var(--brand-text)]">New Assignment</h3>
+            <button type="button" onClick={() => setShowNewForm(false)} className="text-[var(--brand-dim)] hover:text-[var(--brand-text)]">
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Input label="Title" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} required />
+            <Input label="Due date" type="date" value={newDue} onChange={(e) => setNewDue(e.target.value)} />
+            <div className="sm:col-span-2">
+              <Textarea label="Instructions" value={newInstructions} onChange={(e) => setNewInstructions(e.target.value)} rows={3} />
             </div>
-            <div className="mt-3">
-              <Button type="button" onClick={() => void createAssignment()} disabled={!newTitle.trim()}>
-                Add assignment
-              </Button>
-            </div>
-          </Card>
+          </div>
+          <div className="mt-3 flex gap-2">
+            <Button type="button" onClick={() => void createAssignment()} disabled={!newTitle.trim()}>Add assignment</Button>
+            <Button type="button" variant="secondary" onClick={() => setShowNewForm(false)}>Cancel</Button>
+          </div>
+        </Card>
+      )}
 
-          <Card noPadding>
-            <div className="p-4">
-              <h2 className="text-lg font-semibold text-[var(--brand-text)]">Assignments in this batch</h2>
-              {loadingAssignments ? <p className="mt-2 text-sm text-[var(--brand-muted)]">Loading…</p> : null}
-            </div>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Title</TableHead>
-                  <TableHead>Due</TableHead>
-                  <TableHead />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {!assignments.length && !loadingAssignments ? (
-                  <TableRow>
-                    <TableCell colSpan={3}>
-                      <p className="text-sm text-[var(--brand-muted)]">No assignments yet.</p>
-                    </TableCell>
-                  </TableRow>
-                ) : null}
-                {assignments.map((a) => (
-                  <TableRow key={a.id}>
-                    <TableCell>
-                      <span className="font-medium text-[var(--brand-text)]">{a.title}</span>
-                      {a.instructions ? <p className="mt-1 line-clamp-2 text-xs text-[var(--brand-muted)]">{a.instructions}</p> : null}
-                    </TableCell>
-                    <TableCell className="text-sm text-[var(--brand-muted)]">{a.due_date || '—'}</TableCell>
-                    <TableCell>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant={selectedId === a.id ? 'primary' : 'secondary'}
-                        onClick={() => {
-                          setSelectedId(a.id);
-                          setMsg('');
-                        }}
-                      >
-                        {selectedId === a.id ? 'Selected' : 'Manage'}
-                      </Button>
-                    </TableCell>
-                  </TableRow>
+      {/* Split pane: list | detail */}
+      {batchId && (
+        <div className={`grid gap-4 ${selectedId ? 'lg:grid-cols-[320px,1fr]' : 'grid-cols-1'}`}>
+          {/* LEFT — assignment list */}
+          <div className="space-y-1">
+            {loadingAssignments ? (
+              <div className="space-y-1">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="h-14 animate-pulse rounded-[var(--brand-radius-dense)] bg-[var(--brand-surface)]" />
                 ))}
-              </TableBody>
-            </Table>
-          </Card>
-
-          {selectedId && selected ? (
-            <Card className="space-y-4">
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <h2 className="text-lg font-semibold text-[var(--brand-text)]">Edit: {selected.title}</h2>
-                <Badge variant="neutral">{selectedId}</Badge>
               </div>
-              {loadingDetail ? <p className="text-sm text-[var(--brand-muted)]">Loading details…</p> : null}
-              <div className="grid gap-3 md:grid-cols-2">
-                <Input label="Title" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
-                <Input label="Due date" type="date" value={editDue} onChange={(e) => setEditDue(e.target.value)} />
-                <div className="md:col-span-2">
-                  <Textarea label="Instructions" value={editInstructions} onChange={(e) => setEditInstructions(e.target.value)} rows={4} />
+            ) : assignments.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 rounded-[var(--brand-radius)] border border-[var(--brand-border)] bg-[var(--brand-surface)] py-10 text-center">
+                <p className="text-sm text-[var(--brand-muted)]">No assignments yet.</p>
+                <Button type="button" size="sm" variant="secondary" onClick={() => setShowNewForm(true)}>Create first assignment</Button>
+              </div>
+            ) : (
+              assignments.map((a) => {
+                const isActive = a.id === selectedId;
+                return (
+                  <button
+                    key={a.id}
+                    type="button"
+                    onClick={() => { setSelectedId(a.id); setMsg(''); }}
+                    className={`w-full rounded-[var(--brand-radius-dense)] border px-3 py-3 text-left transition-all duration-100 ${
+                      isActive
+                        ? 'border-[var(--brand-primary)]/40 bg-[var(--brand-primary-subtle)]'
+                        : 'border-[var(--brand-border)] bg-[var(--brand-surface)] hover:bg-[var(--brand-surface-2)]'
+                    }`}
+                  >
+                    <p className={`text-sm font-medium leading-snug ${isActive ? 'text-[var(--brand-primary-2)]' : 'text-[var(--brand-text)]'}`}>
+                      {a.title}
+                    </p>
+                    <p className="mt-0.5 text-xs text-[var(--brand-muted)]">
+                      Due: {a.due_date || 'No date'}
+                    </p>
+                  </button>
+                );
+              })
+            )}
+          </div>
+
+          {/* RIGHT — assignment detail */}
+          {selectedId && selected && (
+            <div className="space-y-4 min-w-0">
+              {/* Edit panel */}
+              <Card>
+                <div className="mb-4 flex items-start justify-between gap-2">
+                  <h2 className="text-sm font-semibold text-[var(--brand-text)]">{selected.title}</h2>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedId('')}
+                    className="shrink-0 text-[var(--brand-dim)] hover:text-[var(--brand-text)]"
+                    aria-label="Close"
+                  >
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
                 </div>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button type="button" onClick={() => void saveAssignment()} disabled={!editTitle.trim()}>
-                  Save changes
-                </Button>
-                <Button type="button" variant="secondary" onClick={() => void removeAssignment()}>
-                  Delete assignment
-                </Button>
-              </div>
+                {loadingDetail ? (
+                  <div className="space-y-2">
+                    <div className="h-9 animate-pulse rounded bg-[var(--brand-surface-2)]" />
+                    <div className="h-20 animate-pulse rounded bg-[var(--brand-surface-2)]" />
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <Input label="Title" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
+                      <Input label="Due date" type="date" value={editDue} onChange={(e) => setEditDue(e.target.value)} />
+                      <div className="sm:col-span-2">
+                        <Textarea label="Instructions" value={editInstructions} onChange={(e) => setEditInstructions(e.target.value)} rows={3} />
+                      </div>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Button type="button" size="sm" onClick={() => void saveAssignment()} disabled={!editTitle.trim()}>Save changes</Button>
+                      <Button type="button" size="sm" variant="danger" onClick={() => void removeAssignment()}>Delete</Button>
+                    </div>
+                  </>
+                )}
+              </Card>
 
-              <div className="border-t border-[var(--brand-border)] pt-4">
-                <h3 className="text-base font-semibold text-[var(--brand-text)]">Trainer attachments</h3>
-                <ul className="mt-2 space-y-2">
-                  {files.map((f) => (
-                    <li key={f.id} className="flex flex-wrap items-center justify-between gap-2 rounded-[var(--brand-radius-dense)] border border-[var(--brand-border)] p-2">
-                      <a className="text-sm text-[var(--brand-primary)] underline" href={f.file_url} target="_blank" rel="noreferrer">
-                        {f.title || 'File'}
-                      </a>
-                      <Button type="button" size="sm" variant="secondary" onClick={() => void removeTrainerFile(f.id)}>
-                        Remove
-                      </Button>
-                    </li>
-                  ))}
-                  {!files.length ? <p className="text-sm text-[var(--brand-muted)]">No files attached.</p> : null}
-                </ul>
-                <div className="mt-3 grid gap-3 md:grid-cols-2">
+              {/* Attachments */}
+              <Card>
+                <h3 className="mb-3 text-sm font-semibold text-[var(--brand-text)]">Trainer Attachments</h3>
+                {files.length > 0 ? (
+                  <ul className="mb-3 space-y-1.5">
+                    {files.map((f) => (
+                      <li key={f.id} className="flex items-center justify-between gap-2 rounded-[var(--brand-radius-dense)] border border-[var(--brand-border)] px-3 py-2">
+                        <a className="truncate text-sm text-[var(--brand-primary)] underline" href={f.file_url} target="_blank" rel="noreferrer">
+                          {f.title || 'File'}
+                        </a>
+                        <button type="button" onClick={() => void removeTrainerFile(f.id)} className="shrink-0 text-xs text-[var(--brand-danger)] hover:underline">Remove</button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mb-3 text-xs text-[var(--brand-muted)]">No files attached.</p>
+                )}
+                <div className="grid gap-2 sm:grid-cols-2">
                   <Input label="Attachment title (optional)" value={trainerFileTitle} onChange={(e) => setTrainerFileTitle(e.target.value)} />
                   <div>
-                    <label className="mb-1.5 block text-sm font-medium text-[var(--brand-text)]">File</label>
-                    <input
-                      key={trainerFileKey}
-                      type="file"
-                      accept={ASSIGNMENT_FILE_ACCEPT}
-                      onChange={(e) => setTrainerFile(e.target.files?.[0] || null)}
-                      className="text-sm text-[var(--brand-text)]"
-                    />
+                    <label className="mb-1 block text-xs font-medium text-[var(--brand-muted)]">File</label>
+                    <input key={trainerFileKey} type="file" accept={ASSIGNMENT_FILE_ACCEPT} onChange={(e) => setTrainerFile(e.target.files?.[0] || null)} className="text-sm text-[var(--brand-text)]" />
                   </div>
                 </div>
-                <Button type="button" className="mt-2" loading={busyFile} onClick={() => void uploadTrainerAttachment()} disabled={!trainerFile}>
+                <Button type="button" size="sm" className="mt-2" loading={busyFile} onClick={() => void uploadTrainerAttachment()} disabled={!trainerFile}>
                   Upload attachment
                 </Button>
-              </div>
+              </Card>
 
-              <div className="border-t border-[var(--brand-border)] pt-4">
-                <h3 className="text-base font-semibold text-[var(--brand-text)]">Submissions</h3>
-                <div className="mt-3 space-y-4">
-                  {!submissions.length ? <p className="text-sm text-[var(--brand-muted)]">No submissions yet.</p> : null}
-                  {submissions.map((s) => (
-                    <Fragment key={s.id}>
-                      <div className="rounded-[var(--brand-radius-dense)] border border-[var(--brand-border)] p-3">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <p className="font-medium text-[var(--brand-text)]">{s.trainee_name || 'Trainee'}</p>
-                          <Badge variant={s.status === 'reviewed' ? 'success' : 'neutral'}>{s.status}</Badge>
-                        </div>
-                        <p className="text-xs text-[var(--brand-muted)]">{s.trainee_email || '—'} · {s.submitted_at || ''}</p>
-                        {s.submission_text ? <p className="mt-2 text-sm text-[var(--brand-text)]">{s.submission_text}</p> : null}
-                        {s.file_url ? (
-                          <a className="mt-1 inline-block text-sm text-[var(--brand-primary)] underline" href={s.file_url} target="_blank" rel="noreferrer">
-                            Download submitted file
-                          </a>
-                        ) : null}
-                        <div className="mt-3 grid gap-2 md:grid-cols-2">
-                          <Input
-                            label="Grade"
-                            value={reviewDraft[s.id]?.grade ?? ''}
-                            onChange={(e) =>
-                              setReviewDraft((prev) => ({
-                                ...prev,
-                                [s.id]: { grade: e.target.value, feedback: prev[s.id]?.feedback ?? '' },
-                              }))
-                            }
-                          />
-                          <Textarea
-                            label="Feedback"
-                            rows={2}
-                            value={reviewDraft[s.id]?.feedback ?? ''}
-                            onChange={(e) =>
-                              setReviewDraft((prev) => ({
-                                ...prev,
-                                [s.id]: { grade: prev[s.id]?.grade ?? '', feedback: e.target.value },
-                              }))
-                            }
-                          />
-                        </div>
-                        <Button type="button" className="mt-2" size="sm" loading={Boolean(reviewBusy[s.id])} onClick={() => void saveReview(s.id)}>
-                          Save review
-                        </Button>
-                      </div>
-                    </Fragment>
-                  ))}
+              {/* Submissions table */}
+              <Card noPadding>
+                <div className="flex items-center justify-between px-4 py-3">
+                  <h3 className="text-sm font-semibold text-[var(--brand-text)]">Submissions</h3>
+                  <Badge variant="neutral">{submissions.length}</Badge>
                 </div>
+                {loadingDetail ? (
+                  <div className="p-4">
+                    <div className="h-20 animate-pulse rounded bg-[var(--brand-surface-2)]" />
+                  </div>
+                ) : submissions.length === 0 ? (
+                  <p className="px-4 pb-4 text-sm text-[var(--brand-muted)]">No submissions yet.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-t border-[var(--brand-border)] bg-[var(--brand-surface-2)]">
+                          <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider text-[var(--brand-dim)]">Student</th>
+                          <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider text-[var(--brand-dim)]">Submitted</th>
+                          <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider text-[var(--brand-dim)]">Status</th>
+                          <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider text-[var(--brand-dim)]">Grade</th>
+                          <th className="px-4 py-2" />
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[var(--brand-border)]">
+                        {submissions.map((s) => (
+                          <tr key={s.id} className="hover:bg-[var(--brand-surface-2)]">
+                            <td className="px-4 py-2.5">
+                              <p className="font-medium text-[var(--brand-text)]">{s.trainee_name || 'Trainee'}</p>
+                              <p className="text-xs text-[var(--brand-muted)]">{s.trainee_email || ''}</p>
+                            </td>
+                            <td className="px-4 py-2.5 text-xs text-[var(--brand-muted)]">{s.submitted_at || '—'}</td>
+                            <td className="px-4 py-2.5">
+                              <Badge variant={s.status === 'reviewed' ? 'success' : 'neutral'}>{s.status}</Badge>
+                            </td>
+                            <td className="px-4 py-2.5 text-sm text-[var(--brand-text)]">
+                              {s.review?.grade != null ? s.review.grade : '—'}
+                            </td>
+                            <td className="px-4 py-2.5">
+                              <Button type="button" size="sm" variant="secondary" onClick={() => openReview(s)}>Review</Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </Card>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Review modal */}
+      {reviewSubject && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" onClick={() => setReviewSubject(null)}>
+          <div className="w-full max-w-md rounded-[var(--brand-radius)] border border-[var(--brand-border)] bg-[var(--brand-surface)] shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-start justify-between border-b border-[var(--brand-border)] px-5 py-4">
+              <div>
+                <h3 className="font-semibold text-[var(--brand-text)]">Review Submission</h3>
+                <p className="text-xs text-[var(--brand-muted)]">{reviewSubject.trainee_name} · {reviewSubject.submitted_at || ''}</p>
               </div>
-            </Card>
-          ) : null}
-        </>
-      ) : null}
+              <button type="button" onClick={() => setReviewSubject(null)} className="text-[var(--brand-dim)] hover:text-[var(--brand-text)]">
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <div className="space-y-3 p-5">
+              {reviewSubject.submission_text && (
+                <div>
+                  <p className="mb-1 text-xs font-medium text-[var(--brand-muted)]">Submission text</p>
+                  <p className="text-sm text-[var(--brand-text)]">{reviewSubject.submission_text}</p>
+                </div>
+              )}
+              {reviewSubject.file_url && (
+                <a href={reviewSubject.file_url} target="_blank" rel="noreferrer" className="inline-block text-sm text-[var(--brand-primary)] underline">
+                  Download submitted file
+                </a>
+              )}
+              <Input label="Grade" value={reviewGrade} onChange={(e) => setReviewGrade(e.target.value)} placeholder="0–100" />
+              <Textarea label="Feedback" rows={3} value={reviewFeedback} onChange={(e) => setReviewFeedback(e.target.value)} placeholder="Write feedback for the student…" />
+            </div>
+            <div className="flex justify-end gap-2 border-t border-[var(--brand-border)] px-5 py-3">
+              <Button type="button" variant="secondary" size="sm" onClick={() => setReviewSubject(null)}>Cancel</Button>
+              <Button type="button" size="sm" loading={reviewBusy} onClick={() => void saveReview()}>Save Review</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
