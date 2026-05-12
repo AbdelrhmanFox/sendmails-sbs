@@ -2,7 +2,9 @@
  * Migrate legacy salary-like rows from finance_expenses into finance_staff (payroll reference).
  *
  * Background: Excel import (import-excel-data.js) loads the expense side of WB2 into finance_expenses.
- * Rows described as salary/wages (e.g. Arabic "مرتب", "راتب") belong in Finance → Staff, not the generic expense register.
+ * Rows described as salary/wages (e.g. Arabic "مرتب", "راتب") or individual bonuses
+ * ("مكافأة", "bonus", …) can be moved to Finance → Staff. Bonuses are stored with job_title
+ * "Bonus / incentive" and monthly_salary_egp left null so dashboard payroll totals stay salary-only.
  *
  * Usage:
  *   node scripts/migrate-salary-expenses-to-staff.js --dry-run
@@ -57,12 +59,38 @@ function isSalaryLike(description) {
   return SALARY_RES.some((re) => re.test(d));
 }
 
+/** Individual-directed bonuses (still listed under Staff, not monthly payroll). */
+const BONUS_RES = [
+  /مكافأة|مكافاه|مكافاة/i,
+  /\bBonus(es)?\b/i,
+  /\bIncentives?\b/i,
+  /حوافز?|حافز/i,
+];
+
+function isBonusLike(description) {
+  const d = String(description || '').trim();
+  if (!d) return false;
+  return BONUS_RES.some((re) => re.test(d));
+}
+
+function isMigrantableLike(description) {
+  return isSalaryLike(description) || isBonusLike(description);
+}
+
+/** True when this line is bonus-only (not also a salary/payroll description). */
+function isBonusOnly(description) {
+  return isBonusLike(description) && !isSalaryLike(description);
+}
+
 /** Best-effort: turn "مرتب - أحمد" / "salary Ahmed" into a display name for Staff.full_name */
 function extractStaffName(description) {
   let s = String(description || '').trim();
+  s = s.replace(/^(مكافأة|مكافاه|مكافاة|bonus|incentives?|حوافز?|حافز)\s+ل\s*/i, '');
+  s = s.replace(/^(مكافأة|مكافاه|مكافاة|bonus|incentives?|حوافز?|حافز)\s*[:،,\-–\.]?\s*/i, '');
   s = s.replace(/^(مرتب|راتب|salary|payroll|wages?)\s*[:،,\-–\.]\s*/i, '');
   s = s.replace(/\s*[:،,\-–\.]\s*(مرتب|راتب|salary|payroll)$/i, '');
   s = s.replace(/\s+(مرتب|راتب|salary|payroll)$/i, '');
+  s = s.replace(/\s+(مكافأة|مكافاه|مكافاة|bonus)$/i, '');
   s = s.trim();
   return s || String(description || '').trim();
 }
@@ -83,20 +111,20 @@ async function main() {
     .order('spent_at', { ascending: true });
 
   if (error) throw new Error(error.message);
-  const salaryRows = (expenses || []).filter((r) => isSalaryLike(r.description));
-  if (salaryRows.length === 0) {
-    console.log('No finance_expenses rows matched salary-like patterns. Nothing to do.');
+  const migrantRows = (expenses || []).filter((r) => isMigrantableLike(r.description));
+  if (migrantRows.length === 0) {
+    console.log('No finance_expenses rows matched salary or individual-bonus patterns. Nothing to do.');
     return;
   }
 
   const byDescription = new Map();
-  for (const r of salaryRows) {
+  for (const r of migrantRows) {
     const key = String(r.description || '').trim();
     if (!byDescription.has(key)) byDescription.set(key, []);
     byDescription.get(key).push(r);
   }
 
-  console.log(`Matched ${salaryRows.length} expense rows in ${byDescription.size} description group(s).\n`);
+  console.log(`Matched ${migrantRows.length} expense rows in ${byDescription.size} description group(s).\n`);
 
   let inserted = 0;
   let skipped = 0;
@@ -126,13 +154,25 @@ async function main() {
       continue;
     }
 
+    const bonusOnly = isBonusOnly(rawDescription);
     const ids = group.map((g) => g.id).join(',');
     const firstDate = group[0].spent_at;
+    const sortedG = [...group].sort((a, b) => String(a.spent_at).localeCompare(String(b.spent_at)));
+    const lastG = sortedG[sortedG.length - 1];
+    const totalPaid = group.reduce((s, r) => s + Number(r.amount || 0), 0);
+
     const noteLines = [
-      'Migrated from finance_expenses (salary-like description).',
+      'Migrated from finance_expenses.',
+      bonusOnly
+        ? 'Type: individual bonus / incentive (not counted as recurring monthly salary in payroll KPI).'
+        : 'Type: salary / wages.',
       `Original description: ${rawDescription}`,
       `Source expense row count: ${group.length}. IDs: ${ids.slice(0, 500)}${ids.length > 500 ? '…' : ''}`,
     ];
+    if (bonusOnly) {
+      noteLines.push(`Total paid (EGP): ${totalPaid.toFixed(2)} across ${group.length} payment(s).`);
+      noteLines.push(`Latest payment: ${Number(lastG.amount).toFixed(2)} on ${String(lastG.spent_at).slice(0, 10)}.`);
+    }
 
     if (!FORCE) {
       const { data: existing } = await supabase
@@ -151,18 +191,19 @@ async function main() {
 
     const row = {
       full_name: fullName.slice(0, 500),
-      job_title: null,
+      job_title: bonusOnly ? 'Bonus / incentive' : null,
       email: null,
       phone: null,
       hire_date: firstDate ? String(firstDate).slice(0, 10) : null,
-      monthly_salary_egp: monthly,
+      monthly_salary_egp: bonusOnly ? null : monthly,
       status: 'active',
       notes: noteLines.join('\n'),
       created_by: 'migrate-salary-expenses-to-staff',
     };
 
     if (DRY) {
-      console.log(`[DRY] staff ← "${fullName}" | monthly_salary_egp=${monthly} | from ${group.length} expense(s)`);
+      const pay = bonusOnly ? `bonus total=${totalPaid.toFixed(2)} EGP (monthly_salary left null)` : `monthly_salary_egp=${monthly}`;
+      console.log(`[DRY] staff ← "${fullName}" | ${pay} | from ${group.length} expense(s)`);
       continue;
     }
 
@@ -173,7 +214,8 @@ async function main() {
       continue;
     }
     inserted++;
-    console.log(`INSERT staff ${ins.id} ← "${fullName}" (${monthly} EGP/mo from ${group.length} expense row(s))`);
+    const payLog = bonusOnly ? `bonus, total ${totalPaid.toFixed(2)} EGP` : `${monthly} EGP/mo`;
+    console.log(`INSERT staff ${ins.id} ← "${fullName}" (${payLog} from ${group.length} expense row(s))`);
 
     await deleteExpenseGroup(rawDescription, group);
   }
