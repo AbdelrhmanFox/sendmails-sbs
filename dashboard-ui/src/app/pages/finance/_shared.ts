@@ -39,6 +39,10 @@ export type StaffRow = {
   phone: string | null;
   hire_date: string | null;
   monthly_salary_egp: number | null;
+  /** For Bonus/incentive rows: total EGP paid. Null on salaried rows so payroll KPI stays salary-only. */
+  bonus_recorded_total_egp: number | null;
+  /** Stable HR key (national ID / internal code) used for dedup and import idempotency. */
+  employee_ref: string | null;
   status: string;
   notes: string | null;
   created_at?: string;

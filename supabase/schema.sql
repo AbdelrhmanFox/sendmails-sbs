@@ -461,6 +461,10 @@ create table if not exists public.finance_staff (
   phone text,
   hire_date date,
   monthly_salary_egp numeric(12, 2),
+  -- For Bonus/incentive rows: total EGP paid. Kept null on salaried rows so payroll KPI stays salary-only.
+  bonus_recorded_total_egp numeric(12, 2),
+  -- Optional stable HR key (national ID / internal code) for dedup and import idempotency.
+  employee_ref text,
   status text not null default 'active' check (status in ('active', 'inactive')),
   notes text,
   created_by text,
@@ -470,6 +474,7 @@ create table if not exists public.finance_staff (
 
 create index if not exists idx_finance_staff_status on public.finance_staff (status);
 create index if not exists idx_finance_staff_full_name on public.finance_staff (full_name);
+create index if not exists idx_finance_staff_employee_ref on public.finance_staff (employee_ref) where employee_ref is not null;
 
 alter table public.finance_staff enable row level security;
 

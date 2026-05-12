@@ -1,0 +1,27 @@
+{
+  "_comment": "Controls which finance_expenses descriptions are treated as staff payroll/stipends vs vendor lines during migration. Edit this file and re-run migrate-salary-expenses-to-staff.js --dry-run to preview changes.",
+  "allowlist": [
+    "بدل اتصالات",
+    "بدل مواصلات",
+    "بدل سكن",
+    "بدل تدريب",
+    "بدل انتاجية",
+    "بدل خبرة",
+    "بدل أداء",
+    "stipend",
+    "allowance"
+  ],
+  "denylist": [
+    "أتعاب محامي",
+    "أتعاب محامى",
+    "أتعاب استشاري",
+    "أتعاب مستشار",
+    "أتعاب مراجعة",
+    "أتعاب قانونية",
+    "fees lawyer",
+    "legal fees",
+    "consulting fees",
+    "vendor",
+    "مورد"
+  ]
+}

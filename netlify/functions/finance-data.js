@@ -700,6 +700,8 @@ exports.handler = async (event) => {
         phone: body.phone != null ? String(body.phone).trim() : null,
         hire_date: body.hire_date ? normalizeDate(body.hire_date) : null,
         monthly_salary_egp: body.monthly_salary_egp != null && body.monthly_salary_egp !== '' ? Number(body.monthly_salary_egp) : null,
+        bonus_recorded_total_egp: body.bonus_recorded_total_egp != null && body.bonus_recorded_total_egp !== '' ? Number(body.bonus_recorded_total_egp) : null,
+        employee_ref: body.employee_ref != null ? String(body.employee_ref).trim() || null : null,
         status,
         notes: body.notes != null ? String(body.notes).trim() : null,
         created_by: username,
@@ -729,6 +731,12 @@ exports.handler = async (event) => {
       if (body.hire_date !== undefined) updates.hire_date = body.hire_date ? normalizeDate(body.hire_date) : null;
       if (body.monthly_salary_egp !== undefined) {
         updates.monthly_salary_egp = body.monthly_salary_egp === '' || body.monthly_salary_egp == null ? null : Number(body.monthly_salary_egp);
+      }
+      if (body.bonus_recorded_total_egp !== undefined) {
+        updates.bonus_recorded_total_egp = body.bonus_recorded_total_egp === '' || body.bonus_recorded_total_egp == null ? null : Number(body.bonus_recorded_total_egp);
+      }
+      if (body.employee_ref !== undefined) {
+        updates.employee_ref = body.employee_ref ? String(body.employee_ref).trim() || null : null;
       }
       if (body.status !== undefined) {
         const st = String(body.status).trim().toLowerCase();

@@ -3,8 +3,10 @@
  *
  * Background: Excel import (import-excel-data.js) loads the expense side of WB2 into finance_expenses.
  * Rows described as salary/wages (e.g. Arabic "مرتب", "راتب") or individual bonuses
- * ("مكافأة", "bonus", …) can be moved to Finance → Staff. Bonuses are stored with job_title
- * "Bonus / incentive" and monthly_salary_egp left null so dashboard payroll totals stay salary-only.
+ * ("مكافأة", "bonus", …) or allowlist stipends (see scripts/payroll-migration-config.json) can be
+ * moved to Finance → Staff. Bonuses are stored with job_title "Bonus / incentive",
+ * monthly_salary_egp left null, and bonus_recorded_total_egp set to the total paid so dashboard
+ * payroll commitment KPIs stay salary-only.
  *
  * Usage:
  *   node scripts/migrate-salary-expenses-to-staff.js --dry-run
@@ -21,11 +23,22 @@
  *
  * Idempotency: skips a group if a finance_staff row already exists with the same full_name AND notes containing
  *   "Migrated from finance_expenses" (re-run safe). Use --force to insert anyway (may duplicate names).
+ *
+ * Allowlist / denylist: loaded from scripts/payroll-migration-config.json.
+ *   allowlist: additional description substrings to migrate (e.g. "بدل اتصالات").
+ *   denylist:  substrings to exclude even if they match salary/bonus patterns (e.g. "أتعاب محامي").
  */
 
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 const { createClient } = require('@supabase/supabase-js');
+
+let migrationConfig = { allowlist: [], denylist: [] };
+try {
+  migrationConfig = require('./payroll-migration-config.json');
+} catch (_) {
+  console.warn('WARN: payroll-migration-config.json not found — using built-in patterns only.');
+}
 
 const DRY = process.argv.includes('--dry-run');
 const APPLY = process.argv.includes('--apply');
@@ -43,6 +56,8 @@ if (DELETE_EXPENSES && !APPLY) {
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
+// ── Pattern matching ──────────────────────────────────────────────────────────
+
 /** Description matches common salary / payroll wording (Arabic + English). */
 const SALARY_RES = [
   /مرتب/i,
@@ -59,7 +74,7 @@ function isSalaryLike(description) {
   return SALARY_RES.some((re) => re.test(d));
 }
 
-/** Individual-directed bonuses (still listed under Staff, not monthly payroll). */
+/** Individual-directed bonuses (listed under Staff, not monthly payroll). */
 const BONUS_RES = [
   /مكافأة|مكافاه|مكافاة/i,
   /\bBonus(es)?\b/i,
@@ -73,13 +88,26 @@ function isBonusLike(description) {
   return BONUS_RES.some((re) => re.test(d));
 }
 
+/** True if description matches any allowlist substring (case-insensitive). */
+function isAllowlisted(description) {
+  const d = String(description || '').trim().toLowerCase();
+  return (migrationConfig.allowlist || []).some((s) => d.includes(String(s).toLowerCase()));
+}
+
+/** True if description matches any denylist substring (case-insensitive). */
+function isDenylisted(description) {
+  const d = String(description || '').trim().toLowerCase();
+  return (migrationConfig.denylist || []).some((s) => d.includes(String(s).toLowerCase()));
+}
+
 function isMigrantableLike(description) {
-  return isSalaryLike(description) || isBonusLike(description);
+  if (isDenylisted(description)) return false;
+  return isSalaryLike(description) || isBonusLike(description) || isAllowlisted(description);
 }
 
 /** True when this line is bonus-only (not also a salary/payroll description). */
 function isBonusOnly(description) {
-  return isBonusLike(description) && !isSalaryLike(description);
+  return isBonusLike(description) && !isSalaryLike(description) && !isAllowlisted(description);
 }
 
 /** Best-effort: turn "مرتب - أحمد" / "salary Ahmed" into a display name for Staff.full_name */
@@ -104,6 +132,33 @@ function pickSalaryAmount(rows) {
   return Number(sorted[sorted.length - 1].amount);
 }
 
+// ── Audit log ─────────────────────────────────────────────────────────────────
+
+/**
+ * Write an entry into finance_audit_log for each expense delete, matching the
+ * same format used by the finance-data.js API handler (writeAudit).
+ */
+async function writeAuditLog(expenseIds, staffId, rawDescription) {
+  if (!expenseIds || expenseIds.length === 0) return;
+  const rows = expenseIds.map((eid) => ({
+    actor: 'migrate-salary-expenses-to-staff',
+    action: 'delete',
+    entity: 'finance_expenses',
+    entity_id: String(eid),
+    payload: {
+      reason: 'migrated-to-staff',
+      staff_id: staffId || null,
+      original_description: String(rawDescription || '').slice(0, 200),
+    },
+  }));
+  const { error } = await supabase.from('finance_audit_log').insert(rows);
+  if (error) {
+    console.warn(`  WARN audit log insert failed: ${error.message}`);
+  }
+}
+
+// ── Main ─────────────────────────────────────────────────────────────────────
+
 async function main() {
   const { data: expenses, error } = await supabase
     .from('finance_expenses')
@@ -113,7 +168,7 @@ async function main() {
   if (error) throw new Error(error.message);
   const migrantRows = (expenses || []).filter((r) => isMigrantableLike(r.description));
   if (migrantRows.length === 0) {
-    console.log('No finance_expenses rows matched salary or individual-bonus patterns. Nothing to do.');
+    console.log('No finance_expenses rows matched salary, individual-bonus, or allowlist patterns. Nothing to do.');
     return;
   }
 
@@ -131,7 +186,7 @@ async function main() {
   let deleted = 0;
   let errors = 0;
 
-  async function deleteExpenseGroup(rawDescription, group) {
+  async function deleteExpenseGroup(rawDescription, group, staffId) {
     if (!DELETE_EXPENSES || DRY || !APPLY) return;
     const expenseIds = group.map((g) => g.id);
     const { error: delErr } = await supabase.from('finance_expenses').delete().in('id', expenseIds);
@@ -142,6 +197,7 @@ async function main() {
       deleted += expenseIds.length;
       const tail = rawDescription.length > 60 ? `${rawDescription.slice(0, 60)}…` : rawDescription;
       console.log(`  deleted ${expenseIds.length} finance_expenses row(s) for "${tail}"`);
+      await writeAuditLog(expenseIds, staffId, rawDescription);
     }
   }
 
@@ -161,6 +217,10 @@ async function main() {
     const lastG = sortedG[sortedG.length - 1];
     const totalPaid = group.reduce((s, r) => s + Number(r.amount || 0), 0);
 
+    // Collect unique recorded_by / funding_source values for provenance
+    const recordedByValues = [...new Set(group.map((r) => r.recorded_by).filter(Boolean))];
+    const fundingSourceValues = [...new Set(group.map((r) => r.funding_source).filter(Boolean))];
+
     const noteLines = [
       'Migrated from finance_expenses.',
       bonusOnly
@@ -169,6 +229,12 @@ async function main() {
       `Original description: ${rawDescription}`,
       `Source expense row count: ${group.length}. IDs: ${ids.slice(0, 500)}${ids.length > 500 ? '…' : ''}`,
     ];
+    if (recordedByValues.length > 0) {
+      noteLines.push(`Recorded by: ${recordedByValues.join(', ')}`);
+    }
+    if (fundingSourceValues.length > 0) {
+      noteLines.push(`Funding source: ${fundingSourceValues.join(', ')}`);
+    }
     if (bonusOnly) {
       noteLines.push(`Total paid (EGP): ${totalPaid.toFixed(2)} across ${group.length} payment(s).`);
       noteLines.push(`Latest payment: ${Number(lastG.amount).toFixed(2)} on ${String(lastG.spent_at).slice(0, 10)}.`);
@@ -180,9 +246,10 @@ async function main() {
         .select('id, notes')
         .eq('full_name', fullName)
         .limit(5);
-      const already = (existing || []).some((e) => String(e.notes || '').includes('Migrated from finance_expenses'));
-      if (already) {
-        await deleteExpenseGroup(rawDescription, group);
+      const alreadyMigrated = (existing || []).some((e) => String(e.notes || '').includes('Migrated from finance_expenses'));
+      if (alreadyMigrated) {
+        const existingId = (existing || []).find((e) => String(e.notes || '').includes('Migrated from finance_expenses'))?.id;
+        await deleteExpenseGroup(rawDescription, group, existingId || null);
         console.log(`SKIP insert (already migrated): "${fullName}"`);
         skipped++;
         continue;
@@ -196,14 +263,18 @@ async function main() {
       phone: null,
       hire_date: firstDate ? String(firstDate).slice(0, 10) : null,
       monthly_salary_egp: bonusOnly ? null : monthly,
+      bonus_recorded_total_egp: bonusOnly ? totalPaid : null,
       status: 'active',
       notes: noteLines.join('\n'),
       created_by: 'migrate-salary-expenses-to-staff',
     };
 
     if (DRY) {
-      const pay = bonusOnly ? `bonus total=${totalPaid.toFixed(2)} EGP (monthly_salary left null)` : `monthly_salary_egp=${monthly}`;
-      console.log(`[DRY] staff ← "${fullName}" | ${pay} | from ${group.length} expense(s)`);
+      const pay = bonusOnly
+        ? `bonus_recorded_total=${totalPaid.toFixed(2)} EGP (monthly_salary left null)`
+        : `monthly_salary_egp=${monthly}`;
+      const meta = [...recordedByValues.map((v) => `by=${v}`), ...fundingSourceValues.map((v) => `src=${v}`)].join(', ');
+      console.log(`[DRY] staff ← "${fullName}" | ${pay} | from ${group.length} expense(s)${meta ? ` | ${meta}` : ''}`);
       continue;
     }
 
@@ -217,7 +288,7 @@ async function main() {
     const payLog = bonusOnly ? `bonus, total ${totalPaid.toFixed(2)} EGP` : `${monthly} EGP/mo`;
     console.log(`INSERT staff ${ins.id} ← "${fullName}" (${payLog} from ${group.length} expense row(s))`);
 
-    await deleteExpenseGroup(rawDescription, group);
+    await deleteExpenseGroup(rawDescription, group, ins.id);
   }
 
   console.log('\n── Summary ──');

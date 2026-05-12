@@ -376,7 +376,21 @@ async function main() {
   const incomeRows  = dataRows.filter(r => r[0] && r[1] && num(r[3]) > 0);
   const expenseRows = dataRows.filter(r => r[9] && r[10] && num(r[12]) > 0);
 
-  log('INFO', `WB2 income: ${incomeRows.length} rows, expenses: ${expenseRows.length} rows`);
+  // Reconciliation: log skipped expense rows and reasons so the accountant can verify
+  const skippedExpenseRows = dataRows.filter(r => !(r[9] && r[10] && num(r[12]) > 0));
+  const skippedWithAnyData = skippedExpenseRows.filter(r => r[9] || r[10] || r[11] || r[12]);
+  if (skippedWithAnyData.length > 0) {
+    log('RECONCILE', `${skippedWithAnyData.length} WB2 expense-side rows had some data but were skipped (col9/10 empty or amount ≤ 0):`);
+    skippedWithAnyData.slice(0, 20).forEach((r, i) => {
+      const reason = !r[9] ? 'col9 empty' : !r[10] ? 'col10 (date) empty' : 'col12 (amount) ≤ 0 or missing';
+      log('RECONCILE', `  row ${i + 3}: col9="${String(r[9]||'').slice(0,30)}" col10="${String(r[10]||'').slice(0,20)}" col12="${r[12]}" → ${reason}`);
+    });
+    if (skippedWithAnyData.length > 20) {
+      log('RECONCILE', `  … and ${skippedWithAnyData.length - 20} more. Run with --dry-run and check full output.`);
+    }
+  }
+
+  log('INFO', `WB2 income: ${incomeRows.length} rows, expenses: ${expenseRows.length} rows (skipped with partial data: ${skippedWithAnyData.length})`);
 
   await importExpenses(expenseRows);
   await importCashbookIncome(incomeRows);

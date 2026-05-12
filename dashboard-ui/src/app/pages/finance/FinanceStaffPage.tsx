@@ -4,7 +4,7 @@ import { Button } from '../../components/design-system/Button';
 import { Input } from '../../components/design-system/Input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/design-system/Table';
 import { functionsBase, getAuthHeaders, jsonFetch } from '../../../lib/api';
-import { fmtFull, parseBonusTotalFromNotes, type StaffRow } from './_shared';
+import { fmtFull, type StaffRow } from './_shared';
 
 const emptyForm = {
   full_name: '',
@@ -13,6 +13,8 @@ const emptyForm = {
   phone: '',
   hire_date: '',
   monthly_salary_egp: '',
+  bonus_recorded_total_egp: '',
+  employee_ref: '',
   status: 'active' as const,
   notes: '',
 };
@@ -59,6 +61,8 @@ export function FinanceStaffPage() {
         phone: form.phone.trim() || undefined,
         hire_date: form.hire_date || undefined,
         monthly_salary_egp: form.monthly_salary_egp === '' ? undefined : Number(form.monthly_salary_egp),
+        bonus_recorded_total_egp: form.bonus_recorded_total_egp === '' ? undefined : Number(form.bonus_recorded_total_egp),
+        employee_ref: form.employee_ref.trim() || undefined,
         status: form.status,
         notes: form.notes.trim() || undefined,
       };
@@ -93,6 +97,8 @@ export function FinanceStaffPage() {
       phone: r.phone || '',
       hire_date: r.hire_date ? String(r.hire_date).slice(0, 10) : '',
       monthly_salary_egp: r.monthly_salary_egp != null ? String(r.monthly_salary_egp) : '',
+      bonus_recorded_total_egp: r.bonus_recorded_total_egp != null ? String(r.bonus_recorded_total_egp) : '',
+      employee_ref: r.employee_ref || '',
       status: r.status === 'inactive' ? 'inactive' : 'active',
       notes: r.notes || '',
     });
@@ -120,6 +126,11 @@ export function FinanceStaffPage() {
 
   return (
     <div className="space-y-5">
+      {/* Double-count policy notice */}
+      <div className="rounded-lg border border-[var(--brand-warning)]/40 bg-[var(--brand-warning)]/8 px-4 py-3 text-xs text-[var(--brand-warning)]">
+        <strong>Accounting note — avoid double-counting:</strong> Staff monthly salaries here are planning/commitment data. Do not also record the same payroll as a regular expense in the Cash Book. Use one source of truth: either Staff (for recurring commitments) or Finance Expenses (for posted cash), not both for the same person/period.
+      </div>
+
       {msg && (
         <p
           className={`rounded-lg border px-3 py-2 text-sm ${
@@ -177,7 +188,21 @@ export function FinanceStaffPage() {
                 min="0"
                 value={form.monthly_salary_egp}
                 onChange={(e) => setForm((p) => ({ ...p, monthly_salary_egp: e.target.value }))}
-                placeholder="Optional"
+                placeholder="Leave blank for bonus-only rows"
+              />
+              <Input
+                label="Bonus recorded total (EGP)"
+                type="number"
+                min="0"
+                value={form.bonus_recorded_total_egp}
+                onChange={(e) => setForm((p) => ({ ...p, bonus_recorded_total_egp: e.target.value }))}
+                placeholder="Bonus / incentive rows only"
+              />
+              <Input
+                label="Employee ref"
+                value={form.employee_ref}
+                onChange={(e) => setForm((p) => ({ ...p, employee_ref: e.target.value }))}
+                placeholder="National ID / HR code (optional)"
               />
               <div>
                 <label className="mb-1 block text-xs font-medium text-[var(--brand-muted)]">Status</label>
@@ -254,20 +279,12 @@ export function FinanceStaffPage() {
                         <TableCell className="text-right text-sm text-[var(--brand-text)]">
                           {r.monthly_salary_egp != null ? (
                             fmtFull(Number(r.monthly_salary_egp))
-                          ) : (
-                            (() => {
-                              const bonusTotal = parseBonusTotalFromNotes(r.notes);
-                              if (bonusTotal != null) {
-                                return (
-                                  <span className="inline-flex flex-col items-end gap-0">
-                                    <span>{fmtFull(bonusTotal)}</span>
-                                    <span className="text-[10px] font-normal text-[var(--brand-dim)]">recorded total</span>
-                                  </span>
-                                );
-                              }
-                              return '—';
-                            })()
-                          )}
+                          ) : r.bonus_recorded_total_egp != null ? (
+                            <span className="inline-flex flex-col items-end gap-0">
+                              <span>{fmtFull(Number(r.bonus_recorded_total_egp))}</span>
+                              <span className="text-[10px] font-normal text-[var(--brand-dim)]">bonus total</span>
+                            </span>
+                          ) : '—'}
                         </TableCell>
                         <TableCell className="text-right space-x-1">
                           <Button type="button" variant="secondary" size="sm" onClick={() => startEdit(r)}>
