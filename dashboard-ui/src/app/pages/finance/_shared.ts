@@ -31,6 +31,50 @@ export type ReceiptItem = {
   enrollment_uuid?: string | null;
 };
 
+export type StaffRow = {
+  id: string;
+  full_name: string;
+  job_title: string | null;
+  email: string | null;
+  phone: string | null;
+  hire_date: string | null;
+  monthly_salary_egp: number | null;
+  status: string;
+  notes: string | null;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type RecurringSubscriptionRow = {
+  id: string;
+  name: string;
+  direction: string;
+  amount_egp: number;
+  cycle: string;
+  start_date: string | null;
+  next_billing_date: string | null;
+  end_date: string | null;
+  status: string;
+  notes: string | null;
+};
+
+export type HrAnalytics = {
+  staff_active: number;
+  staff_inactive: number;
+  monthly_payroll_egp: number;
+  subscriptions_active: number;
+  monthly_subscriptions_payable_egp: number;
+  monthly_subscriptions_receivable_egp: number;
+  upcoming_renewals: {
+    id: string;
+    name: string;
+    direction: string;
+    next_billing_date: string;
+    amount_egp: number;
+    cycle: string;
+  }[];
+};
+
 export type InvoiceRow = Record<string, unknown>;
 
 export function fmt(n: number) {

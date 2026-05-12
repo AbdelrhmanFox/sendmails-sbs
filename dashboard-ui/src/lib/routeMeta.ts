@@ -18,6 +18,8 @@ export function getRouteMeta(pathname: string): RouteMeta {
   if (p === '/finance/receivables') return { title: 'Receivables', subtitle: 'Student balances and installments' };
   if (p === '/finance/cashbook') return { title: 'Cash Book', subtitle: 'Income and expense register' };
   if (p === '/finance/expenses') return { title: 'Expenses', subtitle: 'Add and manage expenses' };
+  if (p === '/finance/staff') return { title: 'Staff', subtitle: 'Internal team directory and payroll reference' };
+  if (p === '/finance/subscriptions') return { title: 'Subscriptions', subtitle: 'Monthly, quarterly, and yearly recurring items' };
   if (p === '/finance/payments') return { title: 'Payments', subtitle: 'Record student payments' };
   if (p === '/finance/receipts') return { title: 'Receipts', subtitle: 'Issue and print cash receipts' };
   if (p === '/finance/invoices') return { title: 'Invoices', subtitle: 'Invoice management' };

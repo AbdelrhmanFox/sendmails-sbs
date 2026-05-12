@@ -37,6 +37,8 @@ import { FinancePaymentsPage } from './pages/finance/FinancePaymentsPage';
 import { FinanceReceiptsPage } from './pages/finance/FinanceReceiptsPage';
 import { FinanceInvoicesPage } from './pages/finance/FinanceInvoicesPage';
 import { FinanceLedgerPage } from './pages/finance/FinanceLedgerPage';
+import { FinanceStaffPage } from './pages/finance/FinanceStaffPage';
+import { FinanceSubscriptionsPage } from './pages/finance/FinanceSubscriptionsPage';
 import { CampaignsPage } from './pages/CampaignsPage';
 import { AdminPage } from './pages/AdminPage';
 import { ToolsPage } from './pages/ToolsPage';
@@ -200,6 +202,8 @@ export default function App() {
           <Route path="receivables" element={<FinanceReceivablesPage />} />
           <Route path="cashbook" element={<FinanceCashBookPage />} />
           <Route path="expenses" element={<FinanceExpensesPage />} />
+          <Route path="staff" element={<FinanceStaffPage />} />
+          <Route path="subscriptions" element={<FinanceSubscriptionsPage />} />
           <Route path="payments" element={<FinancePaymentsPage />} />
           <Route path="receipts" element={<FinanceReceiptsPage />} />
           <Route path="invoices" element={<FinanceInvoicesPage />} />

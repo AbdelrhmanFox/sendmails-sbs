@@ -245,6 +245,8 @@ const FINANCE_NAV_GROUPS: NavGroup[] = [
       { id: 'fin-receivables',  label: 'Receivables',  path: '/finance/receivables',  area: 'finance', icon: iconStudents() },
       { id: 'fin-cashbook',     label: 'Cash Book',    path: '/finance/cashbook',     area: 'finance', icon: iconCourses() },
       { id: 'fin-expenses',     label: 'Expenses',     path: '/finance/expenses',     area: 'finance', icon: iconPayments() },
+      { id: 'fin-staff',        label: 'Staff',        path: '/finance/staff',        area: 'finance', icon: iconStudents() },
+      { id: 'fin-subs',         label: 'Subscriptions', path: '/finance/subscriptions', area: 'finance', icon: iconLearningPaths() },
       { id: 'fin-payments',     label: 'Payments',     path: '/finance/payments',     area: 'finance', icon: iconAttendance() },
       { id: 'fin-receipts',     label: 'Receipts',     path: '/finance/receipts',     area: 'finance', icon: iconCertificates() },
       { id: 'fin-invoices',     label: 'Invoices',     path: '/finance/invoices',     area: 'finance', icon: iconAssignments() },

@@ -27,6 +27,34 @@ function parsePage(q) {
   return { page, pageSize, from: (page - 1) * pageSize, to: (page - 1) * pageSize + pageSize - 1 };
 }
 
+function monthlyEquivalent(amount, cycle) {
+  const a = Number(amount || 0);
+  if (!Number.isFinite(a) || a <= 0) return 0;
+  if (cycle === 'yearly') return a / 12;
+  if (cycle === 'quarterly') return a / 3;
+  return a;
+}
+
+/** Add calendar months in UTC to YYYY-MM-DD. */
+function addMonthsIso(isoDateStr, months) {
+  const d = new Date(`${isoDateStr}T12:00:00.000Z`);
+  d.setUTCMonth(d.getUTCMonth() + months);
+  return d.toISOString().slice(0, 10);
+}
+
+/** First billing date on or after `asOf` (exclusive roll from start). */
+function nextBillingOnOrAfter(startStr, cycle, asOfStr) {
+  const step = cycle === 'yearly' ? 12 : cycle === 'quarterly' ? 3 : 1;
+  let cur = startStr;
+  const asOf = asOfStr;
+  let guard = 0;
+  while (cur < asOf && guard < 500) {
+    cur = addMonthsIso(cur, step);
+    guard += 1;
+  }
+  return cur;
+}
+
 
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: cors };
@@ -198,6 +226,72 @@ exports.handler = async (event) => {
       .reduce((s, i) => s + Number(i.total || 0), 0);
 
     return json({ mtd_revenue, outstanding_invoices: outstanding, payment_count: payment_count || 0 });
+  }
+
+  // --- READ: HR & recurring subscriptions snapshot (dashboard analytics) ---
+  if (event.httpMethod === 'GET' && resource === 'hr-analytics') {
+    const today = new Date().toISOString().slice(0, 10);
+    const in30 = new Date(Date.now() + 30 * 864e5).toISOString().slice(0, 10);
+
+    const [{ data: staffRows, error: staffErr }, { data: subRows, error: subErr }] = await Promise.all([
+      supabase.from('finance_staff').select('status, monthly_salary_egp'),
+      supabase
+        .from('finance_recurring_subscriptions')
+        .select('id, name, direction, amount_egp, cycle, status, next_billing_date, start_date'),
+    ]);
+    if (staffErr) return json({ error: staffErr.message || 'Staff analytics failed' }, 500);
+    if (subErr) return json({ error: subErr.message || 'Subscriptions analytics failed' }, 500);
+
+    let staff_active = 0;
+    let staff_inactive = 0;
+    let monthly_payroll_egp = 0;
+    for (const r of staffRows || []) {
+      const st = String(r.status || '').toLowerCase();
+      if (st === 'active') {
+        staff_active += 1;
+        monthly_payroll_egp += Number(r.monthly_salary_egp || 0);
+      } else staff_inactive += 1;
+    }
+
+    let subscriptions_active = 0;
+    let monthly_subscriptions_payable_egp = 0;
+    let monthly_subscriptions_receivable_egp = 0;
+    const upcoming = [];
+
+    for (const r of subRows || []) {
+      if (String(r.status || '').toLowerCase() !== 'active') continue;
+      subscriptions_active += 1;
+      const cycle = String(r.cycle || 'monthly').toLowerCase();
+      const me = monthlyEquivalent(r.amount_egp, cycle);
+      if (String(r.direction || '').toLowerCase() === 'receivable') monthly_subscriptions_receivable_egp += me;
+      else monthly_subscriptions_payable_egp += me;
+
+      const nb = r.next_billing_date ? String(r.next_billing_date).slice(0, 10) : null;
+      const sd = r.start_date ? String(r.start_date).slice(0, 10) : null;
+      const effectiveNext = nb || (sd ? nextBillingOnOrAfter(sd, cycle, today) : null);
+      if (effectiveNext && effectiveNext >= today && effectiveNext <= in30) {
+        upcoming.push({
+          id: r.id,
+          name: r.name,
+          direction: r.direction,
+          next_billing_date: effectiveNext,
+          amount_egp: Number(r.amount_egp || 0),
+          cycle,
+        });
+      }
+    }
+
+    upcoming.sort((a, b) => String(a.next_billing_date).localeCompare(String(b.next_billing_date)));
+
+    return json({
+      staff_active,
+      staff_inactive,
+      monthly_payroll_egp,
+      subscriptions_active,
+      monthly_subscriptions_payable_egp,
+      monthly_subscriptions_receivable_egp,
+      upcoming_renewals: upcoming.slice(0, 12),
+    });
   }
 
   // --- READ: chart-revenue-trend ---
@@ -577,6 +671,190 @@ exports.handler = async (event) => {
       const { error } = await supabase.from('finance_expenses').delete().eq('id', id);
       if (error) return json({ error: error.message || 'Expense delete failed' }, 500);
       await writeAudit(supabase, username, 'delete', 'expense', id, null);
+      return json({ ok: true });
+    }
+  }
+
+  // --- READ: staff ---
+  if (event.httpMethod === 'GET' && resource === 'staff') {
+    const { data, error } = await supabase.from('finance_staff').select('*').order('full_name', { ascending: true });
+    if (error) return json({ error: error.message || 'Staff query failed' }, 500);
+    return json({ items: data || [] });
+  }
+
+  // --- WRITE: staff ---
+  if (resource === 'staff' && event.httpMethod !== 'GET') {
+    if (!canWrite(role)) return json({ error: 'Forbidden' }, 403);
+
+    if (event.httpMethod === 'POST') {
+      let body;
+      try { body = JSON.parse(event.body || '{}'); } catch (_) { return json({ error: 'Invalid JSON' }, 400); }
+      const full_name = String(body.full_name || '').trim();
+      if (!full_name) return json({ error: 'full_name required' }, 400);
+      const status = String(body.status || 'active').trim().toLowerCase();
+      if (!['active', 'inactive'].includes(status)) return json({ error: 'invalid status' }, 400);
+      const row = {
+        full_name,
+        job_title: body.job_title != null ? String(body.job_title).trim() : null,
+        email: body.email != null ? String(body.email).trim() : null,
+        phone: body.phone != null ? String(body.phone).trim() : null,
+        hire_date: body.hire_date ? normalizeDate(body.hire_date) : null,
+        monthly_salary_egp: body.monthly_salary_egp != null && body.monthly_salary_egp !== '' ? Number(body.monthly_salary_egp) : null,
+        status,
+        notes: body.notes != null ? String(body.notes).trim() : null,
+        created_by: username,
+      };
+      const { data: inserted, error } = await supabase.from('finance_staff').insert(row).select('*').single();
+      if (error) return json({ error: error.message || 'Staff insert failed' }, 500);
+      await writeAudit(supabase, username, 'insert', 'finance_staff', inserted.id, { full_name: full_name.slice(0, 80) });
+      return json({ ok: true, item: inserted });
+    }
+
+    if (event.httpMethod === 'PUT') {
+      let body;
+      try { body = JSON.parse(event.body || '{}'); } catch (_) { return json({ error: 'Invalid JSON' }, 400); }
+      const id = String(body.id || '').trim();
+      if (!id) return json({ error: 'id required' }, 400);
+      const { data: existing } = await supabase.from('finance_staff').select('id').eq('id', id).maybeSingle();
+      if (!existing) return json({ error: 'Staff record not found' }, 404);
+      const updates = { updated_at: new Date().toISOString() };
+      if (body.full_name !== undefined) {
+        const fn = String(body.full_name).trim();
+        if (!fn) return json({ error: 'full_name cannot be empty' }, 400);
+        updates.full_name = fn;
+      }
+      if (body.job_title !== undefined) updates.job_title = body.job_title ? String(body.job_title).trim() : null;
+      if (body.email !== undefined) updates.email = body.email ? String(body.email).trim() : null;
+      if (body.phone !== undefined) updates.phone = body.phone ? String(body.phone).trim() : null;
+      if (body.hire_date !== undefined) updates.hire_date = body.hire_date ? normalizeDate(body.hire_date) : null;
+      if (body.monthly_salary_egp !== undefined) {
+        updates.monthly_salary_egp = body.monthly_salary_egp === '' || body.monthly_salary_egp == null ? null : Number(body.monthly_salary_egp);
+      }
+      if (body.status !== undefined) {
+        const st = String(body.status).trim().toLowerCase();
+        if (!['active', 'inactive'].includes(st)) return json({ error: 'invalid status' }, 400);
+        updates.status = st;
+      }
+      if (body.notes !== undefined) updates.notes = body.notes ? String(body.notes).trim() : null;
+      const { data: updated, error } = await supabase.from('finance_staff').update(updates).eq('id', id).select('*').single();
+      if (error) return json({ error: error.message || 'Staff update failed' }, 500);
+      await writeAudit(supabase, username, 'update', 'finance_staff', id, updates);
+      return json({ ok: true, item: updated });
+    }
+
+    if (event.httpMethod === 'DELETE') {
+      const id = String(event.queryStringParameters?.id || '').trim();
+      if (!id) return json({ error: 'id query required' }, 400);
+      const { data: existing } = await supabase.from('finance_staff').select('id').eq('id', id).maybeSingle();
+      if (!existing) return json({ error: 'Staff record not found' }, 404);
+      const { error } = await supabase.from('finance_staff').delete().eq('id', id);
+      if (error) return json({ error: error.message || 'Staff delete failed' }, 500);
+      await writeAudit(supabase, username, 'delete', 'finance_staff', id, null);
+      return json({ ok: true });
+    }
+  }
+
+  // --- READ: subscriptions ---
+  if (event.httpMethod === 'GET' && resource === 'subscriptions') {
+    const { data, error } = await supabase
+      .from('finance_recurring_subscriptions')
+      .select('*')
+      .order('name', { ascending: true });
+    if (error) return json({ error: error.message || 'Subscriptions query failed' }, 500);
+    return json({ items: data || [] });
+  }
+
+  // --- WRITE: subscriptions ---
+  if (resource === 'subscriptions' && event.httpMethod !== 'GET') {
+    if (!canWrite(role)) return json({ error: 'Forbidden' }, 403);
+
+    if (event.httpMethod === 'POST') {
+      let body;
+      try { body = JSON.parse(event.body || '{}'); } catch (_) { return json({ error: 'Invalid JSON' }, 400); }
+      const name = String(body.name || '').trim();
+      const start_date = normalizeDate(body.start_date);
+      const amount_egp = body.amount_egp == null ? NaN : Number(body.amount_egp);
+      const cycle = String(body.cycle || 'monthly').trim().toLowerCase();
+      const direction = String(body.direction || 'payable').trim().toLowerCase();
+      const status = String(body.status || 'active').trim().toLowerCase();
+      if (!name) return json({ error: 'name required' }, 400);
+      if (!start_date) return json({ error: 'start_date required' }, 400);
+      if (Number.isNaN(amount_egp) || amount_egp <= 0) return json({ error: 'positive amount_egp required' }, 400);
+      if (!['monthly', 'quarterly', 'yearly'].includes(cycle)) return json({ error: 'invalid cycle' }, 400);
+      if (!['payable', 'receivable'].includes(direction)) return json({ error: 'invalid direction' }, 400);
+      if (!['active', 'paused', 'cancelled'].includes(status)) return json({ error: 'invalid status' }, 400);
+
+      const today = new Date().toISOString().slice(0, 10);
+      let next_billing_date = body.next_billing_date ? normalizeDate(body.next_billing_date) : null;
+      if (!next_billing_date) next_billing_date = nextBillingOnOrAfter(start_date, cycle, today);
+
+      const row = {
+        name,
+        direction,
+        amount_egp,
+        cycle,
+        start_date,
+        next_billing_date,
+        end_date: body.end_date ? normalizeDate(body.end_date) : null,
+        status,
+        notes: body.notes != null ? String(body.notes).trim() : null,
+        created_by: username,
+      };
+      const { data: inserted, error } = await supabase.from('finance_recurring_subscriptions').insert(row).select('*').single();
+      if (error) return json({ error: error.message || 'Subscription insert failed' }, 500);
+      await writeAudit(supabase, username, 'insert', 'finance_recurring_subscriptions', inserted.id, { name: name.slice(0, 80), cycle });
+      return json({ ok: true, item: inserted });
+    }
+
+    if (event.httpMethod === 'PUT') {
+      let body;
+      try { body = JSON.parse(event.body || '{}'); } catch (_) { return json({ error: 'Invalid JSON' }, 400); }
+      const id = String(body.id || '').trim();
+      if (!id) return json({ error: 'id required' }, 400);
+      const { data: existing } = await supabase.from('finance_recurring_subscriptions').select('id').eq('id', id).maybeSingle();
+      if (!existing) return json({ error: 'Subscription not found' }, 404);
+      const updates = { updated_at: new Date().toISOString() };
+      if (body.name !== undefined) updates.name = String(body.name).trim();
+      if (body.direction !== undefined) {
+        const d = String(body.direction).trim().toLowerCase();
+        if (!['payable', 'receivable'].includes(d)) return json({ error: 'invalid direction' }, 400);
+        updates.direction = d;
+      }
+      if (body.amount_egp !== undefined) {
+        const v = Number(body.amount_egp);
+        if (Number.isNaN(v) || v <= 0) return json({ error: 'positive amount_egp required' }, 400);
+        updates.amount_egp = v;
+      }
+      if (body.cycle !== undefined) {
+        const c = String(body.cycle).trim().toLowerCase();
+        if (!['monthly', 'quarterly', 'yearly'].includes(c)) return json({ error: 'invalid cycle' }, 400);
+        updates.cycle = c;
+      }
+      if (body.start_date !== undefined) updates.start_date = body.start_date ? normalizeDate(body.start_date) : null;
+      if (body.next_billing_date !== undefined) {
+        updates.next_billing_date = body.next_billing_date ? normalizeDate(body.next_billing_date) : null;
+      }
+      if (body.end_date !== undefined) updates.end_date = body.end_date ? normalizeDate(body.end_date) : null;
+      if (body.status !== undefined) {
+        const st = String(body.status).trim().toLowerCase();
+        if (!['active', 'paused', 'cancelled'].includes(st)) return json({ error: 'invalid status' }, 400);
+        updates.status = st;
+      }
+      if (body.notes !== undefined) updates.notes = body.notes ? String(body.notes).trim() : null;
+      const { data: updated, error } = await supabase.from('finance_recurring_subscriptions').update(updates).eq('id', id).select('*').single();
+      if (error) return json({ error: error.message || 'Subscription update failed' }, 500);
+      await writeAudit(supabase, username, 'update', 'finance_recurring_subscriptions', id, updates);
+      return json({ ok: true, item: updated });
+    }
+
+    if (event.httpMethod === 'DELETE') {
+      const id = String(event.queryStringParameters?.id || '').trim();
+      if (!id) return json({ error: 'id query required' }, 400);
+      const { data: existing } = await supabase.from('finance_recurring_subscriptions').select('id').eq('id', id).maybeSingle();
+      if (!existing) return json({ error: 'Subscription not found' }, 404);
+      const { error } = await supabase.from('finance_recurring_subscriptions').delete().eq('id', id);
+      if (error) return json({ error: error.message || 'Subscription delete failed' }, 500);
+      await writeAudit(supabase, username, 'delete', 'finance_recurring_subscriptions', id, null);
       return json({ ok: true });
     }
   }

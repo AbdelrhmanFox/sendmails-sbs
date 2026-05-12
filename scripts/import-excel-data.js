@@ -8,6 +8,8 @@
  *   Sheet1 income side  →  payments (cash-book entries not yet linked to enrollments)
  *   Sheet1 expense side →  finance_expenses
  *
+ * Salary-like expense lines (e.g. description contains "مرتب" / "salary") can later be moved to
+ * `finance_staff` using: `node scripts/migrate-salary-expenses-to-staff.js --dry-run` then `--apply`.
  * Idempotency: each workbook row is keyed by a stable placeholder email
  *   {slug(name)}.{rawClientId}@pending-update.sbs.local
  *   so re-running the script does not create duplicate trainees/enrollments.

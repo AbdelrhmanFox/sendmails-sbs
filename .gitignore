@@ -12,3 +12,6 @@ dashboard/spa/
 # Playwright MCP screenshots, snapshots, traces
 .mcp-playwright-output/
 
+# Supabase CLI local cache
+supabase/.temp/
+
