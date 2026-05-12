@@ -73,6 +73,112 @@ exports.handler = async (event) => {
     return json({ items: data || [] });
   }
 
+  // --- READ: field-suggestions ---
+  // Returns up to 30 distinct past values for a known finance field.
+  // entity: expense-description | expense-funding | expense-by | receipt-payer | payment-notes
+  if (event.httpMethod === 'GET' && resource === 'field-suggestions') {
+    const entity = String(event.queryStringParameters?.entity || '').trim().toLowerCase();
+    const q = String(event.queryStringParameters?.q || '').trim();
+    const limit = Math.min(30, Math.max(1, parseInt(String(event.queryStringParameters?.limit || '30'), 10) || 30));
+
+    const ENTITY_MAP = {
+      'expense-description': { table: 'finance_expenses', column: 'description' },
+      'expense-funding':     { table: 'finance_expenses', column: 'funding_source' },
+      'expense-by':          { table: 'finance_expenses', column: 'recorded_by' },
+      'receipt-payer':       { table: 'cash_receipts',    column: 'payer_name' },
+      'payment-notes':       { table: 'payments',         column: 'notes' },
+      'payment-reference':   { table: 'payments',         column: 'reference' },
+    };
+
+    const mapping = ENTITY_MAP[entity];
+    if (!mapping) return json({ items: [] });
+
+    const col = mapping.column;
+    let dbq = supabase
+      .from(mapping.table)
+      .select(col)
+      .not(col, 'is', null)
+      .neq(col, '')
+      .order(col, { ascending: true });
+
+    if (q.length >= 1) dbq = dbq.ilike(col, `%${q.replace(/%/g, '\\%').replace(/_/g, '\\_')}%`);
+
+    const { data } = await dbq.limit(limit * 3); // over-fetch to dedup
+
+    const seen = new Set();
+    const items = [];
+    for (const row of (data || [])) {
+      const val = String(row[col] || '').trim();
+      if (val && !seen.has(val)) {
+        seen.add(val);
+        items.push(val);
+        if (items.length >= limit) break;
+      }
+    }
+    return json({ items });
+  }
+
+  // --- READ: enrollment-search ---
+  if (event.httpMethod === 'GET' && resource === 'enrollment-search') {
+    const raw = String(event.queryStringParameters?.q || '').trim();
+    if (raw.length < 2) return json({ items: [] });
+    const limit = Math.min(25, Math.max(1, parseInt(String(event.queryStringParameters?.limit || '20'), 10) || 20));
+    const batchFilter = String(event.queryStringParameters?.batch_id || '').trim();
+
+    // Escape SQL pattern chars
+    const pattern = raw.replace(/%/g, '\\%').replace(/_/g, '\\_');
+
+    // Query 1: match by enrollment_id or trainee_id
+    let q1 = supabase
+      .from('enrollments')
+      .select('enrollment_id, trainee_id, batch_id, trainees ( full_name )')
+      .or(`enrollment_id.ilike.%${pattern}%,trainee_id.ilike.%${pattern}%`)
+      .order('enrollment_id', { ascending: true })
+      .limit(limit);
+    if (batchFilter) q1 = q1.eq('batch_id', batchFilter);
+
+    // Query 2: match by trainee full_name
+    let nameMatched = [];
+    const { data: nameTrainees } = await supabase
+      .from('trainees')
+      .select('trainee_id')
+      .ilike('full_name', `%${pattern}%`)
+      .limit(limit);
+    if (nameTrainees && nameTrainees.length > 0) {
+      const tIds = nameTrainees.map((t) => t.trainee_id);
+      let q2 = supabase
+        .from('enrollments')
+        .select('enrollment_id, trainee_id, batch_id, trainees ( full_name )')
+        .in('trainee_id', tIds)
+        .order('enrollment_id', { ascending: true })
+        .limit(limit);
+      if (batchFilter) q2 = q2.eq('batch_id', batchFilter);
+      const { data: q2data } = await q2;
+      nameMatched = q2data || [];
+    }
+
+    const { data: q1data } = await q1;
+    const byId = new Map();
+    [...(q1data || []), ...nameMatched].forEach((row) => {
+      if (!byId.has(row.enrollment_id)) byId.set(row.enrollment_id, row);
+    });
+
+    const items = [...byId.values()]
+      .sort((a, b) => String(a.enrollment_id).localeCompare(String(b.enrollment_id)))
+      .slice(0, limit)
+      .map((row) => {
+        const tr = Array.isArray(row.trainees) ? row.trainees[0] : row.trainees;
+        return {
+          enrollment_id: row.enrollment_id,
+          trainee_id: row.trainee_id,
+          batch_id: row.batch_id,
+          trainee_name: tr ? tr.full_name : null,
+        };
+      });
+
+    return json({ items });
+  }
+
   // --- READ: KPIs ---
   if (event.httpMethod === 'GET' && resource === 'kpis') {
     const now = new Date();

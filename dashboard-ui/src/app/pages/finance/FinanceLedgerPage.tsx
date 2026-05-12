@@ -5,6 +5,7 @@ import { Input } from '../../components/design-system/Input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/design-system/Table';
 import { functionsBase, getAuthHeaders, jsonFetch } from '../../../lib/api';
 import { fmtFull } from './_shared';
+import { EnrollmentPicker } from './EnrollmentPicker';
 
 type LedgerRow = {
   id: string; amount: number; currency: string; method: string | null;
@@ -53,7 +54,12 @@ export function FinanceLedgerPage() {
       <Card>
         <h3 className="mb-3 text-sm font-semibold text-[var(--brand-text)]">Filter Ledger</h3>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Input label="Enrollment ID" value={filterEnrollment} onChange={(e) => setFilterEnrollment(e.target.value)} placeholder="ENR-001" />
+          <EnrollmentPicker
+            label="Enrollment"
+            value={filterEnrollment}
+            onChange={(id) => setFilterEnrollment(id)}
+            optional
+          />
           <Input label="Method" value={filterMethod} onChange={(e) => setFilterMethod(e.target.value)} placeholder="cash, card…" />
           <div>
             <label className="mb-1 block text-xs font-medium text-[var(--brand-muted)]">From</label>

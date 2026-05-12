@@ -6,6 +6,7 @@ import { Badge } from '../../components/design-system/Badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/design-system/Table';
 import { functionsBase, getAuthHeaders, jsonFetch } from '../../../lib/api';
 import { fmtFull } from './_shared';
+import { EnrollmentPicker } from './EnrollmentPicker';
 
 type PaymentRow = {
   id: string; amount: number; currency: string; method: string | null;
@@ -56,6 +57,7 @@ export function FinancePaymentsPage() {
       });
       setMsg('Payment recorded successfully.');
       setEnrollmentId(''); setAmount(''); setReference(''); setNotes(''); setReceivedAt('');
+      // Resetting enrollmentId to '' triggers EnrollmentPicker's external-value sync
       void loadLedger();
     } catch (e) { setMsg(e instanceof Error ? e.message : 'Payment failed'); }
   };
@@ -74,7 +76,12 @@ export function FinancePaymentsPage() {
           <Card>
             <h3 className="mb-4 text-sm font-semibold text-[var(--brand-text)]">Record Payment</h3>
             <div className="space-y-3">
-              <Input label="Enrollment ID" value={enrollmentId} onChange={(e) => setEnrollmentId(e.target.value)} placeholder="e.g. ENR-001" />
+              <EnrollmentPicker
+                label="Enrollment"
+                value={enrollmentId}
+                onChange={(id) => setEnrollmentId(id)}
+                required
+              />
               <Input label="Amount (EGP)" type="number" min="0" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" />
               <div>
                 <label className="mb-1 block text-xs font-medium text-[var(--brand-muted)]">Payment method</label>

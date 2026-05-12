@@ -6,6 +6,7 @@ import { Badge } from '../../components/design-system/Badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/design-system/Table';
 import { functionsBase, getAuthHeaders, jsonFetch } from '../../../lib/api';
 import { fmtFull, type BatchRow, type ExpenseRow } from './_shared';
+import { FieldSuggest } from './FieldSuggest';
 
 export function FinanceExpensesPage() {
   const [batches, setBatches] = useState<BatchRow[]>([]);
@@ -87,19 +88,30 @@ export function FinanceExpensesPage() {
                   className="w-full rounded-[var(--brand-radius-dense)] border border-[var(--brand-border)] bg-[var(--brand-surface)] px-3 py-2 text-sm text-[var(--brand-text)]" />
               </div>
               <Input label="Amount (EGP)" type="number" min="0" value={form.amount} onChange={(e) => setForm((p) => ({ ...p, amount: e.target.value }))} placeholder="0.00" />
-              <div>
-                <label className="mb-1 block text-xs font-medium text-[var(--brand-muted)]">Description</label>
-                <textarea
-                  dir="auto"
-                  rows={2}
-                  value={form.description}
-                  onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
-                  placeholder="e.g. Office supplies / مستلزمات مكتب"
-                  className="w-full rounded-[var(--brand-radius-dense)] border border-[var(--brand-border)] bg-[var(--brand-surface)] px-3 py-2 text-sm text-[var(--brand-text)] placeholder:text-[var(--brand-dim)] resize-none"
-                />
-              </div>
-              <Input label="Funding source" value={form.funding_source} onChange={(e) => setForm((p) => ({ ...p, funding_source: e.target.value }))} placeholder="e.g. Marwa, M+I, Suez…" />
-              <Input label="Recorded by" value={form.recorded_by} onChange={(e) => setForm((p) => ({ ...p, recorded_by: e.target.value }))} />
+              <FieldSuggest
+                entity="expense-description"
+                label="Description"
+                value={form.description}
+                onChange={(v) => setForm((p) => ({ ...p, description: v }))}
+                placeholder="e.g. Office supplies / مستلزمات مكتب"
+                multiline
+                rows={2}
+              />
+              <FieldSuggest
+                entity="expense-funding"
+                label="Funding source"
+                value={form.funding_source}
+                onChange={(v) => setForm((p) => ({ ...p, funding_source: v }))}
+                placeholder="e.g. Marwa, M+I, Suez…"
+                optional
+              />
+              <FieldSuggest
+                entity="expense-by"
+                label="Recorded by"
+                value={form.recorded_by}
+                onChange={(v) => setForm((p) => ({ ...p, recorded_by: v }))}
+                optional
+              />
               {batches.length > 0 && (
                 <div>
                   <label className="mb-1 block text-xs font-medium text-[var(--brand-muted)]">Batch (optional)</label>

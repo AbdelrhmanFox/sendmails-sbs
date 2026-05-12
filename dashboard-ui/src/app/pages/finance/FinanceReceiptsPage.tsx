@@ -5,6 +5,8 @@ import { Input } from '../../components/design-system/Input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/design-system/Table';
 import { functionsBase, getAuthHeaders, jsonFetch } from '../../../lib/api';
 import { fmtFull, egpInWords, type ReceiptItem } from './_shared';
+import { EnrollmentPicker } from './EnrollmentPicker';
+import { FieldSuggest } from './FieldSuggest';
 
 const METHODS = ['cash', 'bank transfer', 'card', 'cheque'];
 
@@ -82,14 +84,21 @@ export function FinanceReceiptsPage() {
           <Card>
             <h3 className="mb-4 text-sm font-semibold text-[var(--brand-text)]">Issue New Receipt</h3>
             <div className="space-y-3">
-              <Input label="Enrollment ID (optional)" value={form.enrollment_id} onChange={(e) => setForm((p) => ({ ...p, enrollment_id: e.target.value }))} placeholder="Link to enrollment" />
+              <EnrollmentPicker
+                label="Enrollment"
+                value={form.enrollment_id}
+                onChange={(id) => setForm((p) => ({ ...p, enrollment_id: id }))}
+                optional
+              />
               <Input label="Amount (EGP)" type="number" min="0" value={form.amount} onChange={(e) => setForm((p) => ({ ...p, amount: e.target.value }))} placeholder="0.00" />
-              <div>
-                <label className="mb-1 block text-xs font-medium text-[var(--brand-muted)]">Payer name</label>
-                <input dir="auto" value={form.payer_name} onChange={(e) => setForm((p) => ({ ...p, payer_name: e.target.value }))}
-                  placeholder="Arabic or English name"
-                  className="w-full rounded-[var(--brand-radius-dense)] border border-[var(--brand-border)] bg-[var(--brand-surface)] px-3 py-2 text-sm text-[var(--brand-text)] placeholder:text-[var(--brand-dim)]" />
-              </div>
+              <FieldSuggest
+                entity="receipt-payer"
+                label="Payer name"
+                value={form.payer_name}
+                onChange={(v) => setForm((p) => ({ ...p, payer_name: v }))}
+                placeholder="Arabic or English name"
+                optional
+              />
               <div>
                 <label className="mb-1 block text-xs font-medium text-[var(--brand-muted)]">Payment method</label>
                 <select value={form.method} onChange={(e) => setForm((p) => ({ ...p, method: e.target.value }))}
