@@ -94,5 +94,5 @@ end $$;
 
 -- Placeholder emails used during import
 update public.trainees
-set email = regexp_replace(email, '@excel-import\.sbs\.local$', '@pending-update.sbs.local')
+set email = replace(email, '@excel-import.sbs.local', '@pending-update.sbs.local')
 where email ilike '%@excel-import.sbs.local';
