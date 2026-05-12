@@ -8,9 +8,9 @@
  *   Sheet1 income side  →  payments (cash-book entries not yet linked to enrollments)
  *   Sheet1 expense side →  finance_expenses
  *
- * Usage:
- *   node scripts/import-excel-data.js
- *   node scripts/import-excel-data.js --dry-run   (preview only, no writes)
+ * Idempotency: each workbook row is keyed by a stable placeholder email
+ *   {slug(name)}.{rawClientId}@pending-update.sbs.local
+ *   so re-running the script does not create duplicate trainees/enrollments.
  */
 
 const path = require('path');
@@ -24,6 +24,23 @@ const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY,
 );
+
+/** Stable SBS-style course/batch for workbook cash-book income (matches migration 20260514). */
+const CASH_COURSE_ID = 'SBS-CO-CASHBOOK';
+const CASH_BATCH_ID = 'SBS-BA-SBS-CO-CASHBOOK-01';
+const CASHBOOK_EMAIL = 'cashbook-income@pending-update.sbs.local';
+
+async function nextTraineeId() {
+  const { data, error } = await supabase.rpc('next_trainee_id');
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+async function nextEnrollmentId() {
+  const { data, error } = await supabase.rpc('next_enrollment_id');
+  if (error) throw new Error(error.message);
+  return data;
+}
 
 // ── Excel file paths ──────────────────────────────────────────────────────────
 const WB1_PATH = 'C:/Users/abdelrahmanahmed/Downloads/نموذج-ايصال-استلام-نقدية.xlsx';
@@ -89,44 +106,48 @@ async function importLedgerSheet(sheetName, batchId, courseName, rows) {
 
     if (!rawId || !name) continue;
 
-    const traineeId    = `XLS-${batchId}-${rawId}`;
-    const enrollmentId = `XLS-EN-${batchId}-${rawId}`;
-    // Placeholder email — Excel data has no emails
-    const email = `${slugify(name)}.${rawId}@excel-import.sbs.local`;
+    const email = `${slugify(name) || 'trainee'}.${rawId}@pending-update.sbs.local`;
 
     if (DRY) {
-      log('DRY', `Trainee=${traineeId} name="${name}" fee=${feeDue} inst=[${inst1},${inst2},${inst3}]`);
+      log('DRY', `Row ${rawId} name="${name}" fee=${feeDue} inst=[${inst1},${inst2},${inst3}] keyed by ${email}`);
       continue;
     }
 
-    // Upsert trainee (email + phone placeholders, status matches existing case)
-    const { error: tErr } = await supabase
-      .from('trainees')
-      .upsert({
+    let traineeId;
+    const { data: existingTrainee } = await supabase.from('trainees').select('trainee_id').eq('email', email).maybeSingle();
+    if (existingTrainee) {
+      traineeId = existingTrainee.trainee_id;
+    } else {
+      traineeId = await nextTraineeId();
+      const phoneKey = `${batchId}:${rawId}`;
+      let h = 0;
+      for (let i = 0; i < phoneKey.length; i += 1) h = (h * 31 + phoneKey.charCodeAt(i)) >>> 0;
+      const phone = `+20${String(1000000000 + (h % 1000000000)).slice(1)}`;
+      const { error: tErr } = await supabase.from('trainees').insert({
         trainee_id: traineeId,
         full_name: name,
         email,
-        phone: `+20000-${rawId}`,
+        phone,
         status: 'Active',
         trainee_type: 'Individual',
-      }, { onConflict: 'trainee_id' });
-    if (tErr) { log('ERR', `Trainee ${traineeId}: ${tErr.message}`); errors++; continue; }
+      });
+      if (tErr) { log('ERR', `Trainee ${email}: ${tErr.message}`); errors++; continue; }
+    }
 
-    // Check if enrollment already exists
-    const { data: existing } = await supabase
+    const { data: existingEn } = await supabase
       .from('enrollments')
       .select('id')
-      .eq('enrollment_id', enrollmentId)
+      .eq('trainee_id', traineeId)
+      .eq('batch_id', batchId)
       .maybeSingle();
 
     let enrollmentUuid;
-    if (existing) {
-      enrollmentUuid = existing.id;
+    if (existingEn) {
+      enrollmentUuid = existingEn.id;
       skipped++;
     } else {
-      const totalPaid = num(row[9]);
+      const enrollmentId = await nextEnrollmentId();
       const remaining = num(row[10]);
-      // Only Pending, Paid, Waived are allowed by DB constraint
       const payStatus = remaining <= 0 ? 'Paid' : 'Pending';
       const { data: enData, error: enErr } = await supabase
         .from('enrollments')
@@ -141,12 +162,11 @@ async function importLedgerSheet(sheetName, batchId, courseName, rows) {
         })
         .select('id')
         .single();
-      if (enErr) { log('ERR', `Enrollment ${enrollmentId}: ${enErr.message}`); errors++; continue; }
+      if (enErr) { log('ERR', `Enrollment ${batchId}/${traineeId}: ${enErr.message}`); errors++; continue; }
       enrollmentUuid = enData.id;
       inserted++;
     }
 
-    // Import installments as payments
     const installments = [inst1, inst2, inst3].filter((v) => v > 0);
     for (let i = 0; i < installments.length; i++) {
       const { data: existPay } = await supabase
@@ -164,10 +184,10 @@ async function importLedgerSheet(sheetName, batchId, courseName, rows) {
           method: 'cash',
           status: 'recorded',
           received_at: new Date().toISOString(),
-          created_by: 'excel-import',
-          notes: `Installment ${i + 1} — imported from Excel`,
+          created_by: null,
+          notes: `Installment ${i + 1}`,
         });
-        if (pErr) log('WARN', `Payment ${enrollmentId} inst${i+1}: ${pErr.message}`);
+        if (pErr) log('WARN', `Payment inst${i + 1}: ${pErr.message}`);
         else inserted++;
       }
     }
@@ -214,7 +234,7 @@ async function importExpenses(rows) {
       recorded_by: recordedBy || null,
       funding_source: funding || null,
       is_refund: false,
-      created_by: 'excel-import',
+      created_by: recordedBy?.trim() || 'import',
     });
     if (error) { log('ERR', `Expense serial ${serial}: ${error.message}`); errors++; }
     else inserted++;
@@ -226,34 +246,60 @@ async function importExpenses(rows) {
 async function importCashbookIncome(rows) {
   log('INCOME', `Importing ${rows.length} income rows as standalone cash-book entries…`);
 
-  // Ensure a generic "cash-book" batch exists for unlinked income
-  if (!DRY) {
-    await supabase.from('courses').upsert({ course_id: 'XLS-cashbook', course_name: 'Cash Book Income', description: 'Standalone cash book income entries', status: 'Active' }, { onConflict: 'course_id' });
-    await supabase.from('batches').upsert({ batch_id: 'XLS-cashbook', batch_name: 'Cash Book Income', course_id: 'XLS-cashbook' }, { onConflict: 'batch_id' });
-  }
-
   let cbEnrollmentUuid = null;
   if (!DRY) {
-    // Upsert a placeholder trainee + enrollment for unlinked income
-    await supabase.from('trainees').upsert({
-      trainee_id: 'XLS-cashbook-income',
-      full_name: 'Cash Book Income',
-      email: 'cashbook-income@excel-import.sbs.local',
-      phone: '+20000-000000',
-      status: 'Active',
-      trainee_type: 'Individual',
-    }, { onConflict: 'trainee_id' });
-    const { data: enRow } = await supabase.from('enrollments')
-      .upsert({
-        enrollment_id: 'XLS-EN-cashbook-income',
-        trainee_id: 'XLS-cashbook-income',
-        batch_id: 'XLS-cashbook',
-        enrollment_status: 'Registered',
-        payment_status: 'Paid',
-        enroll_date: new Date().toISOString().slice(0, 10),
-      }, { onConflict: 'enrollment_id' })
-      .select('id').single();
-    cbEnrollmentUuid = enRow?.id;
+    await supabase.from('courses').upsert(
+      { course_id: CASH_COURSE_ID, course_name: 'Cash book income', description: 'Standalone cash book income', status: 'Active' },
+      { onConflict: 'course_id' },
+    );
+    await supabase.from('batches').upsert(
+      { batch_id: CASH_BATCH_ID, batch_name: 'Cash book income', course_id: CASH_COURSE_ID },
+      { onConflict: 'batch_id' },
+    );
+
+    let { data: tr } = await supabase.from('trainees').select('trainee_id').eq('email', CASHBOOK_EMAIL).maybeSingle();
+    let tid;
+    if (!tr) {
+      tid = await nextTraineeId();
+      const { error: te } = await supabase.from('trainees').insert({
+        trainee_id: tid,
+        full_name: 'Cash book income',
+        email: CASHBOOK_EMAIL,
+        phone: '+201000000000',
+        status: 'Active',
+        trainee_type: 'Individual',
+      });
+      if (te) { log('ERR', `Cashbook trainee: ${te.message}`); return; }
+    } else {
+      tid = tr.trainee_id;
+    }
+
+    const { data: enExisting } = await supabase
+      .from('enrollments')
+      .select('id')
+      .eq('trainee_id', tid)
+      .eq('batch_id', CASH_BATCH_ID)
+      .maybeSingle();
+
+    if (enExisting) {
+      cbEnrollmentUuid = enExisting.id;
+    } else {
+      const eid = await nextEnrollmentId();
+      const { data: enIns, error: ee } = await supabase
+        .from('enrollments')
+        .insert({
+          enrollment_id: eid,
+          trainee_id: tid,
+          batch_id: CASH_BATCH_ID,
+          enrollment_status: 'Registered',
+          payment_status: 'Paid',
+          enroll_date: new Date().toISOString().slice(0, 10),
+        })
+        .select('id')
+        .single();
+      if (ee) { log('ERR', `Cashbook enrollment: ${ee.message}`); return; }
+      cbEnrollmentUuid = enIns.id;
+    }
   }
 
   for (const row of rows) {
@@ -274,7 +320,6 @@ async function importCashbookIncome(rows) {
 
     if (!cbEnrollmentUuid) continue;
 
-    // Check duplicate
     const { data: exist } = await supabase
       .from('payments')
       .select('id')
@@ -292,7 +337,7 @@ async function importCashbookIncome(rows) {
       method: 'cash',
       status: 'recorded',
       received_at: new Date(receivedAt).toISOString(),
-      created_by: recordedBy || 'excel-import',
+      created_by: recordedBy || null,
       notes: description.slice(0, 500),
     });
     if (error) { log('ERR', `Income serial ${serial}: ${error.message}`); errors++; }

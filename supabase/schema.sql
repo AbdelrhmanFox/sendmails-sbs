@@ -370,6 +370,7 @@ end;
 $$;
 
 -- Finance expansion (20260513_finance_access_control + 20260513_finance_expenses)
+-- Excel import re-key to SBS-TR/SBS-EN: migration 20260514_rekey_excel_import_to_sbs_ids.sql
 
 alter table public.enrollments
   add column if not exists agreed_fee numeric(12, 2);
