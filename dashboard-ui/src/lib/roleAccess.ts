@@ -43,12 +43,10 @@ export function canAccessPath(role: string, pathname: string): boolean {
 }
 
 export function defaultPathForRole(role: string): string {
-  const allowed = areasForRole(role);
-  if (String(role || '').toLowerCase() === 'trainee') return '/trainee/portal';
-  if (allowed.includes('operations')) return '/operations/overview';
-  if (allowed.includes('training')) return '/training/overview';
-  if (allowed.includes('finance')) return '/finance';
+  const r = String(role || '').toLowerCase();
+  if (r === 'trainee') return '/trainee/portal';
+  if (['admin', 'staff', 'trainer', 'accountant'].includes(r)) return '/dashboard';
+  const allowed = areasForRole(r);
   if (allowed.includes('automation')) return '/automation';
-  if (allowed.includes('admin')) return '/admin';
-  return '/';
+  return '/dashboard';
 }

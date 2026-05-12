@@ -1,7 +1,3 @@
-/**
- * Maps React Router pathname (inside basename `/spa`) to TopBar copy.
- * Keep in sync with routes in `app/App.tsx`.
- */
 export type RouteMeta = { title: string; subtitle?: string };
 
 function normalizePath(pathname: string): string {
@@ -14,86 +10,37 @@ function normalizePath(pathname: string): string {
 export function getRouteMeta(pathname: string): RouteMeta {
   const p = normalizePath(pathname);
 
-  if (p === '/' || p === '') {
-    return { title: 'Home', subtitle: 'Role-based landing' };
-  }
-  if (p === '/dashboard') {
-    return { title: 'Dashboard', subtitle: 'Overview and shortcuts' };
-  }
-  if (p === '/trainee/portal') {
-    return { title: 'Trainee portal', subtitle: 'Courses, classroom, and assignments' };
-  }
-  if (p === '/account/password') {
-    return { title: 'Change password', subtitle: 'Update your account password' };
-  }
-  if (p === '/finance') {
-    return { title: 'Finance', subtitle: 'KPIs and payment flows' };
-  }
-  if (p === '/automation') {
-    return { title: 'Email campaigns', subtitle: 'Automation and outreach' };
-  }
-  if (p === '/admin') {
-    return { title: 'Admin', subtitle: 'System administration' };
-  }
+  if (p === '/' || p === '') return { title: 'SBS Learn' };
+  if (p === '/dashboard') return { title: 'Dashboard', subtitle: 'Platform overview' };
+  if (p === '/trainee/portal') return { title: 'My Learning', subtitle: 'Courses, classroom, and assignments' };
+  if (p === '/account/password') return { title: 'Change Password', subtitle: 'Update your account password' };
+  if (p === '/finance') return { title: 'Payments', subtitle: 'Revenue and payment flows' };
+  if (p === '/automation') return { title: 'Campaigns', subtitle: 'Email automation and outreach' };
+  if (p === '/admin') return { title: 'Admin', subtitle: 'System administration' };
 
-  if (p.startsWith('/operations/trainees/')) {
-    return { title: 'Trainee profile', subtitle: 'Operations workspace' };
-  }
-  if (p === '/operations/overview') {
-    return { title: 'Operations', subtitle: 'Overview' };
-  }
-  if (p === '/operations/insights') {
-    return { title: 'Operations', subtitle: 'Insights' };
-  }
-  if (p === '/operations/import') {
-    return { title: 'Operations', subtitle: 'Import' };
-  }
-  if (p === '/operations/integration-events') {
-    return { title: 'Operations', subtitle: 'Integration events' };
-  }
-  if (p === '/operations/lms-admin') {
-    return { title: 'Operations', subtitle: 'LMS admin' };
-  }
-  if (p.startsWith('/operations')) {
-    return { title: 'Operations', subtitle: 'Workspace' };
-  }
+  if (p.startsWith('/operations/trainees/')) return { title: 'Student Profile', subtitle: 'Management' };
+  if (p === '/operations/overview') return { title: 'Students', subtitle: 'Overview' };
+  if (p === '/operations/trainees') return { title: 'Students', subtitle: 'Management' };
+  if (p === '/operations/batches') return { title: 'Learning Paths', subtitle: 'Batch management' };
+  if (p === '/operations/courses') return { title: 'Courses', subtitle: 'Course management' };
+  if (p === '/operations/insights') return { title: 'Analytics', subtitle: 'Business insights' };
+  if (p === '/operations/import') return { title: 'Import Data', subtitle: 'Bulk data import' };
+  if (p === '/operations/integration-events') return { title: 'Integration Events', subtitle: 'System logs' };
+  if (p === '/operations/lms-admin') return { title: 'Courses', subtitle: 'Course catalog & LMS admin' };
+  if (p.startsWith('/operations')) return { title: 'Management', subtitle: 'Operations workspace' };
 
-  if (p === '/training/overview') {
-    return { title: 'Training', subtitle: 'Overview' };
-  }
-  if (p === '/training/sessions') {
-    return { title: 'Training', subtitle: 'Sessions' };
-  }
-  if (p === '/training/presenter') {
-    return { title: 'Training', subtitle: 'Presenter tools' };
-  }
-  if (p === '/training/classroom') {
-    return { title: 'Training', subtitle: 'Classroom' };
-  }
-  if (p === '/training/assignments') {
-    return { title: 'Training', subtitle: 'Assignments' };
-  }
-  if (p === '/training/assessments') {
-    return { title: 'Training', subtitle: 'Assessments' };
-  }
-  if (p === '/training/materials') {
-    return { title: 'Training', subtitle: 'Attendance & materials' };
-  }
-  if (p === '/training/library') {
-    return { title: 'Training', subtitle: 'Course library' };
-  }
-  if (p === '/training/credentials') {
-    return { title: 'Training', subtitle: 'Credentials' };
-  }
-  if (p === '/training/lms-analytics') {
-    return { title: 'Training', subtitle: 'LMS analytics' };
-  }
-  if (p === '/training/lms-catalog') {
-    return { title: 'Training', subtitle: 'LMS catalog' };
-  }
-  if (p.startsWith('/training')) {
-    return { title: 'Training', subtitle: 'Delivery workspace' };
-  }
+  if (p === '/training/overview') return { title: 'Training', subtitle: 'Overview' };
+  if (p === '/training/sessions') return { title: 'Live Sessions', subtitle: 'Training delivery' };
+  if (p === '/training/presenter') return { title: 'Presenter Tools', subtitle: 'Live session controls' };
+  if (p === '/training/classroom') return { title: 'Classroom', subtitle: 'Virtual room links' };
+  if (p === '/training/assignments') return { title: 'Assignments', subtitle: 'Submissions and reviews' };
+  if (p === '/training/assessments') return { title: 'Assessments', subtitle: 'Quizzes and exams' };
+  if (p === '/training/materials') return { title: 'Attendance', subtitle: 'Materials and attendance' };
+  if (p === '/training/library') return { title: 'Course Library', subtitle: 'Content repository' };
+  if (p === '/training/credentials') return { title: 'Certificates', subtitle: 'Credentials and badges' };
+  if (p === '/training/lms-analytics') return { title: 'LMS Analytics', subtitle: 'Learner progress and insights' };
+  if (p === '/training/lms-catalog') return { title: 'LMS Catalog', subtitle: 'Available courses' };
+  if (p.startsWith('/training')) return { title: 'Training', subtitle: 'Delivery workspace' };
 
-  return { title: 'SBS', subtitle: undefined };
+  return { title: 'SBS Learn' };
 }

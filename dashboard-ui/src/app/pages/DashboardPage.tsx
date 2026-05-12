@@ -1,42 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardHeader } from '../components/design-system/Card';
+import { Card } from '../components/design-system/Card';
 import { Badge } from '../components/design-system/Badge';
 import { Button } from '../components/design-system/Button';
-import { functionsBase, getAuthHeaders, jsonFetch } from '../../lib/api';
-
-interface StatCardProps {
-  title: string;
-  value: string | number;
-  change?: string;
-  trend?: 'up' | 'down';
-  icon: React.ReactNode;
-}
-
-function StatCard({ title, value, change, trend, icon }: StatCardProps) {
-  return (
-    <Card>
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="mb-1 text-sm text-[var(--brand-muted)]">{title}</p>
-          <p className="text-3xl font-bold text-[var(--brand-text)]">{value}</p>
-          {change && (
-            <p
-              className={`mt-2 flex items-center gap-1 text-sm ${
-                trend === 'up' ? 'text-[var(--brand-success)]' : 'text-[var(--brand-danger)]'
-              }`}
-            >
-              {trend === 'up' ? '↑' : '↓'} {change}
-            </p>
-          )}
-        </div>
-        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[var(--brand-primary)]/10 text-[var(--brand-primary)]">
-          {icon}
-        </div>
-      </div>
-    </Card>
-  );
-}
+import { AUTH_USER, functionsBase, getAuthHeaders, jsonFetch } from '../../lib/api';
 
 type OpsOverview = { trainees: number; courses: number; batches: number; enrollments: number; completed: number };
 type FinanceKpis = { mtd_revenue: number; outstanding_invoices: number; payment_count: number };
@@ -47,14 +14,12 @@ type TrainingSession = {
   groups_count?: number | null;
   training_groups?: { id: string }[] | null;
 };
-
 type PendingSubmission = {
   id: string;
   assignment_id: string;
   assignment_title: string;
   batch_id: string;
   trainee_name?: string | null;
-  trainee_email?: string | null;
   submitted_at?: string | null;
   status: string;
 };
@@ -66,318 +31,360 @@ function fmtMoney(n: number) {
   return `EGP ${Math.round(n)}`;
 }
 
+interface KpiCardProps {
+  title: string;
+  value: string | number;
+  icon: React.ReactNode;
+  color: string;
+  sub?: string;
+}
+
+function KpiCard({ title, value, icon, color, sub }: KpiCardProps) {
+  return (
+    <div className="flex items-start gap-4 rounded-[var(--brand-radius)] border border-[var(--brand-border)] bg-[var(--brand-surface)] p-5">
+      <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${color}`}>
+        {icon}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--brand-dim)]">{title}</p>
+        <p className="mt-0.5 text-2xl font-bold text-[var(--brand-text)]">{value}</p>
+        {sub && <p className="mt-0.5 text-xs text-[var(--brand-muted)]">{sub}</p>}
+      </div>
+    </div>
+  );
+}
+
+function QuickActionCard({
+  label,
+  icon,
+  onClick,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="group flex flex-col items-center gap-2.5 rounded-[var(--brand-radius)] border border-[var(--brand-border)] bg-[var(--brand-surface)] p-4 transition-all duration-150 hover:border-[var(--brand-primary)]/40 hover:bg-[var(--brand-primary-subtle)] active:scale-[0.97]"
+    >
+      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] transition-colors group-hover:bg-[var(--brand-primary)]/20">
+        {icon}
+      </div>
+      <span className="text-xs font-medium text-[var(--brand-muted)] group-hover:text-[var(--brand-primary-2)]">{label}</span>
+    </button>
+  );
+}
+
 export function DashboardPage() {
   const navigate = useNavigate();
   const role = useMemo(() => String(localStorage.getItem('sbs_role') || '').toLowerCase(), []);
+  const username = useMemo(() => String(localStorage.getItem(AUTH_USER) || '').trim() || 'there', []);
+
   const [ops, setOps] = useState<OpsOverview | null>(null);
   const [fin, setFin] = useState<FinanceKpis | null>(null);
   const [sessions, setSessions] = useState<TrainingSession[]>([]);
   const [pendingSubmissions, setPendingSubmissions] = useState<{ items: PendingSubmission[]; total_pending: number } | null>(null);
-  const [loadErr, setLoadErr] = useState('');
   const [loading, setLoading] = useState(true);
+
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      setLoadErr('');
       const headers = getAuthHeaders();
       const tasks: Promise<void>[] = [];
 
       if (['admin', 'staff', 'user'].includes(role)) {
         tasks.push(
-          (async () => {
-            try {
-              const d = await jsonFetch<OpsOverview>(
-                `${functionsBase()}/operations-data?resource=operations-overview`,
-                { headers },
-              );
-              if (!cancelled) setOps(d);
-            } catch {
-              if (!cancelled) setOps(null);
-            }
-          })(),
+          jsonFetch<OpsOverview>(`${functionsBase()}/operations-data?resource=operations-overview`, { headers })
+            .then((d) => { if (!cancelled) setOps(d); })
+            .catch(() => { if (!cancelled) setOps(null); }),
         );
       }
-
       if (['admin', 'accountant'].includes(role)) {
         tasks.push(
-          (async () => {
-            try {
-              const d = await jsonFetch<FinanceKpis>(`${functionsBase()}/finance-data?resource=kpis`, { headers });
-              if (!cancelled) setFin(d);
-            } catch {
-              if (!cancelled) setFin(null);
-            }
-          })(),
+          jsonFetch<FinanceKpis>(`${functionsBase()}/finance-data?resource=kpis`, { headers })
+            .then((d) => { if (!cancelled) setFin(d); })
+            .catch(() => { if (!cancelled) setFin(null); }),
         );
       }
-
       if (['admin', 'trainer'].includes(role)) {
         tasks.push(
-          (async () => {
-            try {
-              const d = await jsonFetch<{ sessions: TrainingSession[] }>(`${functionsBase()}/training-sessions`, {
-                headers,
-              });
-              if (!cancelled) setSessions(d.sessions || []);
-            } catch {
-              if (!cancelled) setSessions([]);
-            }
-          })(),
+          jsonFetch<{ sessions: TrainingSession[] }>(`${functionsBase()}/training-sessions`, { headers })
+            .then((d) => { if (!cancelled) setSessions(d.sessions || []); })
+            .catch(() => { if (!cancelled) setSessions([]); }),
         );
         tasks.push(
-          (async () => {
-            try {
-              const d = await jsonFetch<{ items: PendingSubmission[]; total_pending: number }>(
-                `${functionsBase()}/classroom-data?resource=pending-submissions`,
-                { headers },
-              );
-              const items = d.items || [];
-              const total = typeof d.total_pending === 'number' ? d.total_pending : items.length;
-              if (!cancelled) setPendingSubmissions({ items, total_pending: total });
-            } catch {
-              if (!cancelled) setPendingSubmissions(null);
-            }
-          })(),
+          jsonFetch<{ items: PendingSubmission[]; total_pending: number }>(
+            `${functionsBase()}/classroom-data?resource=pending-submissions`, { headers },
+          )
+            .then((d) => { if (!cancelled) setPendingSubmissions({ items: d.items || [], total_pending: typeof d.total_pending === 'number' ? d.total_pending : (d.items || []).length }); })
+            .catch(() => { if (!cancelled) setPendingSubmissions(null); }),
         );
       }
 
-      try {
-        await Promise.all(tasks);
-      } catch (e) {
-        if (!cancelled) setLoadErr(e instanceof Error ? e.message : 'Could not load dashboard');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+      await Promise.allSettled(tasks);
+      if (!cancelled) setLoading(false);
     })();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [role]);
 
-  const traineeCount = ops?.trainees ?? null;
-  const batchCount = ops?.batches ?? null;
-  const revenue = fin != null ? fmtMoney(fin.mtd_revenue) : '—';
-  const pendingPaymentsCount = fin != null && typeof fin.payment_count === 'number' ? fin.payment_count : null;
+  const kpis = [
+    ops != null && {
+      title: 'Active Students',
+      value: ops.trainees,
+      sub: `${ops.enrollments ?? 0} enrollments`,
+      color: 'bg-[var(--brand-primary)]/10 text-[var(--brand-primary)]',
+      icon: (
+        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+        </svg>
+      ),
+    },
+    ops != null && {
+      title: 'Active Courses',
+      value: ops.courses,
+      sub: `${ops.batches ?? 0} learning paths`,
+      color: 'bg-[var(--brand-success)]/10 text-[var(--brand-success)]',
+      icon: (
+        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+        </svg>
+      ),
+    },
+    ops != null && {
+      title: 'Completions',
+      value: ops.completed ?? 0,
+      sub: 'All time',
+      color: 'bg-[var(--brand-warning)]/10 text-[var(--brand-warning)]',
+      icon: (
+        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4.26 10.147a60.438 60.438 0 00-.491 6.347A48.62 48.62 0 0112 20.904a48.62 48.62 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.636 50.636 0 00-2.658-.813A59.906 59.906 0 0112 3.493a59.903 59.903 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5" />
+        </svg>
+      ),
+    },
+    fin != null && {
+      title: 'Revenue (MTD)',
+      value: fmtMoney(fin.mtd_revenue),
+      sub: `${fin.payment_count ?? 0} payments`,
+      color: 'bg-[var(--brand-danger)]/10 text-[var(--brand-danger)]',
+      icon: (
+        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
+        </svg>
+      ),
+    },
+  ].filter(Boolean) as KpiCardProps[];
 
-  const liveSessions = sessions.slice(0, 2);
+  const liveSessions = sessions.slice(0, 3);
 
   return (
     <div className="space-y-6">
-      {loadErr && (
-        <div className="rounded-lg border border-[var(--brand-danger)]/30 bg-[var(--brand-danger)]/10 p-3 text-sm text-[var(--brand-danger)]">
-          {loadErr}
-        </div>
-      )}
-      {loading && <p className="text-sm text-[var(--brand-muted)]">Loading…</p>}
-
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title="Active Trainees"
-          value={traineeCount != null ? traineeCount : '—'}
-          icon={
-            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-              />
-            </svg>
-          }
-        />
-        <StatCard
-          title="Active Batches"
-          value={batchCount != null ? batchCount : '—'}
-          icon={
-            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-              />
-            </svg>
-          }
-        />
-        <StatCard
-          title="Revenue (MTD)"
-          value={revenue}
-          icon={
-            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-          }
-        />
-        <StatCard
-          title="Pending Payments"
-          value={pendingPaymentsCount != null ? pendingPaymentsCount : '—'}
-          icon={
-            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
-              />
-            </svg>
-          }
-        />
-      </div>
-
-      <Card>
-        <CardHeader title="Quick Actions" subtitle="Common operations" />
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <Button type="button" variant="secondary" fullWidth onClick={() => navigate('/operations/trainees')}>
-            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            New Trainee
-          </Button>
-          <Button type="button" variant="secondary" fullWidth onClick={() => navigate('/operations/batches')}>
-            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            New Batch
-          </Button>
-          <Button type="button" variant="secondary" fullWidth onClick={() => navigate('/finance')}>
-            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-              />
-            </svg>
-            Record Payment
-          </Button>
-          <Button type="button" variant="secondary" fullWidth onClick={() => navigate('/finance')}>
-            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-              />
-            </svg>
-            View Reports
-          </Button>
-        </div>
-      </Card>
-
-      <Card>
-        <CardHeader title="Recent Activity" subtitle="Latest system events" />
-        <div className="space-y-3">
-          <p className="rounded-lg p-4 text-sm text-[var(--brand-muted)]">
-            No activity feed is wired to this dashboard yet. Use Operations and Finance for day-to-day changes.
+      {/* Greeting banner */}
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="font-brand text-2xl font-bold text-[var(--brand-text)]">
+            {greeting}, {username}
+          </h1>
+          <p className="mt-0.5 text-sm text-[var(--brand-muted)]">
+            Here's what's happening across your learning platform today.
           </p>
         </div>
-      </Card>
+        <div className="flex shrink-0 items-center gap-2">
+          <Button type="button" variant="primary" size="sm" onClick={() => navigate('/operations/trainees')}>
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            Add Student
+          </Button>
+        </div>
+      </div>
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader title="Active Training Sessions" subtitle="Live now" />
-          <div className="space-y-3">
-            {liveSessions.length === 0 ? (
-              <p className="p-3 text-sm text-[var(--brand-muted)]">No sessions listed (or no access).</p>
-            ) : (
-              liveSessions.map((s) => {
-                const groups = Array.isArray(s.training_groups) ? s.training_groups.length : Number(s.groups_count || 0);
-                return (
-                  <div key={s.id} className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-[var(--brand-text)]">{s.title || 'Session'}</p>
-                      <p className="text-xs text-[var(--brand-muted)]">
-                        {s.trainer_username || '—'} · {groups} group(s)
-                      </p>
-                    </div>
-                    <Badge variant="success" dot>
-                      Live
-                    </Badge>
+      {/* KPI grid */}
+      {(ops != null || fin != null) && (
+        <div className={`grid gap-4 ${kpis.length >= 4 ? 'grid-cols-2 lg:grid-cols-4' : kpis.length === 3 ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-1 sm:grid-cols-2'}`}>
+          {kpis.map((kpi) => (
+            <KpiCard key={kpi.title} {...kpi} />
+          ))}
+        </div>
+      )}
+
+      {loading && (
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-24 animate-pulse rounded-[var(--brand-radius)] border border-[var(--brand-border)] bg-[var(--brand-surface)]" />
+          ))}
+        </div>
+      )}
+
+      {/* Quick actions */}
+      <div>
+        <h2 className="mb-3 text-sm font-semibold text-[var(--brand-text)]">Quick Actions</h2>
+        <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
+          <QuickActionCard label="New Student" icon={<svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.374 21c-2.331 0-4.512-.645-6.374-1.766z" /></svg>} onClick={() => navigate('/operations/trainees')} />
+          <QuickActionCard label="New Path" icon={<svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>} onClick={() => navigate('/operations/batches')} />
+          <QuickActionCard label="Live Session" icon={<svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z" /></svg>} onClick={() => navigate('/training/sessions')} />
+          <QuickActionCard label="Assignments" icon={<svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25z" /></svg>} onClick={() => navigate('/training/assignments')} />
+          <QuickActionCard label="Payment" icon={<svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" /></svg>} onClick={() => navigate('/finance')} />
+          <QuickActionCard label="Analytics" icon={<svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M7.5 14.25v2.25m3-4.5v4.5m3-6.75v6.75m3-9v9M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z" /></svg>} onClick={() => navigate('/operations/insights')} />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* Active Sessions */}
+        {['admin', 'trainer', 'staff'].includes(role) && (
+          <Card>
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-sm font-semibold text-[var(--brand-text)]">Live Sessions</h2>
+                <p className="text-xs text-[var(--brand-muted)]">Currently active training</p>
+              </div>
+              <Button type="button" variant="ghost" size="sm" onClick={() => navigate('/training/sessions')}>
+                View all
+              </Button>
+            </div>
+            <div className="space-y-2">
+              {loading ? (
+                <div className="space-y-2">
+                  {[1, 2].map((i) => (
+                    <div key={i} className="h-14 animate-pulse rounded-lg bg-[var(--brand-surface-2)]" />
+                  ))}
+                </div>
+              ) : liveSessions.length === 0 ? (
+                <div className="flex flex-col items-center gap-2 py-8 text-center">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--brand-surface-2)] text-[var(--brand-dim)]">
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z" />
+                    </svg>
                   </div>
-                );
-              })
-            )}
-          </div>
-        </Card>
+                  <p className="text-sm text-[var(--brand-muted)]">No active sessions right now</p>
+                  <Button type="button" variant="secondary" size="sm" onClick={() => navigate('/training/sessions')}>
+                    Schedule a session
+                  </Button>
+                </div>
+              ) : (
+                liveSessions.map((s) => {
+                  const groups = Array.isArray(s.training_groups) ? s.training_groups.length : Number(s.groups_count || 0);
+                  return (
+                    <div key={s.id} className="flex items-center justify-between rounded-lg border border-[var(--brand-border)] p-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-[var(--brand-text)]">{s.title || 'Session'}</p>
+                        <p className="text-xs text-[var(--brand-muted)]">
+                          {s.trainer_username || '—'} · {groups} group{groups !== 1 ? 's' : ''}
+                        </p>
+                      </div>
+                      <Badge variant="success" dot>Live</Badge>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </Card>
+        )}
 
-        <Card>
-          <CardHeader title="Pending Submissions" subtitle="Awaiting review" />
-          <div className="space-y-3">
-            {['admin', 'trainer'].includes(role) ? (
-              loading ? (
-                <p className="p-3 text-sm text-[var(--brand-muted)]">Loading…</p>
+        {/* Pending Submissions */}
+        {['admin', 'trainer'].includes(role) && (
+          <Card>
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-sm font-semibold text-[var(--brand-text)]">Pending Reviews</h2>
+                <p className="text-xs text-[var(--brand-muted)]">Assignments awaiting feedback</p>
+              </div>
+              {pendingSubmissions && pendingSubmissions.total_pending > 0 && (
+                <Badge variant="warning">{pendingSubmissions.total_pending}</Badge>
+              )}
+            </div>
+            <div className="space-y-2">
+              {loading ? (
+                <div className="space-y-2">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="h-12 animate-pulse rounded-lg bg-[var(--brand-surface-2)]" />
+                  ))}
+                </div>
               ) : pendingSubmissions == null ? (
-                <p className="p-3 text-sm text-[var(--brand-muted)]">Submission queue is unavailable (check access or try again).</p>
+                <p className="py-4 text-center text-sm text-[var(--brand-muted)]">Submission queue unavailable.</p>
               ) : pendingSubmissions.total_pending === 0 ? (
-                <p className="p-3 text-sm text-[var(--brand-muted)]">No submissions awaiting review.</p>
+                <div className="flex flex-col items-center gap-2 py-8 text-center">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--brand-success)]/10 text-[var(--brand-success)]">
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <p className="text-sm text-[var(--brand-muted)]">All caught up — no pending reviews</p>
+                </div>
               ) : (
                 <>
-                  <p className="px-3 text-sm text-[var(--brand-muted)]">
-                    {pendingSubmissions.total_pending} submission{pendingSubmissions.total_pending === 1 ? '' : 's'} awaiting review
-                    {pendingSubmissions.total_pending > pendingSubmissions.items.length ? ' (showing the most recent)' : ''}.
-                  </p>
-                  <div className="max-h-56 space-y-2 overflow-y-auto px-3">
+                  <div className="max-h-52 space-y-1.5 overflow-y-auto">
                     {pendingSubmissions.items.map((row) => (
                       <button
                         key={row.id}
                         type="button"
-                        className="w-full rounded-lg border border-[var(--brand-border)] p-2 text-left text-sm transition hover:bg-[var(--brand-surface-2)]"
+                        className="w-full rounded-lg border border-[var(--brand-border)] p-2.5 text-left transition-colors hover:bg-[var(--brand-surface-2)]"
                         onClick={() => navigate(`/training/assignments?batch=${encodeURIComponent(row.batch_id)}`)}
                       >
-                        <p className="font-medium text-[var(--brand-text)]">{row.assignment_title || 'Assignment'}</p>
+                        <p className="text-sm font-medium text-[var(--brand-text)]">{row.assignment_title || 'Assignment'}</p>
                         <p className="text-xs text-[var(--brand-muted)]">
                           {(row.trainee_name || 'Trainee').trim()} · {row.submitted_at || '—'}
                         </p>
                       </button>
                     ))}
                   </div>
-                  <div className="px-3 pb-2">
-                    <Button type="button" variant="secondary" size="sm" onClick={() => navigate('/training/assignments')}>
-                      Open assignments
-                    </Button>
-                  </div>
+                  <Button type="button" variant="secondary" size="sm" onClick={() => navigate('/training/assignments')}>
+                    Open all assignments
+                  </Button>
                 </>
-              )
-            ) : (
-              <p className="p-3 text-sm text-[var(--brand-muted)]">
-                Trainers and admins can review submissions under Training → Assignments.
-              </p>
-            )}
-          </div>
-        </Card>
+              )}
+            </div>
+          </Card>
+        )}
       </div>
 
-      <Card>
-        <CardHeader title="Training shortcuts" subtitle="React routes" />
-        <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="secondary" size="sm" onClick={() => navigate('/training/sessions')}>
-            Sessions
-          </Button>
-          <Button type="button" variant="secondary" size="sm" onClick={() => navigate('/training/presenter')}>
-            Presenter
-          </Button>
-          <Button type="button" variant="secondary" size="sm" onClick={() => navigate('/training/classroom')}>
-            Classroom links
-          </Button>
-          <Button type="button" variant="secondary" size="sm" onClick={() => navigate('/training/assignments')}>
-            Assignments
-          </Button>
-          <Button type="button" variant="secondary" size="sm" onClick={() => navigate('/operations/import')}>
-            Data import
-          </Button>
+      {/* Platform features strip */}
+      <div>
+        <h2 className="mb-3 text-sm font-semibold text-[var(--brand-text)]">Platform</h2>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {[
+            { label: 'Course Catalog', sub: 'Browse & manage courses', path: '/operations/lms-admin', icon: '📚' },
+            { label: 'LMS Analytics', sub: 'Learner progress insights', path: '/training/lms-analytics', icon: '📊' },
+            { label: 'Certificates', sub: 'Issue & verify credentials', path: '/training/credentials', icon: '🎓' },
+            { label: 'Classroom Links', sub: 'Virtual room management', path: '/training/classroom', icon: '🔗' },
+          ].map((item) => (
+            <button
+              key={item.label}
+              type="button"
+              onClick={() => navigate(item.path)}
+              className="group flex items-start gap-3 rounded-[var(--brand-radius)] border border-[var(--brand-border)] bg-[var(--brand-surface)] p-4 text-left transition-all duration-150 hover:border-[var(--brand-border-2)] hover:bg-[var(--brand-surface-2)] active:scale-[0.98]"
+            >
+              <span className="text-xl">{item.icon}</span>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-[var(--brand-text)]">{item.label}</p>
+                <p className="text-xs text-[var(--brand-muted)]">{item.sub}</p>
+              </div>
+            </button>
+          ))}
         </div>
-        <p className="mt-3 text-sm text-[var(--brand-muted)]">
-          Public participant URLs (<code className="text-xs text-[var(--brand-text)]">?session=</code>,{' '}
-          <code className="text-xs text-[var(--brand-text)]">?group=</code>, <code className="text-xs text-[var(--brand-text)]">?classroom=</code>, etc.) still resolve via the site root bootstrap into the legacy public views until those flows are ported.
-        </p>
-      </Card>
+      </div>
+
+      {/* Coming soon teaser */}
+      <div className="rounded-[var(--brand-radius)] border border-[var(--brand-primary)]/20 bg-[var(--brand-primary-subtle)] p-4">
+        <div className="flex items-start gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-primary)]/15 text-[var(--brand-primary)]">
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.75}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
+            </svg>
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-[var(--brand-primary-2)]">Coming Soon to SBS Learn</p>
+            <p className="mt-0.5 text-xs text-[var(--brand-muted)]">
+              AI Assistant, Smart Messaging, Course Builder, Automation Workflows, and Calendar integration — all in active development.
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
