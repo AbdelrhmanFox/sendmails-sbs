@@ -198,30 +198,29 @@ export function OperationsLmsAdminPage() {
   const write = canWriteLms();
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold text-[var(--brand-text)]">LMS administration</h2>
-        <p className="mt-1 text-sm text-[var(--brand-muted)]">
-          Create and list LMS entities (admin and staff). Trainers use Training → LMS catalog for read-only views.
-        </p>
-      </div>
+    <div className="space-y-4">
       {err ? (
         <div className="rounded-lg border border-[var(--brand-danger)]/30 bg-[var(--brand-danger)]/10 p-3 text-sm text-[var(--brand-danger)]">
           {err}
         </div>
       ) : null}
-      {msg ? <p className="text-sm text-[var(--brand-text)]">{msg}</p> : null}
+      {msg ? (
+        <p className="rounded-lg border border-[var(--brand-success)]/30 bg-[var(--brand-success)]/10 px-3 py-2 text-sm text-[var(--brand-success)]">{msg}</p>
+      ) : null}
+      {!write ? (
+        <p className="rounded-lg border border-[var(--brand-warning)]/30 bg-[var(--brand-warning)]/10 px-3 py-2 text-sm text-[var(--brand-warning)]">Your role cannot create LMS records on this page.</p>
+      ) : null}
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-1 border-b border-[var(--brand-border)]">
         {tabs.map((t) => (
           <button
             key={t.id}
             type="button"
             onClick={() => setTab(t.id)}
-            className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
+            className={`rounded-t-[var(--brand-radius-dense)] px-3 py-2 text-sm font-medium transition-colors ${
               tab === t.id
-                ? 'bg-[var(--brand-primary)] text-white'
-                : 'border border-[var(--brand-border)] text-[var(--brand-muted)] hover:bg-[var(--brand-surface-2)]'
+                ? 'border border-b-0 border-[var(--brand-border)] bg-[var(--brand-surface)] text-[var(--brand-primary-2)]'
+                : 'text-[var(--brand-muted)] hover:text-[var(--brand-text)]'
             }`}
           >
             {t.label}
@@ -467,10 +466,6 @@ export function OperationsLmsAdminPage() {
         <Button type="button" variant="secondary" onClick={() => void load()}>
           Reload list
         </Button>
-      ) : null}
-
-      {!write ? (
-        <p className="text-sm text-[var(--brand-danger)]">Your role cannot create LMS records on this page.</p>
       ) : null}
 
       {loading ? <p className="text-sm text-[var(--brand-muted)]">Loading…</p> : null}

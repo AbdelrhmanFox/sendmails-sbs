@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Card, CardHeader } from '../../components/design-system/Card';
+import { Card } from '../../components/design-system/Card';
 import { Button } from '../../components/design-system/Button';
 import { Badge } from '../../components/design-system/Badge';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../../components/design-system/Table';
@@ -267,25 +267,6 @@ export function TrainingSessionsPage() {
         </Table>
       </Card>
 
-      <Card>
-        <CardHeader title="Session features" subtitle="Available tools for training sessions" />
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <div className="rounded-lg bg-[var(--brand-surface-2)] p-4">
-            <h4 className="mb-2 font-semibold text-[var(--brand-text)]">Real-time chat</h4>
-            <p className="text-sm text-[var(--brand-muted)]">Participants can chat within their groups with message persistence</p>
-          </div>
-          <div className="rounded-lg bg-[var(--brand-surface-2)] p-4">
-            <h4 className="mb-2 font-semibold text-[var(--brand-text)]">Shared whiteboard</h4>
-            <p className="text-sm text-[var(--brand-muted)]">
-              Optional collaborative whiteboard with real-time broadcast (no persistence)
-            </p>
-          </div>
-          <div className="rounded-lg bg-[var(--brand-surface-2)] p-4">
-            <h4 className="mb-2 font-semibold text-[var(--brand-text)]">Multi-group support</h4>
-            <p className="text-sm text-[var(--brand-muted)]">Create up to 12 groups per session with unique join tokens</p>
-          </div>
-        </div>
-      </Card>
     </div>
   );
 }

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Card } from '../../components/design-system/Card';
+import { Badge } from '../../components/design-system/Badge';
 import { Button } from '../../components/design-system/Button';
 import { Input } from '../../components/design-system/Input';
+import { Card } from '../../components/design-system/Card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/design-system/Table';
 import { functionsBase, getAuthHeaders, jsonFetch } from '../../../lib/api';
 
@@ -16,19 +17,25 @@ type CredentialRow = {
   credential_templates?: { template_name?: string | null; credential_type?: string | null } | null;
 };
 
+const STATUS_VARIANT: Record<string, 'success' | 'warning' | 'neutral' | 'info'> = {
+  active: 'success',
+  issued: 'success',
+  revoked: 'warning',
+  expired: 'neutral',
+};
+
 export function TrainingCredentialsPage() {
   const [items, setItems] = useState<CredentialRow[]>([]);
   const [filterTrainee, setFilterTrainee] = useState('');
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState('');
 
   const load = async () => {
     setErr('');
     setLoading(true);
     try {
-      const q = filterTrainee.trim()
-        ? `&trainee_id=${encodeURIComponent(filterTrainee.trim())}`
-        : '';
+      const q = filterTrainee.trim() ? `&trainee_id=${encodeURIComponent(filterTrainee.trim())}` : '';
       const data = await jsonFetch<{ items: CredentialRow[] }>(
         `${functionsBase()}/credential-center?resource=credentials${q}`,
         { headers: getAuthHeaders() },
@@ -44,71 +51,91 @@ export function TrainingCredentialsPage() {
 
   useEffect(() => {
     void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- load on mount only; filter uses Apply
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const shareUrl = (token: string) =>
     `${window.location.origin}${window.location.pathname.replace(/\/spa\/?.*$/, '/')}?credential=${encodeURIComponent(token)}`;
 
+  const copyLink = async (id: string, token: string) => {
+    await navigator.clipboard.writeText(shareUrl(token));
+    setCopied(id);
+    setTimeout(() => setCopied(''), 2000);
+  };
+
   return (
     <div className="space-y-4">
-      <p className="text-sm text-[var(--brand-muted)]">
-        Issued credentials and public verification links. Verification opens the site root with the same query contract as legacy.
-      </p>
-      {err ? <p className="text-sm text-[var(--brand-danger)]">{err}</p> : null}
-      <Card className="space-y-3 p-4">
-        <div className="flex flex-wrap items-end gap-2">
-          <div className="max-w-xs flex-1">
-            <Input
-              label="Filter by trainee ID"
-              value={filterTrainee}
-              onChange={(e) => setFilterTrainee(e.target.value)}
-              placeholder="Optional"
-            />
-          </div>
-          <Button type="button" variant="secondary" onClick={() => void load()}>
-            Apply
-          </Button>
+      {err && (
+        <p className="rounded-lg border border-[var(--brand-danger)]/30 bg-[var(--brand-danger)]/10 px-3 py-2 text-sm text-[var(--brand-danger)]">{err}</p>
+      )}
+
+      {/* Filter toolbar */}
+      <div className="flex flex-wrap items-center gap-2 rounded-[var(--brand-radius)] border border-[var(--brand-border)] bg-[var(--brand-surface)] px-4 py-3">
+        <div className="w-64">
+          <Input
+            placeholder="Filter by trainee ID…"
+            value={filterTrainee}
+            onChange={(e) => setFilterTrainee(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && void load()}
+          />
         </div>
-      </Card>
-      {loading ? <p className="text-sm text-[var(--brand-muted)]">Loading…</p> : null}
+        <Button type="button" size="sm" variant="secondary" onClick={() => void load()}>
+          Search
+        </Button>
+        {loading && <span className="text-xs text-[var(--brand-muted)]">Loading…</span>}
+        {!loading && (
+          <span className="ml-auto text-xs text-[var(--brand-muted)]">{items.length} certificate{items.length !== 1 ? 's' : ''}</span>
+        )}
+      </div>
+
       <Card noPadding>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Certificate</TableHead>
+              <TableHead>Certificate No.</TableHead>
               <TableHead>Trainee</TableHead>
               <TableHead>Course</TableHead>
+              <TableHead>Template</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Issued</TableHead>
-              <TableHead>Public link</TableHead>
+              <TableHead>Verify link</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {items.map((r) => {
+            {items.length === 0 && !loading ? (
+              <TableRow>
+                <TableCell colSpan={7}>
+                  <p className="text-sm text-[var(--brand-muted)]">No credentials found.</p>
+                </TableCell>
+              </TableRow>
+            ) : items.map((r) => {
               const tok = r.verification_token;
+              const isCopied = copied === r.id;
               return (
                 <TableRow key={r.id}>
-                  <TableCell className="font-mono text-xs">{r.certificate_no}</TableCell>
+                  <TableCell className="font-mono text-xs font-medium text-[var(--brand-text)]">{r.certificate_no}</TableCell>
                   <TableCell className="font-mono text-xs">{r.trainee_id}</TableCell>
                   <TableCell className="font-mono text-xs">{r.course_id}</TableCell>
-                  <TableCell>{r.status}</TableCell>
-                  <TableCell className="text-xs">
-                    {r.issued_at ? new Date(r.issued_at).toLocaleString() : '—'}
+                  <TableCell className="text-xs text-[var(--brand-muted)]">
+                    {r.credential_templates?.template_name || r.credential_templates?.credential_type || '—'}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={STATUS_VARIANT[r.status] ?? 'neutral'}>{r.status}</Badge>
+                  </TableCell>
+                  <TableCell className="text-xs text-[var(--brand-muted)]">
+                    {r.issued_at ? new Date(r.issued_at).toLocaleDateString() : '—'}
                   </TableCell>
                   <TableCell>
                     {tok ? (
                       <Button
                         size="sm"
                         type="button"
-                        variant="secondary"
-                        onClick={() => void navigator.clipboard.writeText(shareUrl(tok))}
+                        variant={isCopied ? 'primary' : 'secondary'}
+                        onClick={() => void copyLink(r.id, tok)}
                       >
-                        Copy verify link
+                        {isCopied ? 'Copied!' : 'Copy link'}
                       </Button>
-                    ) : (
-                      '—'
-                    )}
+                    ) : '—'}
                   </TableCell>
                 </TableRow>
               );

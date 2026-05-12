@@ -269,18 +269,8 @@ export function CampaignsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-[var(--brand-text)]">Email campaigns</h1>
-        <p className="mt-1 text-sm text-[var(--brand-muted)]">
-          Same client-side n8n webhook contract as the classic dashboard; webhook URL is stored in localStorage only.
-        </p>
-      </div>
-
       <Card className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-[var(--brand-text)]">Connection Settings</h2>
-          <p className="text-xs text-[var(--brand-muted)]">Figma-style grouped controls</p>
-        </div>
+        <h2 className="text-sm font-semibold text-[var(--brand-text)]">Connection settings</h2>
         <div className="grid gap-4 md:grid-cols-2">
           <Input label="Webhook URL (n8n)" value={webhook} onChange={(e) => setWebhook(e.target.value)} />
           <Input label="Google Sheet URL" value={sheetUrl} onChange={(e) => setSheetUrl(e.target.value)} />
@@ -302,10 +292,7 @@ export function CampaignsPage() {
       </Card>
 
       <Card className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-[var(--brand-text)]">Composer</h2>
-          <p className="text-xs text-[var(--brand-muted)]">Template, insert, and formatting tools</p>
-        </div>
+        <h2 className="text-sm font-semibold text-[var(--brand-text)]">Composer</h2>
         <div>
           <label className="mb-1.5 block text-sm font-medium text-[var(--brand-text)]">Quick template</label>
           <div className="flex flex-wrap gap-2">

@@ -13,6 +13,7 @@ type TrainingSession = {
 
 type Material = { id: string; title: string; url: string; sort_order?: number };
 type AttRow = { id: string; participant_name: string; attendance_date: string; status: string };
+type Tab = 'materials' | 'attendance';
 
 function downloadCsv(name: string, headers: string[], rows: Array<Array<string | number>>) {
   const esc = (v: string | number) => `"${String(v ?? '').replace(/"/g, '""')}"`;
@@ -38,6 +39,7 @@ export function TrainingMaterialsAttendancePage() {
   const [participantName, setParticipantName] = useState('');
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<Tab>('materials');
 
   useEffect(() => {
     let c = false;
@@ -53,9 +55,7 @@ export function TrainingMaterialsAttendancePage() {
         if (!c) setLoading(false);
       }
     })();
-    return () => {
-      c = true;
-    };
+    return () => { c = true; };
   }, []);
 
   const groups = useMemo(() => {
@@ -63,15 +63,10 @@ export function TrainingMaterialsAttendancePage() {
     return Array.isArray(s?.training_groups) ? s.training_groups : [];
   }, [sessions, sessionId]);
 
-  useEffect(() => {
-    setGroupId('');
-  }, [sessionId]);
+  useEffect(() => { setGroupId(''); }, [sessionId]);
 
   useEffect(() => {
-    if (!sessionId) {
-      setMaterials([]);
-      return;
-    }
+    if (!sessionId) { setMaterials([]); return; }
     let c = false;
     (async () => {
       setErr('');
@@ -85,16 +80,11 @@ export function TrainingMaterialsAttendancePage() {
         if (!c) setErr(e instanceof Error ? e.message : 'Could not load materials');
       }
     })();
-    return () => {
-      c = true;
-    };
+    return () => { c = true; };
   }, [sessionId]);
 
   useEffect(() => {
-    if (!groupId) {
-      setAttendance([]);
-      return;
-    }
+    if (!groupId) { setAttendance([]); return; }
     let c = false;
     (async () => {
       setErr('');
@@ -108,9 +98,7 @@ export function TrainingMaterialsAttendancePage() {
         if (!c) setErr(e instanceof Error ? e.message : 'Could not load attendance');
       }
     })();
-    return () => {
-      c = true;
-    };
+    return () => { c = true; };
   }, [groupId]);
 
   const addMaterial = async () => {
@@ -122,15 +110,12 @@ export function TrainingMaterialsAttendancePage() {
         headers: getAuthHeaders(),
         body: JSON.stringify({ session_id: sessionId, group_id: groupId || null, title: newTitle.trim(), url: newUrl.trim() }),
       });
-      setNewTitle('');
-      setNewUrl('');
-      if (sessionId) {
-        const data = await jsonFetch<{ items: Material[] }>(
-          `${functionsBase()}/training-data?resource=materials&session_id=${encodeURIComponent(sessionId)}`,
-          { headers: getAuthHeaders() },
-        );
-        setMaterials(data.items || []);
-      }
+      setNewTitle(''); setNewUrl('');
+      const data = await jsonFetch<{ items: Material[] }>(
+        `${functionsBase()}/training-data?resource=materials&session_id=${encodeURIComponent(sessionId)}`,
+        { headers: getAuthHeaders() },
+      );
+      setMaterials(data.items || []);
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Add failed');
     }
@@ -160,12 +145,11 @@ export function TrainingMaterialsAttendancePage() {
     setErr('');
     try {
       await jsonFetch(`${functionsBase()}/training-data?resource=materials&id=${encodeURIComponent(id)}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders(),
+        method: 'DELETE', headers: getAuthHeaders(),
       });
       setMaterials((prev) => prev.filter((x) => x.id !== id));
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Material delete failed');
+      setErr(e instanceof Error ? e.message : 'Delete failed');
     }
   };
 
@@ -173,12 +157,11 @@ export function TrainingMaterialsAttendancePage() {
     setErr('');
     try {
       await jsonFetch(`${functionsBase()}/training-data?resource=attendance&id=${encodeURIComponent(id)}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders(),
+        method: 'DELETE', headers: getAuthHeaders(),
       });
       setAttendance((prev) => prev.filter((x) => x.id !== id));
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Attendance delete failed');
+      setErr(e instanceof Error ? e.message : 'Delete failed');
     }
   };
 
@@ -192,114 +175,169 @@ export function TrainingMaterialsAttendancePage() {
   };
 
   return (
-    <div className="space-y-6">
-      <p className="text-sm text-[var(--brand-muted)]">Materials and attendance per live training session and group.</p>
-      {err ? <p className="text-sm text-[var(--brand-danger)]">{err}</p> : null}
-      {loading ? <p className="text-sm text-[var(--brand-muted)]">Loading…</p> : null}
+    <div className="space-y-4">
+      {err && (
+        <p className="rounded-lg border border-[var(--brand-danger)]/30 bg-[var(--brand-danger)]/10 px-3 py-2 text-sm text-[var(--brand-danger)]">{err}</p>
+      )}
 
-      <Card className="space-y-3 p-4">
-        <label className="block text-sm font-medium text-[var(--brand-text)]">Session</label>
-        <select
-          className="w-full max-w-md rounded-[var(--brand-radius-dense)] border border-[var(--brand-border)] bg-[var(--brand-surface)] px-3 py-2 text-[var(--brand-text)]"
-          value={sessionId}
-          onChange={(e) => setSessionId(e.target.value)}
-        >
-          <option value="">Select session</option>
-          {sessions.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.title || s.id}
-            </option>
-          ))}
-        </select>
-        <label className="block text-sm font-medium text-[var(--brand-text)]">Group (for attendance)</label>
-        <select
-          className="w-full max-w-md rounded-[var(--brand-radius-dense)] border border-[var(--brand-border)] bg-[var(--brand-surface)] px-3 py-2 text-[var(--brand-text)]"
-          value={groupId}
-          onChange={(e) => setGroupId(e.target.value)}
-          disabled={!sessionId}
-        >
-          <option value="">Select group</option>
-          {groups.map((g) => (
-            <option key={g.id} value={g.id}>
-              Group {g.group_number ?? '?'}
-            </option>
-          ))}
-        </select>
-      </Card>
-
-      <Card className="space-y-3 p-4">
-        <h3 className="text-lg font-semibold text-[var(--brand-text)]">Materials</h3>
-        <div className="flex flex-wrap gap-2">
-          <Input placeholder="Title" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} className="max-w-xs" />
-          <Input placeholder="URL" value={newUrl} onChange={(e) => setNewUrl(e.target.value)} className="max-w-md" />
-          <Button type="button" disabled={!sessionId} onClick={() => void addMaterial()}>
-            Add link
-          </Button>
-        </div>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Title</TableHead>
-              <TableHead>URL</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {materials.map((m) => (
-              <TableRow key={m.id}>
-                <TableCell>{m.title}</TableCell>
-                <TableCell>
-                  <a className="text-[var(--brand-primary)] underline" href={m.url} target="_blank" rel="noreferrer">
-                    {m.url}
-                  </a>
-                </TableCell>
-                <TableCell>
-                  <Button size="sm" variant="secondary" type="button" onClick={() => void deleteMaterial(m.id)}>
-                    Delete
-                  </Button>
-                </TableCell>
-              </TableRow>
+      {/* Compact session / group selector bar */}
+      <div className="flex flex-wrap items-center gap-4 rounded-[var(--brand-radius)] border border-[var(--brand-border)] bg-[var(--brand-surface)] px-4 py-3">
+        <div className="flex items-center gap-2">
+          <label className="text-xs font-medium text-[var(--brand-muted)]">Session</label>
+          <select
+            className="rounded-[var(--brand-radius-dense)] border border-[var(--brand-border)] bg-[var(--brand-surface-2)] px-2 py-1.5 text-sm text-[var(--brand-text)]"
+            value={sessionId}
+            onChange={(e) => setSessionId(e.target.value)}
+          >
+            <option value="">Select session…</option>
+            {sessions.map((s) => (
+              <option key={s.id} value={s.id}>{s.title || s.id}</option>
             ))}
-          </TableBody>
-        </Table>
-      </Card>
-
-      <Card className="space-y-3 p-4">
-        <h3 className="text-lg font-semibold text-[var(--brand-text)]">Attendance</h3>
-        <div className="flex flex-wrap gap-2">
-          <Input placeholder="Participant name" value={participantName} onChange={(e) => setParticipantName(e.target.value)} />
-          <Button type="button" disabled={!groupId} onClick={() => void addAttendance()}>
-            Mark present
-          </Button>
-          <Button type="button" variant="secondary" disabled={!attendance.length} onClick={exportAttendance}>
-            Export CSV
-          </Button>
+          </select>
         </div>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {attendance.map((a) => (
-              <TableRow key={a.id}>
-                <TableCell>{a.participant_name}</TableCell>
-                <TableCell>{String(a.attendance_date || '').slice(0, 10)}</TableCell>
-                <TableCell>{a.status}</TableCell>
-                <TableCell>
-                  <Button size="sm" variant="secondary" type="button" onClick={() => void deleteAttendance(a.id)}>
-                    Delete
-                  </Button>
-                </TableCell>
-              </TableRow>
+        <div className="flex items-center gap-2">
+          <label className="text-xs font-medium text-[var(--brand-muted)]">Group</label>
+          <select
+            className="rounded-[var(--brand-radius-dense)] border border-[var(--brand-border)] bg-[var(--brand-surface-2)] px-2 py-1.5 text-sm text-[var(--brand-text)] disabled:opacity-50"
+            value={groupId}
+            onChange={(e) => setGroupId(e.target.value)}
+            disabled={!sessionId}
+          >
+            <option value="">Select group…</option>
+            {groups.map((g) => (
+              <option key={g.id} value={g.id}>Group {g.group_number ?? '?'}</option>
             ))}
-          </TableBody>
-        </Table>
-      </Card>
+          </select>
+        </div>
+        {loading && <span className="text-xs text-[var(--brand-muted)]">Loading sessions…</span>}
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1 border-b border-[var(--brand-border)]">
+        {(['materials', 'attendance'] as Tab[]).map((t) => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => setActiveTab(t)}
+            className={`rounded-t-[var(--brand-radius-dense)] px-4 py-2 text-sm font-medium transition-colors ${
+              activeTab === t
+                ? 'border border-b-0 border-[var(--brand-border)] bg-[var(--brand-surface)] text-[var(--brand-primary-2)]'
+                : 'text-[var(--brand-muted)] hover:text-[var(--brand-text)]'
+            }`}
+          >
+            {t === 'materials'
+              ? `Materials${materials.length ? ` (${materials.length})` : ''}`
+              : `Attendance${attendance.length ? ` (${attendance.length})` : ''}`}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'materials' && (
+        <Card noPadding>
+          <div className="flex flex-wrap items-center gap-2 border-b border-[var(--brand-border)] px-4 py-3">
+            <Input
+              placeholder="Title"
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              className="max-w-xs"
+            />
+            <Input
+              placeholder="URL"
+              value={newUrl}
+              onChange={(e) => setNewUrl(e.target.value)}
+              className="max-w-sm"
+            />
+            <Button type="button" size="sm" disabled={!sessionId || !newTitle.trim() || !newUrl.trim()} onClick={() => void addMaterial()}>
+              Add link
+            </Button>
+          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Title</TableHead>
+                <TableHead>URL</TableHead>
+                <TableHead />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {materials.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={3}>
+                    <p className="text-sm text-[var(--brand-muted)]">
+                      {sessionId ? 'No materials yet. Add a link above.' : 'Select a session to view materials.'}
+                    </p>
+                  </TableCell>
+                </TableRow>
+              ) : materials.map((m) => (
+                <TableRow key={m.id}>
+                  <TableCell>{m.title}</TableCell>
+                  <TableCell>
+                    <a className="text-[var(--brand-primary)] underline" href={m.url} target="_blank" rel="noreferrer">
+                      {m.url}
+                    </a>
+                  </TableCell>
+                  <TableCell>
+                    <Button size="sm" variant="secondary" type="button" onClick={() => void deleteMaterial(m.id)}>
+                      Delete
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
+      )}
+
+      {activeTab === 'attendance' && (
+        <Card noPadding>
+          <div className="flex flex-wrap items-center gap-2 border-b border-[var(--brand-border)] px-4 py-3">
+            <Input
+              placeholder="Participant name"
+              value={participantName}
+              onChange={(e) => setParticipantName(e.target.value)}
+              className="max-w-xs"
+            />
+            <Button type="button" size="sm" disabled={!groupId || !participantName.trim()} onClick={() => void addAttendance()}>
+              Mark present
+            </Button>
+            <Button type="button" size="sm" variant="secondary" disabled={!attendance.length} onClick={exportAttendance}>
+              Export CSV
+            </Button>
+          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {attendance.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4}>
+                    <p className="text-sm text-[var(--brand-muted)]">
+                      {groupId ? 'No attendance records yet.' : 'Select a group to view attendance.'}
+                    </p>
+                  </TableCell>
+                </TableRow>
+              ) : attendance.map((a) => (
+                <TableRow key={a.id}>
+                  <TableCell>{a.participant_name}</TableCell>
+                  <TableCell>{String(a.attendance_date || '').slice(0, 10)}</TableCell>
+                  <TableCell>{a.status}</TableCell>
+                  <TableCell>
+                    <Button size="sm" variant="secondary" type="button" onClick={() => void deleteAttendance(a.id)}>
+                      Delete
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
+      )}
     </div>
   );
 }

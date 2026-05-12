@@ -1,4 +1,4 @@
-import { HTMLAttributes, ReactNode } from 'react';
+import { HTMLAttributes, ReactNode, TdHTMLAttributes, ThHTMLAttributes } from 'react';
 
 export interface TableProps extends HTMLAttributes<HTMLTableElement> {
   children: ReactNode;
@@ -53,7 +53,7 @@ export function TableRow({
   );
 }
 
-export function TableHead({ children, className = '', ...props }: HTMLAttributes<HTMLTableCellElement>) {
+export function TableHead({ children, className = '', ...props }: ThHTMLAttributes<HTMLTableCellElement>) {
   return (
     <th
       className={`
@@ -70,7 +70,7 @@ export function TableHead({ children, className = '', ...props }: HTMLAttributes
   );
 }
 
-export function TableCell({ children, className = '', ...props }: HTMLAttributes<HTMLTableCellElement>) {
+export function TableCell({ children, className = '', ...props }: TdHTMLAttributes<HTMLTableCellElement>) {
   return (
     <td
       className={`px-4 py-3 text-sm text-[var(--brand-text)] ${className}`}

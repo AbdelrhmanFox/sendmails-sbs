@@ -676,7 +676,7 @@ export function OperationsPage() {
                   const paid =
                     r.amount_paid != null && r.amount_paid !== ''
                       ? `EGP ${Number(r.amount_paid)}`
-                      : r.amount_paid === 0
+                      : Number(r.amount_paid) === 0
                         ? 'EGP 0'
                         : '—';
                   const ed = r.enroll_date || r.created_at;
