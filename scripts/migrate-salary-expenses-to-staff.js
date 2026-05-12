@@ -9,6 +9,9 @@
  *   node scripts/migrate-salary-expenses-to-staff.js --apply
  *   node scripts/migrate-salary-expenses-to-staff.js --apply --delete-expenses
  *
+ * When staff rows already exist from a prior --apply, --delete-expenses still removes matching
+ * finance_expenses rows for each salary-like group (no duplicate staff inserts).
+ *
  * Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (same as import-excel-data.js)
  *
  * Grouping: rows with the exact same `description` are treated as one staff line (same person/label in the sheet).
@@ -100,6 +103,20 @@ async function main() {
   let deleted = 0;
   let errors = 0;
 
+  async function deleteExpenseGroup(rawDescription, group) {
+    if (!DELETE_EXPENSES || DRY || !APPLY) return;
+    const expenseIds = group.map((g) => g.id);
+    const { error: delErr } = await supabase.from('finance_expenses').delete().in('id', expenseIds);
+    if (delErr) {
+      console.error(`ERR delete expenses for "${rawDescription}": ${delErr.message}`);
+      errors++;
+    } else {
+      deleted += expenseIds.length;
+      const tail = rawDescription.length > 60 ? `${rawDescription.slice(0, 60)}…` : rawDescription;
+      console.log(`  deleted ${expenseIds.length} finance_expenses row(s) for "${tail}"`);
+    }
+  }
+
   for (const [rawDescription, group] of byDescription) {
     const fullName = extractStaffName(rawDescription);
     const monthly = pickSalaryAmount(group);
@@ -125,7 +142,8 @@ async function main() {
         .limit(5);
       const already = (existing || []).some((e) => String(e.notes || '').includes('Migrated from finance_expenses'));
       if (already) {
-        console.log(`SKIP (already migrated): "${fullName}"`);
+        await deleteExpenseGroup(rawDescription, group);
+        console.log(`SKIP insert (already migrated): "${fullName}"`);
         skipped++;
         continue;
       }
@@ -157,17 +175,7 @@ async function main() {
     inserted++;
     console.log(`INSERT staff ${ins.id} ← "${fullName}" (${monthly} EGP/mo from ${group.length} expense row(s))`);
 
-    if (DELETE_EXPENSES) {
-      const expenseIds = group.map((g) => g.id);
-      const { error: delErr } = await supabase.from('finance_expenses').delete().in('id', expenseIds);
-      if (delErr) {
-        console.error(`ERR delete expenses for "${fullName}": ${delErr.message}`);
-        errors++;
-      } else {
-        deleted += expenseIds.length;
-        console.log(`  deleted ${expenseIds.length} finance_expenses row(s)`);
-      }
-    }
+    await deleteExpenseGroup(rawDescription, group);
   }
 
   console.log('\n── Summary ──');
