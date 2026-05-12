@@ -6,10 +6,12 @@
  *
  * WB2 (مصاريف SBS (2) (2) (1) (1).xlsx)
  *   Sheet1 income side  →  payments (cash-book entries not yet linked to enrollments)
- *   Sheet1 expense side →  finance_expenses
+ *   Sheet1 expense side →  finance_expenses (dated rows). Lines with amount + description but **empty date** (col 10)
+ *   are inserted as needs_review with placeholder spent_at so accountants complete them in Finance → Expenses.
  *
  * Salary-like expense lines (e.g. description contains "مرتب" / "راتب" / "مكافأة" / "bonus") can later be moved to
  * `finance_staff` using: `node scripts/migrate-salary-expenses-to-staff.js --dry-run` then `--apply`.
+ * Compare Sheet1 vs import filters: `node scripts/analyze-wb2-expense-gaps.js` (optional path to xlsx).
  * Idempotency: each workbook row is keyed by a stable placeholder email
  *   {slug(name)}.{rawClientId}@pending-update.sbs.local
  *   so re-running the script does not create duplicate trainees/enrollments.
@@ -74,6 +76,23 @@ function slugify(str) {
 function num(v) {
   const n = Number(v);
   return Number.isFinite(n) ? n : 0;
+}
+
+/** WB2 expense col12: Excel sometimes stores amounts as strings like "1,000.00 ج.م.\u200f". */
+function egpCellAmount(v) {
+  if (v == null || v === '') return 0;
+  if (typeof v === 'number' && Number.isFinite(v)) return v;
+  const s = String(v)
+    .replace(/\u200f|\u200e/g, '')
+    .replace(/ج\.م\.?/gi, '')
+    .replace(/EGP/gi, '')
+    .replace(/,/g, '')
+    .replace(/\s+/g, '')
+    .trim();
+  const m = s.match(/([\d.]+)/);
+  if (!m) return 0;
+  const n = parseFloat(m[1]);
+  return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
 let inserted = 0, skipped = 0, errors = 0;
@@ -198,13 +217,69 @@ async function importLedgerSheet(sheetName, batchId, courseName, rows) {
 
 // ── Step 2: WB2 — Cash book expenses ─────────────────────────────────────────
 
+/** Must match netlify/functions/finance-data.js INCOMPLETE_EXPENSE_PLACEHOLDER_DATE. */
+const INCOMPLETE_EXPENSE_PLACEHOLDER_DATE = '9999-12-31';
+
+/** WB2 rows with serial + description + amount but empty date column — still load so staff can set spent_at. */
+async function importExpensesIncomplete(dataRows) {
+  const items = [];
+  for (let i = 0; i < dataRows.length; i += 1) {
+    const r = dataRows[i];
+    const excelRow = i + 3;
+    if (!r[9] || r[10]) continue;
+    const description = String(r[11] || '').trim();
+    const amount = egpCellAmount(r[12]);
+    if (!description || amount <= 0) continue;
+    items.push({
+      excelRow,
+      description,
+      amount,
+      recordedBy: String(r[13] || '').trim(),
+      funding: String(r[14] || '').trim(),
+    });
+  }
+  log('INCOMPLETE-EXP', `${items.length} WB2 expense line(s) have amount + description but no sheet date — importing as incomplete (needs_review)…`);
+  for (const it of items) {
+    if (DRY) {
+      log('DRY-INC-EXP', `excel row ${it.excelRow} | "${it.description}" | ${it.amount} EGP`);
+      continue;
+    }
+    const { data: existRow } = await supabase
+      .from('finance_expenses')
+      .select('id')
+      .eq('import_sheet_row', it.excelRow)
+      .eq('needs_review', true)
+      .maybeSingle();
+    if (existRow) {
+      skipped++;
+      continue;
+    }
+    const { error } = await supabase.from('finance_expenses').insert({
+      spent_at: INCOMPLETE_EXPENSE_PLACEHOLDER_DATE,
+      amount: it.amount,
+      currency: 'EGP',
+      description: it.description,
+      recorded_by: it.recordedBy || null,
+      funding_source: it.funding || null,
+      is_refund: false,
+      needs_review: true,
+      import_sheet_row: it.excelRow,
+      created_by: 'import-incomplete',
+    });
+    if (error) {
+      log('ERR', `Incomplete expense excel row ${it.excelRow}: ${error.message}`);
+      errors++;
+    } else inserted++;
+  }
+}
+
 async function importExpenses(rows) {
   log('EXPENSES', `Importing ${rows.length} expense rows…`);
   for (const row of rows) {
     const serial      = num(row[9]);
     const dateVal     = row[10];
     const description = String(row[11] || '').trim();
-    const amount      = num(row[12]);
+    const amount      = egpCellAmount(row[12]);
     const recordedBy  = String(row[13] || '').trim();
     const funding     = String(row[14] || '').trim();
 
@@ -236,6 +311,8 @@ async function importExpenses(rows) {
       recorded_by: recordedBy || null,
       funding_source: funding || null,
       is_refund: false,
+      needs_review: false,
+      import_sheet_row: null,
       created_by: recordedBy?.trim() || 'import',
     });
     if (error) { log('ERR', `Expense serial ${serial}: ${error.message}`); errors++; }
@@ -374,16 +451,17 @@ async function main() {
   const dataRows = sheet1.slice(2); // skip 2 header rows
 
   const incomeRows  = dataRows.filter(r => r[0] && r[1] && num(r[3]) > 0);
-  const expenseRows = dataRows.filter(r => r[9] && r[10] && num(r[12]) > 0);
+  const expenseRows = dataRows.filter(r => r[9] && r[10] && egpCellAmount(r[12]) > 0);
 
   // Reconciliation: log skipped expense rows and reasons so the accountant can verify
-  const skippedExpenseRows = dataRows.filter(r => !(r[9] && r[10] && num(r[12]) > 0));
+  const skippedExpenseRows = dataRows.filter(r => !(r[9] && r[10] && egpCellAmount(r[12]) > 0));
   const skippedWithAnyData = skippedExpenseRows.filter(r => r[9] || r[10] || r[11] || r[12]);
   if (skippedWithAnyData.length > 0) {
     log('RECONCILE', `${skippedWithAnyData.length} WB2 expense-side rows had some data but were skipped (col9/10 empty or amount ≤ 0):`);
-    skippedWithAnyData.slice(0, 20).forEach((r, i) => {
+    skippedWithAnyData.slice(0, 20).forEach((r, idx) => {
+      const sheetRow = dataRows.indexOf(r) + 3;
       const reason = !r[9] ? 'col9 empty' : !r[10] ? 'col10 (date) empty' : 'col12 (amount) ≤ 0 or missing';
-      log('RECONCILE', `  row ${i + 3}: col9="${String(r[9]||'').slice(0,30)}" col10="${String(r[10]||'').slice(0,20)}" col12="${r[12]}" → ${reason}`);
+      log('RECONCILE', `  excel row ${sheetRow}: col9="${String(r[9]||'').slice(0,30)}" col10="${String(r[10]||'').slice(0,20)}" col12="${r[12]}" → ${reason}`);
     });
     if (skippedWithAnyData.length > 20) {
       log('RECONCILE', `  … and ${skippedWithAnyData.length - 20} more. Run with --dry-run and check full output.`);
@@ -393,6 +471,7 @@ async function main() {
   log('INFO', `WB2 income: ${incomeRows.length} rows, expenses: ${expenseRows.length} rows (skipped with partial data: ${skippedWithAnyData.length})`);
 
   await importExpenses(expenseRows);
+  await importExpensesIncomplete(dataRows);
   await importCashbookIncome(incomeRows);
 
   console.log('\n── Summary ──────────────────────────');

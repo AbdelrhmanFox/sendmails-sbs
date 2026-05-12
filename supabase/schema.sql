@@ -440,11 +440,14 @@ create table if not exists public.finance_expenses (
   batch_id text,
   is_refund boolean not null default false,
   refund_settled_at date,
+  needs_review boolean not null default false,
+  import_sheet_row integer,
   created_by text not null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
+create index if not exists idx_finance_expenses_needs_review on public.finance_expenses (needs_review) where needs_review = true;
 create index if not exists idx_finance_expenses_spent_at on public.finance_expenses (spent_at desc);
 create index if not exists idx_finance_expenses_batch_id on public.finance_expenses (batch_id);
 

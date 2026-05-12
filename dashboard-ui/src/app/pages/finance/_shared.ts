@@ -18,7 +18,18 @@ export type ExpenseRow = {
   id: string; serial: number; date: string; description: string;
   amount: number; funding_source: string | null; batch_id: string | null;
   is_refund: boolean; recorded_by: string | null;
+  /** True when imported without a real sheet date — correct the date in Expenses. */
+  needs_review?: boolean;
+  /** Excel Sheet1 row (1-based) when imported from WB2 incomplete path. */
+  import_sheet_row?: number | null;
 };
+
+/** Placeholder spent_at from server for incomplete imports; must match finance-data.js. */
+export const INCOMPLETE_EXPENSE_DATE = '9999-12-31';
+
+export function expenseDatePending(r: Pick<ExpenseRow, 'needs_review' | 'date'>): boolean {
+  return !!r.needs_review || (r.date && String(r.date).slice(0, 10) === INCOMPLETE_EXPENSE_DATE);
+}
 
 export type IncomeRow = {
   serial: number; date: string | null; description: string;

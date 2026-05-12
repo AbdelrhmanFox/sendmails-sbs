@@ -3,7 +3,7 @@ import { Card } from '../../components/design-system/Card';
 import { Button } from '../../components/design-system/Button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/design-system/Table';
 import { functionsBase, getAuthHeaders, jsonFetch } from '../../../lib/api';
-import { fmtFull, type BatchRow, type IncomeRow, type ExpenseRow } from './_shared';
+import { expenseDatePending, fmtFull, type BatchRow, type ExpenseRow, type IncomeRow } from './_shared';
 
 export function FinanceCashBookPage() {
   const [batches, setBatches] = useState<BatchRow[]>([]);
@@ -154,10 +154,15 @@ export function FinanceCashBookPage() {
                   {expenses.map((r) => (
                     <TableRow key={r.id}>
                       <TableCell className="text-xs text-[var(--brand-dim)]">{r.serial}</TableCell>
-                      <TableCell className="text-xs text-[var(--brand-muted)]">{r.date?.slice(0, 10) ?? '—'}</TableCell>
+                      <TableCell className="text-xs text-[var(--brand-muted)]">
+                        {expenseDatePending(r) ? <span className="font-medium text-[var(--brand-warning)]">Pending</span> : (r.date?.slice(0, 10) ?? '—')}
+                      </TableCell>
                       <TableCell>
                         <p className="text-sm text-[var(--brand-text)]" dir="auto">{r.description}</p>
                         {r.funding_source && <p className="text-xs text-[var(--brand-muted)]">{r.funding_source}</p>}
+                        {expenseDatePending(r) && (
+                          <p className="text-[10px] text-[var(--brand-warning)]">Incomplete — set date in Expenses</p>
+                        )}
                       </TableCell>
                       <TableCell className="text-right text-sm font-medium text-[var(--brand-danger)]">{fmtFull(r.amount)}</TableCell>
                     </TableRow>

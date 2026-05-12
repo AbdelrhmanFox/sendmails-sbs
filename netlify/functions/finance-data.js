@@ -3,6 +3,9 @@ const { cors, json, getSupabaseServiceClient, verifyAuth, normalizeDate, trimEnv
 const READ_ROLES = ['admin', 'accountant'];
 const WRITE_ROLES = ['admin', 'accountant'];
 
+/** Placeholder spent_at for WB2 lines with no sheet date; UI shows as incomplete until corrected. */
+const INCOMPLETE_EXPENSE_PLACEHOLDER_DATE = '9999-12-31';
+
 function canRead(role) {
   return READ_ROLES.includes(role);
 }
@@ -556,6 +559,8 @@ exports.handler = async (event) => {
       batch_id: e.batch_id,
       is_refund: e.is_refund,
       recorded_by: e.recorded_by,
+      needs_review: !!e.needs_review,
+      import_sheet_row: e.import_sheet_row != null ? Number(e.import_sheet_row) : null,
     }));
 
     return json({ income, expenses, currency: 'EGP' });
@@ -628,6 +633,12 @@ exports.handler = async (event) => {
         batch_id: batchId,
         is_refund: !!body.is_refund,
         refund_settled_at: body.refund_settled_at ? normalizeDate(body.refund_settled_at) : null,
+        needs_review: !!body.needs_review,
+        import_sheet_row: (() => {
+          if (body.import_sheet_row == null || body.import_sheet_row === '') return null;
+          const n = parseInt(String(body.import_sheet_row), 10);
+          return Number.isFinite(n) ? n : null;
+        })(),
         created_by: username,
       };
       const { data: inserted, error } = await supabase.from('finance_expenses').insert(row).select('*').single();
@@ -646,7 +657,13 @@ exports.handler = async (event) => {
       if (!existing) return json({ error: 'Expense not found' }, 404);
 
       const updates = {};
-      if (body.spent_at !== undefined) updates.spent_at = normalizeDate(body.spent_at);
+      if (body.spent_at !== undefined) {
+        const d = normalizeDate(body.spent_at);
+        if (d) {
+          updates.spent_at = d;
+          if (d !== INCOMPLETE_EXPENSE_PLACEHOLDER_DATE) updates.needs_review = false;
+        }
+      }
       if (body.amount !== undefined) updates.amount = Number(body.amount);
       if (body.currency !== undefined) updates.currency = String(body.currency).trim();
       if (body.description !== undefined) updates.description = String(body.description).trim();
@@ -655,6 +672,12 @@ exports.handler = async (event) => {
       if (body.batch_id !== undefined) updates.batch_id = body.batch_id ? String(body.batch_id).trim() : null;
       if (body.is_refund !== undefined) updates.is_refund = !!body.is_refund;
       if (body.refund_settled_at !== undefined) updates.refund_settled_at = body.refund_settled_at ? normalizeDate(body.refund_settled_at) : null;
+      if (body.needs_review !== undefined) updates.needs_review = !!body.needs_review;
+      if (body.import_sheet_row !== undefined) {
+        updates.import_sheet_row = body.import_sheet_row == null || body.import_sheet_row === ''
+          ? null
+          : parseInt(String(body.import_sheet_row), 10);
+      }
       updates.updated_at = new Date().toISOString();
 
       const { data: updated, error } = await supabase.from('finance_expenses').update(updates).eq('id', id).select('*').single();
