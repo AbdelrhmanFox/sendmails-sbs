@@ -2,8 +2,6 @@
 -- SBS-TR-###### / SBS-EN-###### business IDs (same UUID rows; payments unchanged).
 -- Also normalise cash-book placeholder course/batch and scrub obvious import markers.
 
-begin;
-
 -- ---------------------------------------------------------------------------
 -- Cash book ledger: replace XLS-cashbook with stable SBS-style course/batch ids
 -- ---------------------------------------------------------------------------
@@ -45,8 +43,7 @@ update public.payments
 set
   created_by = case when created_by = 'excel-import' then null else created_by end,
   notes = case
-    when notes is not null and position('imported from Excel' in notes) > 0 then
-      trim(replace(replace(notes, ' — imported from Excel', ''), 'imported from Excel', ''))
+    when notes is not null and notes ilike '%imported from Excel%' then trim(replace(notes, 'imported from Excel', ''))
     else notes
   end
 where created_by = 'excel-import'
@@ -71,7 +68,7 @@ begin
     order by trainee_id
   loop
     nid := public.next_trainee_id();
-    update public.enrollments set trainee_id = nid where trainee_id = tr.trainee_id;
+    -- enrollments.trainee_id references trainees(trainee_id) with ON UPDATE CASCADE
     update public.trainees set trainee_id = nid where id = tr.id;
   end loop;
 end $$;
@@ -99,5 +96,3 @@ end $$;
 update public.trainees
 set email = regexp_replace(email, '@excel-import\.sbs\.local$', '@pending-update.sbs.local')
 where email ilike '%@excel-import.sbs.local';
-
-commit;
