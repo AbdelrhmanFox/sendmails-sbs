@@ -7,10 +7,8 @@ import { Badge } from '../components/design-system/Badge';
 import { functionsBase, getAuthHeaders, jsonFetch } from '../../lib/api';
 
 type UserRow = { username: string; role: string };
-type AccessRow = { id: string; username: string; batch_id: string; created_by: string; created_at: string };
-type BatchRow = { batch_id: string; batch_name?: string; course_id?: string };
 
-const TABS = ['Users', 'Finance Access', 'Security', 'Config', 'Audit'] as const;
+const TABS = ['Users', 'Security', 'Config', 'Audit'] as const;
 type Tab = typeof TABS[number];
 
 const ROLE_COLORS: Record<string, 'primary' | 'success' | 'warning' | 'info' | 'neutral'> = {
@@ -35,13 +33,6 @@ export function AdminPage() {
   const [supportNumber, setSupportNumber] = useState('');
   const [auditRows, setAuditRows] = useState<Record<string, unknown>[]>([]);
 
-  // Finance Access state
-  const [accessRows, setAccessRows] = useState<AccessRow[]>([]);
-  const [batches, setBatches] = useState<BatchRow[]>([]);
-  const [accessMsg, setAccessMsg] = useState('');
-  const [newAccessUser, setNewAccessUser] = useState('');
-  const [newAccessBatch, setNewAccessBatch] = useState('');
-
   const load = useCallback(async () => {
     setLoading(true); setErr('');
     try {
@@ -53,18 +44,6 @@ export function AdminPage() {
       setLoading(false);
     }
   }, []);
-
-  const loadFinanceAccess = useCallback(async () => {
-    try {
-      const [access, batchData] = await Promise.all([
-        jsonFetch<{ items: AccessRow[] }>(`${functionsBase()}/finance-data?resource=finance-access`, { headers: getAuthHeaders() }),
-        jsonFetch<{ items: BatchRow[] }>(`${functionsBase()}/finance-data?resource=my-batches`, { headers: getAuthHeaders() }),
-      ]);
-      setAccessRows(access.items || []);
-      setBatches(batchData.items || []);
-      if (!newAccessBatch && batchData.items?.length) setNewAccessBatch(batchData.items[0].batch_id);
-    } catch (_) {}
-  }, [newAccessBatch]);
 
   useEffect(() => {
     void load();
@@ -78,31 +57,7 @@ export function AdminPage() {
         setAuditRows(audit.items || []);
       } catch (_) {}
     })();
-    void loadFinanceAccess();
-  }, [load, loadFinanceAccess]);
-
-  const grantAccess = async () => {
-    setAccessMsg('');
-    try {
-      await jsonFetch(`${functionsBase()}/finance-data?resource=finance-access`, {
-        method: 'POST', headers: getAuthHeaders(),
-        body: JSON.stringify({ username: newAccessUser.trim(), batch_id: newAccessBatch }),
-      });
-      setAccessMsg('Access granted.'); setNewAccessUser('');
-      void loadFinanceAccess();
-    } catch (e) { setAccessMsg(e instanceof Error ? e.message : 'Failed to grant access'); }
-  };
-
-  const revokeAccess = async (id: string, username: string, batchId: string) => {
-    if (!window.confirm(`Revoke access for "${username}" to batch "${batchId}"?`)) return;
-    setAccessMsg('');
-    try {
-      await jsonFetch(`${functionsBase()}/finance-data?resource=finance-access&id=${encodeURIComponent(id)}`, {
-        method: 'DELETE', headers: getAuthHeaders(),
-      });
-      void loadFinanceAccess();
-    } catch (e) { setAccessMsg(e instanceof Error ? e.message : 'Failed to revoke access'); }
-  };
+  }, [load]);
 
   const createUser = async () => {
     setMsg('');
@@ -219,86 +174,6 @@ export function AdminPage() {
                       <Button type="button" variant="danger" size="sm" onClick={() => void deleteUser(u.username)}>
                         Delete
                       </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Card>
-        </div>
-      )}
-
-      {activeTab === 'Finance Access' && (
-        <div className="space-y-4">
-          {accessMsg && <p className="rounded-lg border border-[var(--brand-success)]/30 bg-[var(--brand-success)]/10 px-3 py-2 text-sm text-[var(--brand-success)]">{accessMsg}</p>}
-
-          <Card>
-            <h3 className="mb-3 text-sm font-semibold text-[var(--brand-text)]">Grant Batch Access to Accountant</h3>
-            <p className="mb-4 text-xs text-[var(--brand-muted)]">Accountants only see data for the batches explicitly granted to them. An accountant with no grants sees nothing.</p>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <div>
-                <label className="mb-1 block text-xs font-medium text-[var(--brand-muted)]">Accountant username</label>
-                <input
-                  value={newAccessUser}
-                  onChange={(e) => setNewAccessUser(e.target.value)}
-                  placeholder="e.g. marwa"
-                  className="w-full rounded-[var(--brand-radius-dense)] border border-[var(--brand-border)] bg-[var(--brand-surface)] px-3 py-2 text-sm text-[var(--brand-text)] placeholder:text-[var(--brand-dim)]"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-medium text-[var(--brand-muted)]">Batch</label>
-                {batches.length > 0 ? (
-                  <select
-                    value={newAccessBatch}
-                    onChange={(e) => setNewAccessBatch(e.target.value)}
-                    className="w-full rounded-[var(--brand-radius-dense)] border border-[var(--brand-border)] bg-[var(--brand-surface)] px-3 py-2 text-sm text-[var(--brand-text)]"
-                  >
-                    {batches.map((b) => (
-                      <option key={b.batch_id} value={b.batch_id}>{b.batch_name || b.batch_id}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <input
-                    value={newAccessBatch}
-                    onChange={(e) => setNewAccessBatch(e.target.value)}
-                    placeholder="Batch ID"
-                    className="w-full rounded-[var(--brand-radius-dense)] border border-[var(--brand-border)] bg-[var(--brand-surface)] px-3 py-2 text-sm text-[var(--brand-text)] placeholder:text-[var(--brand-dim)]"
-                  />
-                )}
-              </div>
-              <div className="flex items-end">
-                <Button type="button" size="sm" onClick={() => void grantAccess()} disabled={!newAccessUser.trim() || !newAccessBatch.trim()}>
-                  Grant Access
-                </Button>
-              </div>
-            </div>
-          </Card>
-
-          <Card noPadding>
-            <div className="border-b border-[var(--brand-border)] px-4 py-3">
-              <h3 className="text-sm font-semibold text-[var(--brand-text)]">Current Access Grants</h3>
-            </div>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Accountant</TableHead>
-                  <TableHead>Batch</TableHead>
-                  <TableHead>Granted by</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {accessRows.length === 0 ? (
-                  <TableRow><TableCell colSpan={5}><p className="text-sm text-[var(--brand-muted)]">No grants yet. All accountants currently have no finance access.</p></TableCell></TableRow>
-                ) : accessRows.map((r) => (
-                  <TableRow key={r.id}>
-                    <TableCell className="font-mono text-sm font-medium text-[var(--brand-text)]">{r.username}</TableCell>
-                    <TableCell className="font-mono text-xs text-[var(--brand-text)]">{r.batch_id}</TableCell>
-                    <TableCell className="text-xs text-[var(--brand-muted)]">{r.created_by}</TableCell>
-                    <TableCell className="text-xs text-[var(--brand-muted)]">{r.created_at.slice(0, 10)}</TableCell>
-                    <TableCell className="text-right">
-                      <Button type="button" variant="danger" size="sm" onClick={() => void revokeAccess(r.id, r.username, r.batch_id)}>Revoke</Button>
                     </TableCell>
                   </TableRow>
                 ))}
