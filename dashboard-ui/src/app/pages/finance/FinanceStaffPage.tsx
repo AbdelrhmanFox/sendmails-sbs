@@ -4,7 +4,7 @@ import { Button } from '../../components/design-system/Button';
 import { Input } from '../../components/design-system/Input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/design-system/Table';
 import { functionsBase, getAuthHeaders, jsonFetch } from '../../../lib/api';
-import { fmtFull, type StaffRow } from './_shared';
+import { fmtFull, parseBonusTotalFromNotes, type StaffRow } from './_shared';
 
 const emptyForm = {
   full_name: '',
@@ -220,7 +220,8 @@ export function FinanceStaffPage() {
               <div>
                 <h3 className="text-sm font-semibold text-[var(--brand-text)]">Staff directory</h3>
                 <p className="text-xs text-[var(--brand-muted)]">
-                  {items.length} records · Active payroll (est.): {fmtFull(payrollActive)}
+                  {items.length} records · Active monthly payroll (est.): {fmtFull(payrollActive)}
+                  <span className="text-[var(--brand-dim)]"> (excludes bonus-only rows)</span>
                 </p>
               </div>
             </div>
@@ -240,7 +241,7 @@ export function FinanceStaffPage() {
                       <TableHead>Name</TableHead>
                       <TableHead>Role</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Monthly</TableHead>
+                      <TableHead className="text-right">Amount (EGP)</TableHead>
                       <TableHead />
                     </TableRow>
                   </TableHeader>
@@ -251,7 +252,22 @@ export function FinanceStaffPage() {
                         <TableCell className="text-xs text-[var(--brand-muted)]">{r.job_title ?? '—'}</TableCell>
                         <TableCell className="text-xs capitalize text-[var(--brand-muted)]">{r.status}</TableCell>
                         <TableCell className="text-right text-sm text-[var(--brand-text)]">
-                          {r.monthly_salary_egp != null ? fmtFull(Number(r.monthly_salary_egp)) : '—'}
+                          {r.monthly_salary_egp != null ? (
+                            fmtFull(Number(r.monthly_salary_egp))
+                          ) : (
+                            (() => {
+                              const bonusTotal = parseBonusTotalFromNotes(r.notes);
+                              if (bonusTotal != null) {
+                                return (
+                                  <span className="inline-flex flex-col items-end gap-0">
+                                    <span>{fmtFull(bonusTotal)}</span>
+                                    <span className="text-[10px] font-normal text-[var(--brand-dim)]">recorded total</span>
+                                  </span>
+                                );
+                              }
+                              return '—';
+                            })()
+                          )}
                         </TableCell>
                         <TableCell className="text-right space-x-1">
                           <Button type="button" variant="secondary" size="sm" onClick={() => startEdit(r)}>

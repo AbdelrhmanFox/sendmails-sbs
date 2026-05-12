@@ -89,6 +89,15 @@ export function fmtFull(n: number) {
   return `EGP ${n.toLocaleString('en-EG', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
 }
 
+/** Total from staff migration notes: `Total paid (EGP): 4000.00 …` (bonus rows keep monthly_salary null). */
+export function parseBonusTotalFromNotes(notes: string | null | undefined): number | null {
+  if (!notes) return null;
+  const m = notes.match(/Total paid \(EGP\):\s*([\d,]+(?:\.\d+)?)/i);
+  if (!m) return null;
+  const n = Number(String(m[1]).replace(/,/g, ''));
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
 export const CHART_COLORS = [
   'var(--brand-primary)', '#22c55e', '#f59e0b', '#ef4444',
   '#a855f7', '#06b6d4', '#f97316', '#84cc16',
