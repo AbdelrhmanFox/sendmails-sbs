@@ -1,7 +1,7 @@
 /** Mirrors `dashboard/js/shared.js` ROLE_AREAS / areasForRole. */
 export const ROLE_AREAS: Record<string, string[]> = {
-  admin: ['operations', 'training', 'finance', 'automation', 'admin'],
-  staff: ['operations', 'training', 'automation'],
+  admin: ['operations', 'training', 'finance', 'automation', 'admin', 'tools'],
+  staff: ['operations', 'training', 'automation', 'tools'],
   trainer: ['training'],
   trainee: ['training'],
   user: ['automation'],
@@ -27,7 +27,7 @@ export function pathToArea(pathname: string): string | null {
   if (p === '/' || p.startsWith('/account')) return null;
   const seg = p.split('/').filter(Boolean)[0];
   if (!seg) return null;
-  if (['operations', 'training', 'finance', 'automation', 'admin'].includes(seg)) return seg;
+  if (['operations', 'training', 'finance', 'automation', 'admin', 'tools'].includes(seg)) return seg;
   return null;
 }
 

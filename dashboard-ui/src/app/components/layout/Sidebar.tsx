@@ -214,7 +214,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'SYSTEM',
     items: [
       { id: 'admin', label: 'Admin', path: '/admin', area: 'admin', icon: iconAdmin() },
-      { id: 'tools', label: 'Tools', path: '/tools', area: 'admin', icon: iconTools() },
+      { id: 'tools', label: 'Tools', path: '/tools', area: 'tools', icon: iconTools() },
       { id: 'import', label: 'Import Data', path: '/operations/import', area: 'operations', icon: iconImport() },
     ],
   },
