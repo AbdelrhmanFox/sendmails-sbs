@@ -31,6 +31,7 @@ import { TrainingAssessmentsPage } from './pages/training/TrainingAssessmentsPag
 import { FinancePage } from './pages/FinancePage';
 import { CampaignsPage } from './pages/CampaignsPage';
 import { AdminPage } from './pages/AdminPage';
+import { ToolsPage } from './pages/ToolsPage';
 import { ChangePasswordPage } from './pages/ChangePasswordPage';
 import { TraineePortalPage } from './pages/TraineePortalPage';
 import { AUTH_TOKEN } from '../lib/api';
@@ -199,6 +200,14 @@ export default function App() {
           element={
             <ProtectedLayout>
               <AdminPage />
+            </ProtectedLayout>
+          }
+        />
+        <Route
+          path="/tools"
+          element={
+            <ProtectedLayout>
+              <ToolsPage />
             </ProtectedLayout>
           }
         />

@@ -83,7 +83,10 @@ function fileTypeLabel(item: Resource): string {
   return 'File';
 }
 
+type WorkspaceTab = 'assignments' | 'materials' | 'library';
+
 export function TraineePortalPage() {
+  const [workspaceTab, setWorkspaceTab] = useState<WorkspaceTab>('assignments');
   const [me, setMe] = useState<TraineeMeResponse | null>(null);
   const [courses, setCourses] = useState<TraineeCourse[]>([]);
   const [activeBatchId, setActiveBatchId] = useState('');
@@ -234,13 +237,6 @@ export function TraineePortalPage() {
 
   return (
     <div className="space-y-6">
-      <div id="trainee-overview" className="scroll-mt-28">
-        <h1 className="text-2xl font-bold text-[var(--brand-text)]">Trainee portal</h1>
-        <p className="mt-1 text-sm text-[var(--brand-muted)]">
-          Assignments, classroom resources, and account updates in one place.
-        </p>
-      </div>
-
       {loading ? (
         <div className="space-y-4">
           <div className="grid gap-6 lg:grid-cols-3">
@@ -324,69 +320,82 @@ export function TraineePortalPage() {
           </div>
         </Card>
 
-        <Card className="scroll-mt-28 lg:col-span-2">
-          <h2 className="text-lg font-semibold text-[var(--brand-text)]">Learning workspace</h2>
-          <p className="mt-1 text-sm text-[var(--brand-muted)]">
-            Assignments, batch files, and library content for your selected enrollment.
-          </p>
-
-          <div
-            id="trainee-classroom"
-            className="scroll-mt-28 transition-opacity duration-200 motion-reduce:transition-none"
+        <div className="flex flex-col gap-0 lg:col-span-2">
+          {/* Context bar */}
+          <div className="rounded-t-[var(--brand-radius)] border border-[var(--brand-border)] bg-[var(--brand-surface)] px-4 py-3"
             style={{ opacity: classroomLoading ? 0.65 : 1 }}
           >
-            <h3 className="mt-5 text-base font-semibold text-[var(--brand-text)]">Classroom context</h3>
-            <p className="mt-1 text-sm text-[var(--brand-muted)]">
-              {activeCourse?.course_name || classroom?.batch?.course_name || '—'} · {activeCourse?.batch_name || classroom?.batch?.batch_name || '—'}
+            <p className="text-sm font-medium text-[var(--brand-text)]">
+              {activeCourse?.course_name || classroom?.batch?.course_name || '—'}
             </p>
-            {classroomLoading ? (
-              <div className="mt-3 space-y-2">
-                <Skeleton className="h-5 w-48 rounded" />
-                <Skeleton className="h-5 w-64 rounded" />
-                <Skeleton className="h-5 w-40 rounded" />
+            <p className="text-xs text-[var(--brand-muted)]">
+              {activeCourse?.batch_name || classroom?.batch?.batch_name || (activeBatchId ? 'Loading…' : 'Select a course to load workspace')}
+            </p>
+            {classroomLoading && (
+              <div className="mt-2 space-y-1.5">
+                <Skeleton className="h-3 w-48 rounded" />
+                <Skeleton className="h-3 w-32 rounded" />
               </div>
-            ) : null}
-            {!activeBatchId && !classroomLoading ? (
-              <p className="mt-3 text-sm text-[var(--brand-muted)]">Select a course from the list to load this workspace.</p>
-            ) : null}
+            )}
           </div>
 
-          <div className="my-6 border-t border-[var(--brand-border)]" role="presentation" />
+          {/* Workspace tabs */}
+          <div className="flex gap-1 border-x border-[var(--brand-border)] bg-[var(--brand-surface-2)]/30 px-3 pt-2">
+            {([
+              ['assignments', `Assignments${classroom?.assignments?.length ? ` (${classroom.assignments.length})` : ''}`],
+              ['materials', `Materials${classroom?.materials?.length ? ` (${classroom.materials.length})` : ''}`],
+              ['library', 'Library'],
+            ] as [WorkspaceTab, string][]).map(([t, label]) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setWorkspaceTab(t)}
+                className={`rounded-t-[var(--brand-radius-dense)] px-4 py-2 text-sm font-medium transition-colors ${
+                  workspaceTab === t
+                    ? 'border border-b-0 border-[var(--brand-border)] bg-[var(--brand-surface)] text-[var(--brand-primary-2)]'
+                    : 'text-[var(--brand-muted)] hover:text-[var(--brand-text)]'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
 
-          <section id="trainee-assignments" className="scroll-mt-28">
-            <h3 className="text-base font-semibold text-[var(--brand-text)]">Assignments</h3>
-            <div className="mt-3 space-y-4">
-              {!classroom?.assignments?.length ? <p className="text-sm text-[var(--brand-muted)]">No assignments yet.</p> : null}
-              {(classroom?.assignments || []).map((a) => (
-                <AssignmentCard key={a.id} assignment={a} busy={Boolean(submissionBusy[a.id])} onSave={saveSubmission} />
-              ))}
-            </div>
-          </section>
-
-          <div className="my-6 border-t border-[var(--brand-border)]" role="presentation" />
-
-          <section id="trainee-materials" className="scroll-mt-28">
-            <h3 className="text-base font-semibold text-[var(--brand-text)]">Batch materials</h3>
-            <ResourceList items={classroom?.materials || []} />
-          </section>
-
-          <div className="my-6 border-t border-[var(--brand-border)]" role="presentation" />
-
-          <section id="trainee-library" className="scroll-mt-28">
-            <h3 className="text-base font-semibold text-[var(--brand-text)]">Course library</h3>
-            <ResourceList items={classroom?.course_library?.uncategorized || []} />
-            <div className="mt-3 space-y-3">
-              {(classroom?.course_library?.chapters || []).map((ch) => (
-                <details key={ch.id} className="rounded-[var(--brand-radius-dense)] border border-[var(--brand-border)] p-3">
-                  <summary className="cursor-pointer rounded-[var(--brand-radius-dense)] font-medium text-[var(--brand-text)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-focus-ring)]">{ch.title}</summary>
-                  <div className="mt-3">
-                    <ResourceList items={ch.materials || []} />
-                  </div>
-                </details>
-              ))}
-            </div>
-          </section>
-        </Card>
+          {/* Tab content */}
+          <div className="rounded-b-[var(--brand-radius)] border border-t-0 border-[var(--brand-border)] bg-[var(--brand-surface)] p-5">
+            {workspaceTab === 'assignments' && (
+              <div className="space-y-4">
+                {!classroom?.assignments?.length
+                  ? <p className="text-sm text-[var(--brand-muted)]">{activeBatchId ? 'No assignments yet.' : 'Select a course to load assignments.'}</p>
+                  : (classroom.assignments).map((a) => (
+                    <AssignmentCard key={a.id} assignment={a} busy={Boolean(submissionBusy[a.id])} onSave={saveSubmission} />
+                  ))
+                }
+              </div>
+            )}
+            {workspaceTab === 'materials' && (
+              <ResourceList items={classroom?.materials || []} />
+            )}
+            {workspaceTab === 'library' && (
+              <div>
+                <ResourceList items={classroom?.course_library?.uncategorized || []} />
+                <div className="mt-3 space-y-2">
+                  {(classroom?.course_library?.chapters || []).map((ch) => (
+                    <details key={ch.id} className="rounded-[var(--brand-radius-dense)] border border-[var(--brand-border)] p-3">
+                      <summary className="cursor-pointer font-medium text-[var(--brand-text)] outline-none">{ch.title}</summary>
+                      <div className="mt-3">
+                        <ResourceList items={ch.materials || []} />
+                      </div>
+                    </details>
+                  ))}
+                  {!classroom?.course_library?.chapters?.length && !classroom?.course_library?.uncategorized?.length && (
+                    <p className="text-sm text-[var(--brand-muted)]">{activeBatchId ? 'No library content yet.' : 'Select a course first.'}</p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       <Card id="trainee-password" className="scroll-mt-28">

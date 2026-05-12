@@ -17,6 +17,7 @@ export function getRouteMeta(pathname: string): RouteMeta {
   if (p === '/finance') return { title: 'Payments', subtitle: 'Revenue and payment flows' };
   if (p === '/automation') return { title: 'Campaigns', subtitle: 'Email automation and outreach' };
   if (p === '/admin') return { title: 'Admin', subtitle: 'System administration' };
+  if (p === '/tools') return { title: 'Tools', subtitle: 'QR code generator and utilities' };
 
   if (p.startsWith('/operations/trainees/')) return { title: 'Student Profile', subtitle: 'Management' };
   if (p === '/operations/overview') return { title: 'Students', subtitle: 'Overview' };
