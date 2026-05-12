@@ -1,5 +1,14 @@
 import { forwardRef, InputHTMLAttributes } from 'react';
 
+const fieldBase =
+  'w-full rounded-[var(--brand-radius-dense)] border bg-[var(--brand-navy)] ' +
+  'text-[var(--brand-text)] placeholder:text-[var(--brand-dim)] ' +
+  'transition-all duration-150 ' +
+  'focus:outline-none focus:ring-2 focus:ring-[var(--brand-focus-ring)] focus:ring-offset-0 ';
+
+const fieldDefault = 'border-[var(--brand-border)] focus:border-[var(--brand-primary)]/60';
+const fieldError   = 'border-[var(--brand-danger)] focus:border-[var(--brand-danger)] focus:ring-[var(--brand-danger)]/30';
+
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
@@ -8,41 +17,45 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, helpText, icon, className = '', ...props }, ref) => {
-    const baseStyles = 'w-full px-4 py-2.5 rounded-[var(--brand-radius-dense)] border transition-all duration-200 bg-[var(--brand-surface)] text-[var(--brand-text)] placeholder:text-[var(--brand-muted)]';
-    const stateStyles = error
-      ? 'border-[var(--brand-danger)] focus:border-[var(--brand-danger)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-danger)]/35'
-      : 'border-[var(--brand-border)] focus:border-[var(--brand-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-focus-ring)]';
-    const iconPadding = icon ? 'pl-11' : '';
+  ({ label, error, helpText, icon, className = '', id, ...props }, ref) => {
+    const inputId = id ?? (label ? `field-${label.replace(/\s+/g, '-').toLowerCase()}` : undefined);
 
     return (
-      <div className="w-full">
+      <div className="w-full space-y-1.5">
         {label && (
-          <label className="block text-sm font-medium text-[var(--brand-text)] mb-1.5">{label}</label>
+          <label htmlFor={inputId} className="block text-sm font-medium text-[var(--brand-text)]">
+            {label}
+          </label>
         )}
         <div className="relative">
           {icon && (
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--brand-muted)]">
+            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--brand-muted)]">
               {icon}
-            </div>
+            </span>
           )}
           <input
             ref={ref}
-            className={`${baseStyles} ${stateStyles} ${iconPadding} ${className}`}
+            id={inputId}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? `${inputId}-err` : helpText ? `${inputId}-help` : undefined}
+            className={`${fieldBase} ${error ? fieldError : fieldDefault} px-3.5 py-2 text-sm ${icon ? 'pl-10' : ''} ${className}`}
             {...props}
           />
         </div>
         {error && (
-          <p className="text-sm text-[var(--brand-danger)] mt-1.5">{error}</p>
+          <p id={`${inputId}-err`} className="text-xs text-[var(--brand-danger)]">
+            {error}
+          </p>
         )}
         {!error && helpText && (
-          <p className="text-sm text-[var(--brand-muted)] mt-1.5">{helpText}</p>
+          <p id={`${inputId}-help`} className="text-xs text-[var(--brand-muted)]">
+            {helpText}
+          </p>
         )}
       </div>
     );
   }
 );
-
 Input.displayName = 'Input';
 
 export interface SelectProps extends InputHTMLAttributes<HTMLSelectElement> {
@@ -53,39 +66,35 @@ export interface SelectProps extends InputHTMLAttributes<HTMLSelectElement> {
 }
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
-  ({ label, error, helpText, options, className = '', ...props }, ref) => {
-    const baseStyles = 'w-full px-4 py-2.5 rounded-[var(--brand-radius-dense)] border transition-all duration-200 bg-[var(--brand-surface)] text-[var(--brand-text)] cursor-pointer';
-    const stateStyles = error
-      ? 'border-[var(--brand-danger)] focus:border-[var(--brand-danger)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-danger)]/35'
-      : 'border-[var(--brand-border)] focus:border-[var(--brand-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-focus-ring)]';
+  ({ label, error, helpText, options, className = '', id, ...props }, ref) => {
+    const selectId = id ?? (label ? `field-${label.replace(/\s+/g, '-').toLowerCase()}` : undefined);
 
     return (
-      <div className="w-full">
+      <div className="w-full space-y-1.5">
         {label && (
-          <label className="block text-sm font-medium text-[var(--brand-text)] mb-1.5">{label}</label>
+          <label htmlFor={selectId} className="block text-sm font-medium text-[var(--brand-text)]">
+            {label}
+          </label>
         )}
         <select
           ref={ref}
-          className={`${baseStyles} ${stateStyles} ${className}`}
+          id={selectId}
+          className={`${fieldBase} ${error ? fieldError : fieldDefault} px-3.5 py-2 text-sm cursor-pointer appearance-none ${className}`}
+          style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238891aa' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
           {...props}
         >
-          {options.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
+          {options.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
             </option>
           ))}
         </select>
-        {error && (
-          <p className="text-sm text-[var(--brand-danger)] mt-1.5">{error}</p>
-        )}
-        {!error && helpText && (
-          <p className="text-sm text-[var(--brand-muted)] mt-1.5">{helpText}</p>
-        )}
+        {error && <p className="text-xs text-[var(--brand-danger)]">{error}</p>}
+        {!error && helpText && <p className="text-xs text-[var(--brand-muted)]">{helpText}</p>}
       </div>
     );
   }
 );
-
 Select.displayName = 'Select';
 
 export interface TextareaProps extends InputHTMLAttributes<HTMLTextAreaElement> {
@@ -96,32 +105,28 @@ export interface TextareaProps extends InputHTMLAttributes<HTMLTextAreaElement> 
 }
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ label, error, helpText, rows = 4, className = '', ...props }, ref) => {
-    const baseStyles = 'w-full px-4 py-2.5 rounded-[var(--brand-radius-dense)] border transition-all duration-200 bg-[var(--brand-surface)] text-[var(--brand-text)] placeholder:text-[var(--brand-muted)] resize-vertical';
-    const stateStyles = error
-      ? 'border-[var(--brand-danger)] focus:border-[var(--brand-danger)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-danger)]/35'
-      : 'border-[var(--brand-border)] focus:border-[var(--brand-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--brand-focus-ring)]';
+  ({ label, error, helpText, rows = 4, className = '', id, ...props }, ref) => {
+    const fieldId = id ?? (label ? `field-${label.replace(/\s+/g, '-').toLowerCase()}` : undefined);
 
     return (
-      <div className="w-full">
+      <div className="w-full space-y-1.5">
         {label && (
-          <label className="block text-sm font-medium text-[var(--brand-text)] mb-1.5">{label}</label>
+          <label htmlFor={fieldId} className="block text-sm font-medium text-[var(--brand-text)]">
+            {label}
+          </label>
         )}
         <textarea
           ref={ref}
+          id={fieldId}
           rows={rows}
-          className={`${baseStyles} ${stateStyles} ${className}`}
+          aria-invalid={error ? true : undefined}
+          className={`${fieldBase} ${error ? fieldError : fieldDefault} resize-y px-3.5 py-2 text-sm ${className}`}
           {...props}
         />
-        {error && (
-          <p className="text-sm text-[var(--brand-danger)] mt-1.5">{error}</p>
-        )}
-        {!error && helpText && (
-          <p className="text-sm text-[var(--brand-muted)] mt-1.5">{helpText}</p>
-        )}
+        {error && <p className="text-xs text-[var(--brand-danger)]">{error}</p>}
+        {!error && helpText && <p className="text-xs text-[var(--brand-muted)]">{helpText}</p>}
       </div>
     );
   }
 );
-
 Textarea.displayName = 'Textarea';

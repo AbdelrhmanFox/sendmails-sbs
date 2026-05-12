@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Card } from '../../components/design-system/Card';
 import { Button } from '../../components/design-system/Button';
 import { SegmentedNav } from '../../components/design-system/SegmentedNav';
+import { EmptyState } from '../../components/design-system/EmptyState';
 import { Input } from '../../components/design-system/Input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/design-system/Table';
 import { functionsBase, getAuthHeaders, jsonFetch } from '../../../lib/api';
@@ -66,6 +68,7 @@ const CATALOG_TABS_ASSESSMENT: { value: TabId; label: string }[] = [
 ];
 
 export function TrainingLmsCatalogPage() {
+  const navigate = useNavigate();
   const [tab, setTab] = useState<TabId>('programs');
   const [rows, setRows] = useState<Record<string, unknown>[]>([]);
   const [err, setErr] = useState('');
@@ -225,10 +228,22 @@ export function TrainingLmsCatalogPage() {
 
   const renderTable = () => {
     if (!rows.length && !loading && (tab === 'enrollments' || tab === 'criteria')) {
-      return <p className="p-4 text-sm text-[var(--brand-muted)]">Enter an ID in the toolbar and load.</p>;
+      return (
+        <EmptyState
+          title="Enter an ID to load"
+          description={tab === 'enrollments' ? 'Paste a cohort ID in the toolbar above, then click Load enrollments.' : 'Paste a rubric template ID in the toolbar above, then click Load criteria.'}
+          action={{ label: 'Go to LMS admin', onClick: () => navigate('/operations/lms-admin') }}
+        />
+      );
     }
     if (!rows.length && !loading) {
-      return <p className="p-4 text-sm text-[var(--brand-muted)]">No rows.</p>;
+      return (
+        <EmptyState
+          title={`No ${TAB_META[tab].title.toLowerCase()} found`}
+          description="Records created in Operations → LMS admin will appear here."
+          action={{ label: 'Go to LMS admin', onClick: () => navigate('/operations/lms-admin') }}
+        />
+      );
     }
     const keys = rows.length ? Object.keys(rows[0]) : [];
     return (

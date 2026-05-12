@@ -7,17 +7,18 @@ export interface TableProps extends HTMLAttributes<HTMLTableElement> {
 
 export function Table({ children, fullWidth = true, className = '', ...props }: TableProps) {
   return (
-    <div className="overflow-x-auto rounded-[var(--brand-radius)] border border-[var(--brand-border)]">
-      <table className={`${fullWidth ? 'w-full' : ''} ${className}`} {...props}>
-        {children}
-      </table>
-    </div>
+    <table
+      className={`border-separate border-spacing-0 ${fullWidth ? 'w-full' : ''} ${className}`}
+      {...props}
+    >
+      {children}
+    </table>
   );
 }
 
 export function TableHeader({ children, className = '', ...props }: HTMLAttributes<HTMLTableSectionElement>) {
   return (
-    <thead className={`bg-[var(--brand-surface-2)] border-b border-[var(--brand-border)] ${className}`} {...props}>
+    <thead className={className} {...props}>
       {children}
     </thead>
   );
@@ -31,10 +32,22 @@ export function TableBody({ children, className = '', ...props }: HTMLAttributes
   );
 }
 
-export function TableRow({ children, interactive, className = '', ...props }: HTMLAttributes<HTMLTableRowElement> & { interactive?: boolean }) {
-  const hoverStyle = interactive ? 'hover:bg-[var(--brand-surface-2)] cursor-pointer transition-colors' : '';
+export function TableRow({
+  children,
+  interactive,
+  className = '',
+  ...props
+}: HTMLAttributes<HTMLTableRowElement> & { interactive?: boolean }) {
   return (
-    <tr className={`border-b border-[var(--brand-border)] last:border-b-0 ${hoverStyle} ${className}`} {...props}>
+    <tr
+      className={`
+        border-b border-[var(--brand-border)] transition-colors duration-100
+        last:border-b-0
+        ${interactive ? 'cursor-pointer hover:bg-[var(--brand-surface-2)]' : 'hover:bg-[var(--brand-surface-2)]/40'}
+        ${className}
+      `}
+      {...props}
+    >
       {children}
     </tr>
   );
@@ -42,7 +55,16 @@ export function TableRow({ children, interactive, className = '', ...props }: HT
 
 export function TableHead({ children, className = '', ...props }: HTMLAttributes<HTMLTableCellElement>) {
   return (
-    <th className={`px-4 py-3 text-left text-sm font-semibold text-[var(--brand-text)] ${className}`} {...props}>
+    <th
+      className={`
+        sticky top-0 bg-[var(--brand-navy)] px-4 py-2.5
+        text-left text-xs font-semibold uppercase tracking-wider text-[var(--brand-muted)]
+        border-b border-[var(--brand-border)]
+        first:rounded-tl-[var(--brand-radius-dense)] last:rounded-tr-[var(--brand-radius-dense)]
+        ${className}
+      `}
+      {...props}
+    >
       {children}
     </th>
   );
@@ -50,7 +72,10 @@ export function TableHead({ children, className = '', ...props }: HTMLAttributes
 
 export function TableCell({ children, className = '', ...props }: HTMLAttributes<HTMLTableCellElement>) {
   return (
-    <td className={`px-4 py-3 text-sm text-[var(--brand-text)] ${className}`} {...props}>
+    <td
+      className={`px-4 py-3 text-sm text-[var(--brand-text)] ${className}`}
+      {...props}
+    >
       {children}
     </td>
   );

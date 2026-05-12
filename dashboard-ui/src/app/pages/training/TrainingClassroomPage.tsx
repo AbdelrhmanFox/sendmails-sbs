@@ -4,6 +4,7 @@ import { Card } from '../../components/design-system/Card';
 import { Button } from '../../components/design-system/Button';
 import { Input } from '../../components/design-system/Input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/design-system/Table';
+import { Skeleton } from '../../components/ui/skeleton';
 import { BatchMaterialManager } from '../../components/training/BatchMaterialManager';
 import { functionsBase, getAuthHeaders, jsonFetch } from '../../../lib/api';
 
@@ -62,8 +63,15 @@ export function TrainingClassroomPage() {
     <div className="space-y-4">
       <p className="text-sm text-[var(--brand-muted)]">Classroom batches and participant links (same APIs as the legacy trainer classroom).</p>
       {err ? <p className="text-sm text-[var(--brand-danger)]">{err}</p> : null}
-      {loading ? <p className="text-sm text-[var(--brand-muted)]">Loading…</p> : null}
+      {loading ? (
+        <div className="space-y-2">
+          <Skeleton className="h-10 rounded-[var(--brand-radius-dense)]" />
+          <Skeleton className="h-10 rounded-[var(--brand-radius-dense)]" />
+          <Skeleton className="h-10 rounded-[var(--brand-radius-dense)]" />
+        </div>
+      ) : null}
       <Card noPadding>
+        <div className="w-full overflow-x-auto [-webkit-overflow-scrolling:touch]">
         <Table>
           <TableHeader>
             <TableRow>
@@ -139,6 +147,7 @@ export function TrainingClassroomPage() {
             })}
           </TableBody>
         </Table>
+        </div>
       </Card>
     </div>
   );

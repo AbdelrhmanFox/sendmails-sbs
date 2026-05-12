@@ -1,142 +1,182 @@
-/* SBS Company Dashboard - Brand Theme */
-/* Color palette from: sendmails-sbs/brand/palette.json */
-/* DO NOT MODIFY brand colors - these are official SBS colors */
-
-/* Inter: UI, tables, forms. Montserrat: brand / marketing headings only (see .font-brand). */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&display=swap');
+/* SBS Platform — Obsidian Pro Design System */
+/* Redesigned from scratch for modern SaaS quality */
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..800;1,14..32,300..800&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
 
 :root {
-  /* === SBS Brand Colors === */
-  /* Backgrounds */
-  --brand-bg: #0e1035;
-  --brand-surface: #161a4f;
-  --brand-surface-2: #1e245e;
-  --brand-navy: #1b1464;
-  --brand-indigo: #2e3192;
+  /* ============================================
+     OBSIDIAN PRO — Dark Theme (Default)
+     ============================================ */
 
-  /* Borders */
-  --brand-border: #3438a0;
+  /* Backgrounds — layered depth system */
+  --brand-bg:        #07080f;   /* deepest canvas */
+  --brand-surface:   #0c0f1d;   /* cards / sidebar */
+  --brand-surface-2: #131729;   /* hover / secondary */
+  --brand-navy:      #0f1325;   /* deep panels */
+  --brand-indigo:    #181d35;   /* active bg */
+
+  /* Borders — very subtle, premium feel */
+  --brand-border:   #1e2440;
+  --brand-border-2: #2a3058;
 
   /* Text */
-  --brand-text: #f4f3fb;
-  --brand-muted: #b4b0c8;
+  --brand-text:  #e2e5f0;
+  --brand-muted: #8891aa;
+  --brand-dim:   #4a5270;
 
-  /* Primary Actions */
-  --brand-primary: #00a99d;
-  --brand-primary-2: #29abe2;
-  --brand-primary-deep: #0071bc;
+  /* Primary — Indigo (modern SaaS standard) */
+  --brand-primary:       #6366f1;
+  --brand-primary-2:     #818cf8;
+  --brand-primary-deep:  #4f46e5;
+  --brand-primary-subtle: rgba(99, 102, 241, 0.09);
+  --brand-primary-glow:   rgba(99, 102, 241, 0.22);
 
-  /* Accents */
-  --brand-accent: #f7931e;
-  --brand-accent-2: #f59e3b;
+  /* Accent */
+  --brand-accent:   #f59e0b;
+  --brand-accent-2: #fbbf24;
 
-  /* Status */
-  --brand-danger: #ed1c24;
-  --brand-success: #39b54a;
+  /* Semantic status colors */
+  --brand-danger:         #ef4444;
+  --brand-danger-subtle:  rgba(239, 68, 68, 0.1);
+  --brand-success:        #22c55e;
+  --brand-success-subtle: rgba(34, 197, 94, 0.1);
+  --brand-warning:        #f59e0b;
+  --brand-warning-subtle: rgba(245, 158, 11, 0.1);
 
-  /* Focus (Section 3.1) — keyboard / focus-visible rings; based on primary-2 */
-  --brand-focus-ring: rgba(41, 171, 226, 0.45);
+  /* Focus */
+  --brand-focus-ring: rgba(99, 102, 241, 0.38);
 
-  /* === Spacing Scale === */
-  --sp-1: 4px;
-  --sp-2: 8px;
-  --sp-3: 12px;
-  --sp-4: 16px;
-  --sp-5: 20px;
-  --sp-6: 24px;
-  --sp-7: 28px;
-  --sp-8: 32px;
+  /* ============================================
+     SPACING (4-point grid)
+     ============================================ */
+  --sp-1: 4px;  --sp-2: 8px;   --sp-3: 12px;  --sp-4: 16px;
+  --sp-5: 20px; --sp-6: 24px;  --sp-7: 28px;  --sp-8: 32px;
+  --sp-10: 40px; --sp-12: 48px; --sp-16: 64px;
 
-  /* === Border Radius === */
-  --brand-radius: 12px;
-  --brand-radius-dense: 8px;
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
+  /* ============================================
+     RADIUS
+     ============================================ */
+  --brand-radius:       10px;
+  --brand-radius-dense:  6px;
+  --brand-radius-lg:    16px;
+  --radius-sm:  6px;
+  --radius-md:  10px;
+  --radius-lg:  16px;
+  --radius-xl:  20px;
+  --radius-full: 9999px;
 
-  /* === Shadows === */
-  --brand-shadow: 0 6px 20px rgba(8, 10, 40, 0.38);
-  --brand-shadow-soft: 0 2px 10px rgba(8, 10, 40, 0.22);
-  --shadow-sm: 0 1px 3px rgba(8, 10, 40, 0.12);
-  --shadow-md: 0 4px 16px rgba(8, 10, 40, 0.3);
-  --shadow-lg: 0 6px 20px rgba(8, 10, 40, 0.38);
+  /* ============================================
+     SHADOWS
+     ============================================ */
+  --brand-shadow:      0 8px 40px rgba(0, 0, 0, 0.72);
+  --brand-shadow-soft: 0 2px 12px rgba(0, 0, 0, 0.45);
+  --shadow-sm:   0 1px 3px  rgba(0, 0, 0, 0.35);
+  --shadow-md:   0 4px 16px rgba(0, 0, 0, 0.55);
+  --shadow-lg:   0 8px 40px rgba(0, 0, 0, 0.72);
+  --shadow-glow: 0 0 28px   rgba(99, 102, 241, 0.18);
+  --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 
-  /* === Typography (Section 3.2) === */
-  --font-ui: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-sans: 'Montserrat', system-ui, -apple-system, sans-serif;
-  --font-size-xs: 0.75rem;
-  --font-size-sm: 0.875rem;
+  /* ============================================
+     TYPOGRAPHY
+     ============================================ */
+  --font-ui:    'Inter', system-ui, -apple-system, sans-serif;
+  --font-brand: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  --font-mono:  'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  --font-sans:  var(--font-brand);
+
+  --font-size-xs:   0.75rem;
+  --font-size-sm:   0.875rem;
   --font-size-base: 1rem;
-  --font-size-lg: 1.125rem;
-  --font-size-xl: 1.25rem;
-  --font-size-2xl: 1.5rem;
-  --font-size-3xl: 1.875rem;
-  --font-size-4xl: 2.25rem;
+  --font-size-lg:   1.125rem;
+  --font-size-xl:   1.25rem;
+  --font-size-2xl:  1.5rem;
+  --font-size-3xl:  1.875rem;
+  --font-size-4xl:  2.25rem;
+
+  /* ============================================
+     ANIMATION
+     ============================================ */
+  --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-slow: 350ms;
 }
 
+/* ============================================
+   TAILWIND V4 THEME MAPPING
+   ============================================ */
 @theme inline {
-  /* Map SBS brand colors to Tailwind color system */
-  --color-bg-base: var(--brand-bg);
-  --color-bg-surface: var(--brand-surface);
+  --color-bg-base:      var(--brand-bg);
+  --color-bg-surface:   var(--brand-surface);
   --color-bg-surface-2: var(--brand-surface-2);
-  --color-bg-navy: var(--brand-navy);
-  --color-bg-indigo: var(--brand-indigo);
+  --color-bg-navy:      var(--brand-navy);
+  --color-bg-indigo:    var(--brand-indigo);
 
   --color-border-default: var(--brand-border);
 
   --color-text-primary: var(--brand-text);
-  --color-text-muted: var(--brand-muted);
+  --color-text-muted:   var(--brand-muted);
 
-  --color-primary: var(--brand-primary);
-  --color-primary-2: var(--brand-primary-2);
+  --color-primary:      var(--brand-primary);
+  --color-primary-2:    var(--brand-primary-2);
   --color-primary-deep: var(--brand-primary-deep);
 
-  --color-accent: var(--brand-accent);
+  --color-accent:   var(--brand-accent);
   --color-accent-2: var(--brand-accent-2);
 
-  --color-danger: var(--brand-danger);
+  --color-danger:  var(--brand-danger);
   --color-success: var(--brand-success);
 
-  /* Spacing */
-  --spacing-1: var(--sp-1);
-  --spacing-2: var(--sp-2);
-  --spacing-3: var(--sp-3);
-  --spacing-4: var(--sp-4);
-  --spacing-5: var(--sp-5);
-  --spacing-6: var(--sp-6);
-  --spacing-7: var(--sp-7);
-  --spacing-8: var(--sp-8);
+  --spacing-1: var(--sp-1);  --spacing-2: var(--sp-2);
+  --spacing-3: var(--sp-3);  --spacing-4: var(--sp-4);
+  --spacing-5: var(--sp-5);  --spacing-6: var(--sp-6);
+  --spacing-7: var(--sp-7);  --spacing-8: var(--sp-8);
 
-  /* Shadows */
-  --shadow-soft: var(--brand-shadow-soft);
+  --shadow-soft:    var(--brand-shadow-soft);
   --shadow-default: var(--shadow-md);
-  --shadow-strong: var(--brand-shadow);
+  --shadow-strong:  var(--brand-shadow);
 }
 
+/* ============================================
+   BASE LAYER
+   ============================================ */
 @layer base {
-  * {
-    @apply border-[var(--brand-border)];
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    text-rendering: optimizeLegibility;
   }
 
   body {
-    @apply bg-[var(--brand-bg)] text-[var(--brand-text)];
+    background-color: var(--brand-bg);
+    color: var(--brand-text);
     font-family: var(--font-ui);
     font-size: var(--font-size-base);
+    line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    min-height: 100dvh;
   }
 
   h1 {
+    font-family: var(--font-brand);
     font-size: var(--font-size-3xl);
     font-weight: 700;
-    line-height: 1.2;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
     color: var(--brand-text);
   }
 
   h2 {
+    font-family: var(--font-brand);
     font-size: var(--font-size-2xl);
-    font-weight: 600;
-    line-height: 1.25;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.015em;
     color: var(--brand-text);
   }
 
@@ -144,6 +184,7 @@
     font-size: var(--font-size-xl);
     font-weight: 600;
     line-height: 1.3;
+    letter-spacing: -0.01em;
     color: var(--brand-text);
   }
 
@@ -155,95 +196,181 @@
   }
 
   p {
-    font-size: var(--font-size-base);
-    line-height: 1.6;
+    line-height: 1.65;
     color: var(--brand-text);
   }
 
   label {
     font-size: var(--font-size-sm);
     font-weight: 500;
-    line-height: 1.5;
     color: var(--brand-text);
   }
 
   button {
-    font-size: var(--font-size-base);
-    font-weight: 500;
-    line-height: 1.5;
+    font-family: inherit;
+    cursor: pointer;
   }
 
   input, textarea, select {
-    font-size: var(--font-size-base);
-    font-weight: 400;
-    line-height: 1.5;
+    font-family: inherit;
+  }
+
+  *:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--brand-bg), 0 0 0 4px var(--brand-primary);
   }
 }
 
-/* Montserrat for brand / hero moments; default chrome uses Inter via body. */
+/* ============================================
+   UTILITIES
+   ============================================ */
+
+/* Brand typography */
 .font-brand {
-  font-family: var(--font-sans);
+  font-family: var(--font-brand);
 }
 
-/* Custom scrollbar styling for dark theme */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+/* Gradient utilities */
+.gradient-primary {
+  background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary-2) 100%);
 }
 
-::-webkit-scrollbar-track {
+.gradient-surface {
+  background: linear-gradient(180deg, var(--brand-surface) 0%, var(--brand-bg) 100%);
+}
+
+.gradient-border {
+  position: relative;
   background: var(--brand-surface);
+  border-radius: var(--brand-radius);
 }
 
-::-webkit-scrollbar-thumb {
-  background: var(--brand-border);
-  border-radius: 4px;
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, var(--brand-primary-subtle), var(--brand-border));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: var(--brand-indigo);
+/* Glass morphism */
+.glass {
+  background: rgba(12, 15, 29, 0.75);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-/* Light appearance (next-themes sets class "light" on html). Dark tokens remain in :root above. */
+/* Animations */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse-scale {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.05); }
+}
+
+.animate-fade-up {
+  animation: fadeUp var(--dur-base) var(--ease-out) both;
+}
+
+.animate-fade-in {
+  animation: fadeIn var(--dur-base) var(--ease-out) both;
+}
+
+/* Skeleton with shimmer */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--brand-surface)   25%,
+    var(--brand-surface-2) 50%,
+    var(--brand-surface)   75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+  border-radius: var(--brand-radius-dense);
+}
+
+/* ============================================
+   SCROLLBAR — Ultra thin, premium look
+   ============================================ */
+::-webkit-scrollbar          { width: 5px; height: 5px; }
+::-webkit-scrollbar-track    { background: transparent; }
+::-webkit-scrollbar-thumb    { background: var(--brand-border-2); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: var(--brand-dim); }
+::-webkit-scrollbar-corner   { background: transparent; }
+
+/* ============================================
+   LIGHT MODE OVERRIDES
+   ============================================ */
 html.light {
-  --brand-bg: #eef0fb;
-  --brand-surface: #ffffff;
-  --brand-surface-2: #e4e7f5;
-  --brand-navy: #e8e9f7;
-  --brand-indigo: #d6d8f0;
+  --brand-bg:        #f4f5fb;
+  --brand-surface:   #ffffff;
+  --brand-surface-2: #eef0f9;
+  --brand-navy:      #e8eaf5;
+  --brand-indigo:    #dde0f5;
 
-  --brand-border: #c5c9e0;
+  --brand-border:   #dde0ee;
+  --brand-border-2: #c8cce0;
 
-  --brand-text: #0e1035;
-  --brand-muted: #5a5678;
+  --brand-text:  #0f1225;
+  --brand-muted: #5a6080;
+  --brand-dim:   #9298b5;
 
-  --brand-primary: #008f86;
-  --brand-primary-2: #1a8fc4;
-  --brand-primary-deep: #006aa8;
+  --brand-primary:        #4f46e5;
+  --brand-primary-2:      #6366f1;
+  --brand-primary-deep:   #3730a3;
+  --brand-primary-subtle: rgba(79, 70, 229, 0.08);
+  --brand-primary-glow:   rgba(79, 70, 229, 0.18);
 
-  --brand-accent: #d97706;
-  --brand-accent-2: #ea580c;
+  --brand-accent:   #d97706;
+  --brand-accent-2: #f59e0b;
 
-  --brand-danger: #c81e1e;
-  --brand-success: #2d8a3a;
+  --brand-danger:         #dc2626;
+  --brand-danger-subtle:  rgba(220, 38, 38, 0.08);
+  --brand-success:        #16a34a;
+  --brand-success-subtle: rgba(22, 163, 74, 0.08);
+  --brand-warning:        #d97706;
+  --brand-warning-subtle: rgba(217, 119, 6, 0.08);
 
-  --brand-focus-ring: rgba(26, 143, 196, 0.45);
+  --brand-focus-ring: rgba(79, 70, 229, 0.3);
 
-  --brand-shadow: 0 6px 20px rgba(14, 16, 53, 0.1);
-  --brand-shadow-soft: 0 2px 10px rgba(14, 16, 53, 0.06);
-  --shadow-sm: 0 1px 3px rgba(14, 16, 53, 0.08);
-  --shadow-md: 0 4px 16px rgba(14, 16, 53, 0.1);
-  --shadow-lg: 0 6px 20px rgba(14, 16, 53, 0.12);
+  --brand-shadow:      0 8px 32px rgba(0, 0, 0, 0.10);
+  --brand-shadow-soft: 0 2px 8px  rgba(0, 0, 0, 0.06);
+  --shadow-sm:   0 1px 3px  rgba(0, 0, 0, 0.06);
+  --shadow-md:   0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg:   0 8px 32px rgba(0, 0, 0, 0.10);
+  --shadow-glow: 0 0 24px   rgba(79, 70, 229, 0.12);
 }
 
-html.light ::-webkit-scrollbar-track {
-  background: var(--brand-surface-2);
-}
+html.light ::-webkit-scrollbar-thumb       { background: var(--brand-border-2); }
+html.light ::-webkit-scrollbar-thumb:hover { background: var(--brand-muted); }
 
-html.light ::-webkit-scrollbar-thumb {
-  background: var(--brand-border);
-}
-
-html.light ::-webkit-scrollbar-thumb:hover {
-  background: #9ca3c9;
+html.light .glass {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
 }

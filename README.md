@@ -66,6 +66,7 @@ For asset layout and syncing rules, see [`brand/README.md`](brand/README.md).
 | [`AGENTS.md`](AGENTS.md) | AI operating contract (precedence, safety, validation, escalation). |
 | [`docs/DASHBOARD.md`](docs/DASHBOARD.md) | Dashboard layout, behaviour, and key files. |
 | [`docs/FULL_INFO.md`](docs/FULL_INFO.md) | **Full project handoff** for external design/code tools (routes, stack, APIs index, constraints). |
+| [`docs/DASHBOARD_DESIGNER_HANDOFF.md`](docs/DASHBOARD_DESIGNER_HANDOFF.md) | **Designer handoff** — every screen, who sees it, API calls per screen, navigation structure, brand tokens. |
 | [`docs/PROJECT_BREAKDOWN.md`](docs/PROJECT_BREAKDOWN.md) | Structured extraction from the project brief. |
 | [`docs/PROJECT_PROMPT.md`](docs/PROJECT_PROMPT.md) | Full project brief. |
 | [`docs/DATA_MODEL.md`](docs/DATA_MODEL.md) | Workbook-driven data model and CSV mapping. |

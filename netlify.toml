@@ -21,6 +21,13 @@
     X-Frame-Options = "DENY"
     X-Content-Type-Options = "nosniff"
 
+# Local development — runs Vite dev server + netlify functions together
+[dev]
+  command = "cd dashboard-ui && npm run dev"
+  targetPort = 5173
+  port = 8888
+  autoLaunch = false
+
 # React SPA (Vite) under /spa/
 [[redirects]]
   from = "/spa/*"

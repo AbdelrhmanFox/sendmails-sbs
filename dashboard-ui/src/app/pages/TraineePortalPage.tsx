@@ -4,6 +4,7 @@ import { Card } from '../components/design-system/Card';
 import { Callout } from '../components/design-system/Callout';
 import { Button } from '../components/design-system/Button';
 import { Input, Textarea } from '../components/design-system/Input';
+import { Skeleton } from '../components/ui/skeleton';
 import { AUTH_ROLE, functionsBase, getAuthHeaders, jsonFetch } from '../../lib/api';
 
 type TraineeMeResponse = {
@@ -240,7 +241,15 @@ export function TraineePortalPage() {
         </p>
       </div>
 
-      {loading ? <p className="text-sm text-[var(--brand-muted)]">Loading portal…</p> : null}
+      {loading ? (
+        <div className="space-y-4">
+          <div className="grid gap-6 lg:grid-cols-3">
+            <Skeleton className="h-40 rounded-[var(--brand-radius)]" />
+            <Skeleton className="h-40 rounded-[var(--brand-radius)] lg:col-span-2" />
+          </div>
+          <Skeleton className="h-24 rounded-[var(--brand-radius)]" />
+        </div>
+      ) : null}
       {err ? (
         <div className="rounded-lg border border-[var(--brand-danger)]/30 bg-[var(--brand-danger)]/10 p-3 text-sm text-[var(--brand-danger)]">
           {err}
@@ -330,7 +339,13 @@ export function TraineePortalPage() {
             <p className="mt-1 text-sm text-[var(--brand-muted)]">
               {activeCourse?.course_name || classroom?.batch?.course_name || '—'} · {activeCourse?.batch_name || classroom?.batch?.batch_name || '—'}
             </p>
-            {classroomLoading ? <p className="mt-3 text-sm text-[var(--brand-muted)]">Loading classroom…</p> : null}
+            {classroomLoading ? (
+              <div className="mt-3 space-y-2">
+                <Skeleton className="h-5 w-48 rounded" />
+                <Skeleton className="h-5 w-64 rounded" />
+                <Skeleton className="h-5 w-40 rounded" />
+              </div>
+            ) : null}
             {!activeBatchId && !classroomLoading ? (
               <p className="mt-3 text-sm text-[var(--brand-muted)]">Select a course from the list to load this workspace.</p>
             ) : null}
@@ -363,7 +378,7 @@ export function TraineePortalPage() {
             <div className="mt-3 space-y-3">
               {(classroom?.course_library?.chapters || []).map((ch) => (
                 <details key={ch.id} className="rounded-[var(--brand-radius-dense)] border border-[var(--brand-border)] p-3">
-                  <summary className="cursor-pointer font-medium text-[var(--brand-text)]">{ch.title}</summary>
+                  <summary className="cursor-pointer rounded-[var(--brand-radius-dense)] font-medium text-[var(--brand-text)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-focus-ring)]">{ch.title}</summary>
                   <div className="mt-3">
                     <ResourceList items={ch.materials || []} />
                   </div>
