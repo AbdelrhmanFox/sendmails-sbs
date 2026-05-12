@@ -19,16 +19,35 @@ alter table public.lms_audit_events enable row level security;
 drop policy if exists lms_audit_events_deny_all on public.lms_audit_events;
 create policy lms_audit_events_deny_all on public.lms_audit_events for all using (false);
 
--- Add referential integrity gradually (NOT VALID avoids immediate failure on old bad rows)
-alter table public.batches
-  add constraint if not exists batches_course_id_fk
-  foreign key (course_id) references public.courses(course_id) on update cascade on delete set null not valid;
+-- Add referential integrity gradually (NOT VALID avoids immediate failure on old bad rows).
+-- Postgres has no `ADD CONSTRAINT IF NOT EXISTS`; use DO blocks for idempotency.
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'batches_course_id_fk') then
+    alter table public.batches
+      add constraint batches_course_id_fk
+      foreign key (course_id) references public.courses(course_id)
+      on update cascade on delete set null not valid;
+  end if;
+end$$;
 
-alter table public.enrollments
-  add constraint if not exists enrollments_batch_id_fk
-  foreign key (batch_id) references public.batches(batch_id) on update cascade on delete set null not valid;
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'enrollments_batch_id_fk') then
+    alter table public.enrollments
+      add constraint enrollments_batch_id_fk
+      foreign key (batch_id) references public.batches(batch_id)
+      on update cascade on delete set null not valid;
+  end if;
+end$$;
 
-alter table public.enrollments
-  add constraint if not exists enrollments_trainee_id_fk
-  foreign key (trainee_id) references public.trainees(trainee_id) on update cascade on delete set null not valid;
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'enrollments_trainee_id_fk') then
+    alter table public.enrollments
+      add constraint enrollments_trainee_id_fk
+      foreign key (trainee_id) references public.trainees(trainee_id)
+      on update cascade on delete set null not valid;
+  end if;
+end$$;
 

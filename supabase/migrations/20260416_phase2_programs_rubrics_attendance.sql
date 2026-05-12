@@ -74,9 +74,15 @@ create table if not exists public.rubric_scores (
 alter table public.session_attendance
   add column if not exists trainee_id text;
 
-alter table public.session_attendance
-  add constraint if not exists session_attendance_trainee_fk
-  foreign key (trainee_id) references public.trainees(trainee_id) on delete set null not valid;
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'session_attendance_trainee_fk') then
+    alter table public.session_attendance
+      add constraint session_attendance_trainee_fk
+      foreign key (trainee_id) references public.trainees(trainee_id)
+      on delete set null not valid;
+  end if;
+end$$;
 
 alter table public.programs enable row level security;
 alter table public.program_courses enable row level security;

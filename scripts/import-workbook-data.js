@@ -8,15 +8,28 @@ const EXPORT_DIR = path.join(ROOT, 'docs', 'excel-export');
 function normalizeDate(value) {
   const s = String(value || '').trim();
   if (!s) return null;
+  const toIsoDate = (year, month, day) => {
+    const y = Number(year);
+    const m = Number(month);
+    const d = Number(day);
+    if (!y || !m || !d || m < 1 || m > 12 || d < 1 || d > 31) return null;
+    const dt = new Date(Date.UTC(y, m - 1, d));
+    if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== m - 1 || dt.getUTCDate() !== d) return null;
+    return `${String(y).padStart(4, '0')}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+  };
   const slash = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
   if (slash) {
     const y = slash[3].length === 2 ? `20${slash[3]}` : slash[3];
-    return `${y}-${slash[1].padStart(2, '0')}-${slash[2].padStart(2, '0')}`;
+    const [first, second] = [Number(slash[1]), Number(slash[2])];
+    const [month, day] = first > 12 ? [second, first] : [first, second];
+    return toIsoDate(y, month, day);
   }
   const dash = s.match(/^(\d{1,2})-(\d{1,2})-(\d{2,4})$/);
   if (dash) {
     const y = dash[3].length === 2 ? `20${dash[3]}` : dash[3];
-    return `${y}-${dash[2].padStart(2, '0')}-${dash[1].padStart(2, '0')}`;
+    const [first, second] = [Number(dash[1]), Number(dash[2])];
+    const [month, day] = first > 12 ? [second, first] : [first, second];
+    return toIsoDate(y, month, day);
   }
   const dt = new Date(s);
   if (Number.isNaN(dt.getTime())) return null;
@@ -47,8 +60,8 @@ async function run() {
   const trainees = parseCsv(path.join(EXPORT_DIR, 'trainees.csv')).map((r) => ({
     trainee_id: r.Trainee_ID,
     full_name: r.Full_Name || null,
-    phone: r.Phone || null,
-    email: r.Email || null,
+    phone: r.Phone || '',
+    email: r.Email || '',
     trainee_type: r.Type || null,
     company_name: r.Company_Name || null,
     job_title: r.Job_Title || null,
@@ -82,6 +95,8 @@ async function run() {
     capacity: r.Capacity ? Number(r.Capacity) : null,
   })).filter((r) => r.batch_id);
 
+  const validBatchIds = new Set(batches.map((batch) => batch.batch_id));
+  const skippedEnrollments = [];
   const enrollments = parseCsv(path.join(EXPORT_DIR, 'enrollments.csv')).map((r) => ({
     enrollment_id: r.Enrollment_ID,
     trainee_id: r.Trainee_ID || '',
@@ -92,7 +107,11 @@ async function run() {
     certificate_issued: r.Certificate_Issued ? r.Certificate_Issued.toLowerCase() === 'yes' : null,
     enroll_date: normalizeDate(r.Enroll_Date),
     notes: r.Notes || null,
-  })).filter((r) => r.enrollment_id && r.trainee_id && r.batch_id);
+  })).filter((r) => {
+    const isValid = r.enrollment_id && r.trainee_id && r.batch_id && validBatchIds.has(r.batch_id);
+    if (!isValid && r.enrollment_id) skippedEnrollments.push(r);
+    return isValid;
+  });
 
   if (trainees.length) {
     const { error } = await supabase.from('trainees').upsert(trainees, { onConflict: 'trainee_id' });
@@ -115,6 +134,9 @@ async function run() {
   console.log(`Imported courses: ${courses.length}`);
   console.log(`Imported batches: ${batches.length}`);
   console.log(`Imported enrollments: ${enrollments.length}`);
+  if (skippedEnrollments.length) {
+    console.warn(`Skipped enrollments with missing/unknown batch IDs: ${skippedEnrollments.map((r) => r.enrollment_id).join(', ')}`);
+  }
 }
 
 run().catch((err) => {
