@@ -389,6 +389,95 @@ exports.handler = async (event) => {
     return json({ currency: 'EGP', labels, values: entries.map(([, v]) => v), days });
   }
 
+  // --- READ: chart-expenses-trend ---
+  // Monthly operating expense sums. Excludes rows still flagged as incomplete (spent_at = 9999-12-31).
+  if (event.httpMethod === 'GET' && resource === 'chart-expenses-trend') {
+    const months = Math.min(24, Math.max(3, parseInt(String(event.queryStringParameters?.months || '6'), 10) || 6));
+    const today = new Date();
+    const startDate = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - (months - 1), 1));
+    const startStr = startDate.toISOString().slice(0, 10);
+
+    const { data: expRows, error: expErr } = await supabase
+      .from('finance_expenses')
+      .select('spent_at, amount')
+      .gte('spent_at', startStr)
+      .lt('spent_at', '9999-01-01');
+    if (expErr) return json({ error: expErr.message || 'Chart query failed' }, 500);
+
+    const byMonth = {};
+    const keys = [];
+    for (let i = 0; i < months; i += 1) {
+      const d = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - (months - 1 - i), 1));
+      const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+      keys.push(key);
+      byMonth[key] = 0;
+    }
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    (expRows || []).forEach((e) => {
+      if (!e.spent_at) return;
+      const key = String(e.spent_at).slice(0, 7);
+      if (Object.prototype.hasOwnProperty.call(byMonth, key)) byMonth[key] += Number(e.amount || 0);
+    });
+    const values = keys.map((k) => byMonth[k] || 0);
+    const labels = keys.map((k) => {
+      const m = k.split('-')[1];
+      const y = k.split('-')[0];
+      return `${monthNames[parseInt(m, 10) - 1]} ${y}`;
+    });
+    return json({ currency: 'EGP', labels, values });
+  }
+
+  // --- READ: chart-cash-monthly ---
+  // Income (payments) and expenses per month on the same month keys — dual-series chart.
+  if (event.httpMethod === 'GET' && resource === 'chart-cash-monthly') {
+    const months = Math.min(24, Math.max(3, parseInt(String(event.queryStringParameters?.months || '6'), 10) || 6));
+    const today = new Date();
+    const startDate = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - (months - 1), 1));
+    const startIso = startDate.toISOString();
+    const startStr = startDate.toISOString().slice(0, 10);
+
+    const [{ data: payRows, error: payErr }, { data: expRows, error: expErr }] = await Promise.all([
+      supabase.from('payments').select('amount, received_at').gte('received_at', startIso),
+      supabase.from('finance_expenses').select('amount, spent_at').gte('spent_at', startStr).lt('spent_at', '9999-01-01'),
+    ]);
+    if (payErr) return json({ error: payErr.message || 'Chart query failed' }, 500);
+    if (expErr) return json({ error: expErr.message || 'Chart query failed' }, 500);
+
+    const keys = [];
+    const incomeMap = {};
+    const expMap = {};
+    for (let i = 0; i < months; i += 1) {
+      const d = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - (months - 1 - i), 1));
+      const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+      keys.push(key);
+      incomeMap[key] = 0;
+      expMap[key] = 0;
+    }
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    (payRows || []).forEach((p) => {
+      if (!p.received_at) return;
+      const dt = new Date(p.received_at);
+      const key = `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}`;
+      if (Object.prototype.hasOwnProperty.call(incomeMap, key)) incomeMap[key] += Number(p.amount || 0);
+    });
+    (expRows || []).forEach((e) => {
+      if (!e.spent_at) return;
+      const key = String(e.spent_at).slice(0, 7);
+      if (Object.prototype.hasOwnProperty.call(expMap, key)) expMap[key] += Number(e.amount || 0);
+    });
+    const labels = keys.map((k) => {
+      const m = k.split('-')[1];
+      const y = k.split('-')[0];
+      return `${monthNames[parseInt(m, 10) - 1]} ${y}`;
+    });
+    return json({
+      currency: 'EGP',
+      labels,
+      income_values: keys.map((k) => incomeMap[k] || 0),
+      expense_values: keys.map((k) => expMap[k] || 0),
+    });
+  }
+
   // --- READ: ledger ---
   if (event.httpMethod === 'GET' && resource === 'ledger') {
     const { page, pageSize, from, to } = parsePage(event.queryStringParameters || {});

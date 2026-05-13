@@ -4,6 +4,10 @@ export type Kpis = { mtd_revenue: number; outstanding_invoices: number; payment_
 export type RevChart = { currency: string; labels: string[]; values: number[] };
 export type MethodChart = { currency: string; labels: string[]; values: number[]; days: number };
 export type TraineeChart = { currency: string; labels: string[]; values: number[] };
+/** Monthly expenses trend — same shape as RevChart. */
+export type ExpenseChart = { currency: string; labels: string[]; values: number[] };
+/** Dual-series cash chart: income vs expenses per month. */
+export type CashMonthlyChart = { currency: string; labels: string[]; income_values: number[]; expense_values: number[] };
 export type ArAging = { as_of: string; buckets: { b0_30: number; b31_60: number; b61_90: number; b90p: number }; currency: string };
 export type BatchRow = { batch_id: string; batch_name?: string; course_id?: string };
 
