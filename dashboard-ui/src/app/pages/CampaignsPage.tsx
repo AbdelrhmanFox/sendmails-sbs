@@ -6,7 +6,7 @@ import { jsonFetch } from '../../lib/api';
 
 const WEBHOOK_KEY = 'sbs_sendmails_webhook';
 const SHEET_KEY = 'sbs_sendmails_sheet_url';
-const DEFAULT_WEBHOOK_URL = 'https://n8n.growleadpro.com/webhook/sendmails-sbs';
+const DEFAULT_WEBHOOK_URL = 'https://n8n.s3odyn8n.tech/webhook/sendmails-sbs';
 const DEFAULT_SHEET_URL =
   'https://docs.google.com/spreadsheets/d/1sUUpVcRs5tE1KzNGaVA4cnQShvr1eI1bvkO44jAsKtI/edit?gid=0#gid=0';
 
