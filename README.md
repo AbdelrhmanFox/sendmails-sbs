@@ -42,6 +42,8 @@ Internal staff dashboard for **SBS** (educational and training services). The ap
 | `supabase/` | One-off SQL helpers (e.g. `fix-login-database-error.sql`) as needed. |
 | `scripts/` | Seed, workbook export/import, data model build. |
 | `automation/workflow.json` | n8n campaign workflow (import into your n8n instance). |
+| `docs/ZOHO_MAIL_DELIVERABILITY.md` | Zoho Mail SPF/DKIM/DMARC and anti-spam setup for email campaigns. |
+| `docs/N8N_ZOHO_SMTP_SETUP.md` | Step-by-step n8n Zoho SMTP credential and DNS checklist. |
 | `docs/` | Long-form docs, CSV exports under `docs/excel-export/`, sample import under `docs/sample-import/`. |
 | `brand/` | Brand README, `palette.json`, `Main Logo/`, `Color Palette/ColorPalette.pdf`, `exports/logo.png`. |
 | `CLAUDE.md` | Cursor/agent rules for this repo. |
@@ -157,7 +159,7 @@ npm run import:workbook
 
 ### 5) n8n campaigns
 
-Import `automation/workflow.json`, attach Google Sheets + SMTP credentials, activate the workflow, then paste the webhook URL into the dashboard **Email Campaigns** module.
+Import `automation/workflow.json`, attach Google Sheets + Zoho SMTP credentials (`docs/ZOHO_MAIL_DELIVERABILITY.md`), activate the workflow, then paste the webhook URL into the dashboard **Email Campaigns** module.
 
 ---
 

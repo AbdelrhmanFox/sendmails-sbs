@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Card } from '../components/design-system/Card';
 import { Button } from '../components/design-system/Button';
 import { Input } from '../components/design-system/Input';
+import { Callout } from '../components/design-system/Callout';
 import { jsonFetch } from '../../lib/api';
 
 const WEBHOOK_KEY = 'sbs_sendmails_webhook';
@@ -11,6 +12,21 @@ const DEFAULT_SHEET_URL =
   'https://docs.google.com/spreadsheets/d/1sUUpVcRs5tE1KzNGaVA4cnQShvr1eI1bvkO44jAsKtI/edit?gid=0#gid=0';
 
 type PreviewResponse = { columns?: string[]; sampleRow?: Record<string, string> };
+type StatusResponse = {
+  sent?: number;
+  pending?: number;
+  errors?: number;
+  lastSentRow?: string | number;
+  nextRowToSend?: string | number;
+  lastError?: string | null;
+  lastErrorRow?: string | number | null;
+  rateLimitHit?: boolean;
+};
+type CampaignAlert = {
+  message: string;
+  row?: string | number | null;
+  rateLimit: boolean;
+};
 type CampaignTemplateKey = '' | 'welcome' | 'reminder' | 'announcement' | 'offer';
 
 const CAMPAIGN_TEMPLATES: Record<Exclude<CampaignTemplateKey, ''>, { subject: string; body: string }> = {
@@ -52,6 +68,8 @@ export function CampaignsPage() {
   const [sampleRow, setSampleRow] = useState<Record<string, string>>({});
   const [msg, setMsg] = useState('');
   const [statusHtml, setStatusHtml] = useState('');
+  const [campaignAlert, setCampaignAlert] = useState<CampaignAlert | null>(null);
+  const [polling, setPolling] = useState(false);
   const [loading, setLoading] = useState(false);
   const editorRef = useRef<HTMLDivElement | null>(null);
   const subjectRef = useRef<HTMLInputElement | null>(null);
@@ -97,9 +115,44 @@ export function CampaignsPage() {
     }
   };
 
+  const refreshStatus = useCallback(async () => {
+    if (!webhook.trim() || !sheetUrl.trim()) return;
+    try {
+      const data = await jsonFetch<StatusResponse>(webhook.trim(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'status', sheetUrl: sheetUrl.trim() }),
+      });
+      const errorCount = data.errors ?? 0;
+      setStatusHtml(
+        `Sent: ${data.sent ?? '—'} · Pending: ${data.pending ?? '—'} · Errors: ${errorCount} · Last row: ${data.lastSentRow ?? '—'} · Next: ${data.nextRowToSend ?? '—'}`,
+      );
+      if (data.lastError) {
+        setCampaignAlert({
+          message: data.lastError,
+          row: data.lastErrorRow ?? null,
+          rateLimit: !!data.rateLimitHit,
+        });
+      }
+      if (typeof data.pending === 'number' && data.pending === 0) {
+        setPolling(false);
+      }
+    } catch (e) {
+      setStatusHtml(e instanceof Error ? e.message : 'Status failed');
+    }
+  }, [webhook, sheetUrl]);
+
+  useEffect(() => {
+    if (!polling) return;
+    void refreshStatus();
+    const id = window.setInterval(() => void refreshStatus(), 60_000);
+    return () => window.clearInterval(id);
+  }, [polling, refreshStatus]);
+
   const sendCampaign = async () => {
     setLoading(true);
     setMsg('');
+    setCampaignAlert(null);
     try {
       await jsonFetch(webhook.trim(), {
         method: 'POST',
@@ -107,6 +160,7 @@ export function CampaignsPage() {
         body: JSON.stringify({ action: 'send', sheetUrl: sheetUrl.trim(), cc: cc.trim(), subject: subject.trim(), bodyHtml }),
       });
       setMsg('Campaign dispatch started.');
+      setPolling(true);
       void refreshStatus();
     } catch (e) {
       setMsg(e instanceof Error ? e.message : 'Send failed');
@@ -125,32 +179,12 @@ export function CampaignsPage() {
         body: JSON.stringify({ action: 'stop', sheetUrl: sheetUrl.trim() }),
       });
       setMsg('Stop requested. Current automation run will halt before the next email.');
+      setPolling(false);
       void refreshStatus();
     } catch (e) {
       setMsg(e instanceof Error ? e.message : 'Stop failed');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const refreshStatus = async () => {
-    if (!webhook.trim() || !sheetUrl.trim()) return;
-    try {
-      const data = await jsonFetch<{
-        sent?: number;
-        pending?: number;
-        lastSentRow?: string;
-        nextRowToSend?: string;
-      }>(webhook.trim(), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'status', sheetUrl: sheetUrl.trim() }),
-      });
-      setStatusHtml(
-        `Sent: ${data.sent ?? '—'} · Pending: ${data.pending ?? '—'} · Last row: ${data.lastSentRow ?? '—'} · Next: ${data.nextRowToSend ?? '—'}`,
-      );
-    } catch (e) {
-      setStatusHtml(e instanceof Error ? e.message : 'Status failed');
     }
   };
 
@@ -269,6 +303,24 @@ export function CampaignsPage() {
 
   return (
     <div className="space-y-6">
+      {campaignAlert ? (
+        <Callout
+          variant={campaignAlert.rateLimit ? 'danger' : 'warning'}
+          title={campaignAlert.rateLimit ? 'Zoho sending limit reached' : 'Last send error'}
+          action={{ label: 'Dismiss', onClick: () => setCampaignAlert(null) }}
+        >
+          <p className="text-sm text-[var(--brand-text)]">{campaignAlert.message}</p>
+          {campaignAlert.row != null ? (
+            <p className="mt-1 text-sm text-[var(--brand-muted)]">Sheet row: {campaignAlert.row}</p>
+          ) : null}
+          {campaignAlert.rateLimit ? (
+            <p className="mt-2 text-sm text-[var(--brand-muted)]">
+              Unblock <code className="text-xs">info@sbsolutions-eg.com</code> via Zoho UnblockMe, then stop and resume the campaign after the wait interval.
+            </p>
+          ) : null}
+        </Callout>
+      ) : null}
+
       <Card className="space-y-4">
         <h2 className="text-sm font-semibold text-[var(--brand-text)]">Connection settings</h2>
         <div className="grid gap-4 md:grid-cols-2">
@@ -289,6 +341,7 @@ export function CampaignsPage() {
         {columns.length ? <p className="text-sm text-[var(--brand-muted)]">Columns: {columns.join(', ')}</p> : null}
         {msg ? <p className="text-sm text-[var(--brand-text)]">{msg}</p> : null}
         {statusHtml ? <p className="text-sm text-[var(--brand-muted)]">{statusHtml}</p> : null}
+        {polling ? <p className="text-xs text-[var(--brand-muted)]">Auto-refreshing status every 60 seconds while sends are pending.</p> : null}
       </Card>
 
       <Card className="space-y-4">

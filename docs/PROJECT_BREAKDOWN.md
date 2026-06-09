@@ -44,7 +44,7 @@ In short: **Bulk email from a Google Sheet, one every 5 minutes, with merge fiel
 | **Auth tokens** | JWT | Signed with JWT_SECRET; stored in localStorage; sent as `Authorization: Bearer <token>`. |
 | **Password hashing** | bcrypt (e.g. bcryptjs) | Used in Netlify Functions when creating/resetting passwords. |
 | **Sheet** | Google Sheets | Data source; read (preview, status, send) and update ("Email Sent" column). |
-| **Email** | SMTP (e.g. Hostinger) | Configured in n8n; one email per batch item. |
+| **Email** | SMTP (Zoho Mail) | Configured in n8n; one email per batch item. See `docs/ZOHO_MAIL_DELIVERABILITY.md`. |
 | **QR** | External API (e.g. api.qrserver.com) | Generate QR image from URL/text; dashboard shows image + download. |
 
 ---
@@ -386,7 +386,7 @@ Earlier subsections in this document (e.g. seven-step wizard, QR, RTL/i18n) desc
 2. Import `automation/workflow.json` into n8n.
 3. Configure credentials in n8n:
    - **Google Sheets:** OAuth or service account with access to the target sheet.
-   - **SMTP:** Host, port, user, password (e.g. Hostinger).
+   - **SMTP:** Zoho Mail (`smtp.zoho.com`, app password for `info@sbsolutions-eg.com`). See `docs/ZOHO_MAIL_DELIVERABILITY.md`.
 4. Set Webhook path (e.g. `/sendmails-sbs` or as in workflow).
 5. Activate the workflow.
 6. Copy the full webhook URL (e.g. `https://your-n8n.com/webhook/sendmails-sbs`).
